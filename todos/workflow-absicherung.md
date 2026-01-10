@@ -180,7 +180,7 @@ Vor Abschluss muss jeder Handler diese Punkte erfüllen:
 | Phase | Status | Fortschritt |
 |-------|--------|-------------|
 | Phase 1 | Erledigt | 100% |
-| Phase 2 | Teilweise | 50% (Error-Handler, Logging) |
+| Phase 2 | Erledigt | 100% (Error-Handler in allen Admin-Dateien) |
 | Phase 3 | Teilweise | 73% (Unit-Tests vorhanden) |
 | Phase 4 | Offen | 0% |
 | Phase 5 | Teilweise | 30% (Logging implementiert) |
@@ -194,6 +194,14 @@ Vor Abschluss muss jeder Handler diese Punkte erfüllen:
 - [x] DB-Error-Handling in configuration.inc.php
 - [x] DB-Error-Handling in password.inc.php
 - [x] DB-Error-Handling in edit.inc.php
+- [x] PHPStan: No errors
+- [x] PHPUnit: 110 tests passed
+
+### Erledigte Aufgaben (Phase 2)
+
+- [x] DB-Error-Handling in admins.inc.php (add, load, delete, update, list)
+- [x] DB-Error-Handling in release.inc.php (release all, release one, load entries)
+- [x] DB-Error-Handling in statement.inc.php (update, load entry)
 - [x] PHPStan: No errors
 - [x] PHPUnit: 110 tests passed
 

@@ -40,29 +40,42 @@ if ($id === 0) {
 if ($action === 'update' && $id > 0 && validateCsrfToken($_POST['csrf_token'] ?? '')) {
     $edit_statement = $_POST['edit_statement'] ?? '';
 
-    $stmt = $pdo->prepare("UPDATE {$pb_entries} SET statement = ?, statement_by = ? WHERE id = ?");
-    $stmt->execute([$edit_statement, $admin_session['name'] ?? 'Admin', $id]);
+    try {
+        $stmt = $pdo->prepare("UPDATE {$pb_entries} SET statement = ?, statement_by = ? WHERE id = ?");
+        $stmt->execute([$edit_statement, $admin_session['name'] ?? 'Admin', $id]);
 
-    $message = empty($edit_statement) ? 'Statement wurde gelöscht.' : 'Statement wurde erfolgreich aktualisiert.';
-    $messageType = 'success';
-    $showForm = false;
+        $message = empty($edit_statement) ? 'Statement wurde gelöscht.' : 'Statement wurde erfolgreich aktualisiert.';
+        $messageType = 'success';
+        $showForm = false;
+    } catch (PDOException $e) {
+        logDbError('Statement update: ' . $e->getMessage());
+        $message = 'Datenbankfehler beim Speichern des Statements.';
+        $messageType = 'error';
+    }
     regenerateCsrfToken();
 }
 
 // Load entry data
 $entry = null;
 if ($showForm && $id > 0) {
-    $stmt = $pdo->prepare("SELECT * FROM {$pb_entries} WHERE id = ?");
-    $stmt->execute([$id]);
-    $entry = $stmt->fetch(PDO::FETCH_ASSOC);
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM {$pb_entries} WHERE id = ?");
+        $stmt->execute([$id]);
+        $entry = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$entry) {
-        $message = 'Eintrag nicht gefunden!';
+        if (!$entry) {
+            $message = 'Eintrag nicht gefunden!';
+            $messageType = 'error';
+            $showForm = false;
+        } else {
+            $edit_statement = $entry['statement'] ?? '';
+            $statement_by = $entry['statement_by'] ?? '';
+        }
+    } catch (PDOException $e) {
+        logDbError('Statement entry load: ' . $e->getMessage());
+        $message = 'Datenbankfehler beim Laden des Eintrags.';
         $messageType = 'error';
         $showForm = false;
-    } else {
-        $edit_statement = $entry['statement'] ?? '';
-        $statement_by = $entry['statement_by'] ?? '';
     }
 }
 

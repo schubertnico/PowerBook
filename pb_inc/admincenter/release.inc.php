@@ -32,11 +32,17 @@ $action = $_POST['action'] ?? '';
 
 // Release all entries
 if ($action === 'release_all' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
-    $stmt = $pdo->prepare("UPDATE {$pb_entries} SET status = 'R' WHERE status = 'U'");
-    $stmt->execute();
-    $affected = $stmt->rowCount();
-    $message = "Alle Einträge ({$affected}) erfolgreich freigeschaltet.";
-    $messageType = 'success';
+    try {
+        $stmt = $pdo->prepare("UPDATE {$pb_entries} SET status = 'R' WHERE status = 'U'");
+        $stmt->execute();
+        $affected = $stmt->rowCount();
+        $message = "Alle Einträge ({$affected}) erfolgreich freigeschaltet.";
+        $messageType = 'success';
+    } catch (PDOException $e) {
+        logDbError('Release all entries: ' . $e->getMessage());
+        $message = 'Datenbankfehler beim Freischalten der Einträge.';
+        $messageType = 'error';
+    }
     regenerateCsrfToken();
 }
 
@@ -44,10 +50,16 @@ if ($action === 'release_all' && validateCsrfToken($_POST['csrf_token'] ?? '')) 
 if ($action === 'release_one' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
     $entry_id = (int)($_POST['entry_id'] ?? 0);
     if ($entry_id > 0) {
-        $stmt = $pdo->prepare("UPDATE {$pb_entries} SET status = 'R' WHERE id = ?");
-        $stmt->execute([$entry_id]);
-        $message = 'Eintrag erfolgreich freigeschaltet.';
-        $messageType = 'success';
+        try {
+            $stmt = $pdo->prepare("UPDATE {$pb_entries} SET status = 'R' WHERE id = ?");
+            $stmt->execute([$entry_id]);
+            $message = 'Eintrag erfolgreich freigeschaltet.';
+            $messageType = 'success';
+        } catch (PDOException $e) {
+            logDbError('Release single entry: ' . $e->getMessage());
+            $message = 'Datenbankfehler beim Freischalten des Eintrags.';
+            $messageType = 'error';
+        }
     } else {
         $message = 'Bitte wählen Sie einen Eintrag aus.';
         $messageType = 'error';
@@ -56,10 +68,20 @@ if ($action === 'release_one' && validateCsrfToken($_POST['csrf_token'] ?? '')) 
 }
 
 // Get unreleased entries
-$stmt = $pdo->prepare("SELECT * FROM {$pb_entries} WHERE status = 'U' ORDER BY id DESC");
-$stmt->execute();
-$unreleasedEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
-$count_unreleased = count($unreleasedEntries);
+try {
+    $stmt = $pdo->prepare("SELECT * FROM {$pb_entries} WHERE status = 'U' ORDER BY id DESC");
+    $stmt->execute();
+    $unreleasedEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $count_unreleased = count($unreleasedEntries);
+} catch (PDOException $e) {
+    logDbError('Load unreleased entries: ' . $e->getMessage());
+    $unreleasedEntries = [];
+    $count_unreleased = 0;
+    if (empty($message)) {
+        $message = 'Datenbankfehler beim Laden der Einträge.';
+        $messageType = 'error';
+    }
+}
 ?>
 
 <tr><td bgcolor="#3F5070" align="center">

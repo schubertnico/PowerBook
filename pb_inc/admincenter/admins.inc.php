@@ -311,9 +311,19 @@ function sendAdminEmail(string $type, array $data): void {
 }
 
 // Get all admins
-$stmt = $pdo->query("SELECT * FROM {$pb_admin} ORDER BY name ASC");
-$admins = $stmt->fetchAll(PDO::FETCH_ASSOC);
-$countAdmins = count($admins);
+try {
+    $stmt = $pdo->query("SELECT * FROM {$pb_admin} ORDER BY name ASC");
+    $admins = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $countAdmins = count($admins);
+} catch (PDOException $e) {
+    logDbError('Admin list: ' . $e->getMessage());
+    $admins = [];
+    $countAdmins = 0;
+    if (empty($message)) {
+        $message = 'Datenbankfehler beim Laden der Admin-Liste.';
+        $messageType = 'error';
+    }
+}
 ?>
 
 <tr><td bgcolor="#3F5070" align="center">
