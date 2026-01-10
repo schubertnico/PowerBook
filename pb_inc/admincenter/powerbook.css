@@ -1,0 +1,82 @@
+/* (C) 2002 by Axel 'Expandable' Habermaier */
+
+BODY, TABLE, TR, TH, TD {
+  font-family: Verdana, Helvetica, sans-serif;
+  color: #ffffff;
+  font-size: 12px;
+  scrollbar-arrow-color: #001329;
+  scrollbar-base-color: #3F5070;
+}
+
+A {
+  font-family: Verdana, Helvetica, sans-serif;
+  color: #B5C3D9;
+  text-decoration: none;
+}
+
+A:VISITED {
+  font-family: Verdana, Helvetica, sans-serif;
+  color: #B5C3D9;
+  text-decoration: none;
+}
+
+A:ACTIVE{
+  font-family: Verdana, Helvetica, sans-serif;
+  color: #B5C3D9;
+  text-decoration: none;
+}
+
+A:HOVER {
+  font-family: Verdana, Helvetica, sans-serif;
+  color: #B5C3D9;
+  text-decoration: none;
+  background-color: #3F4C66;
+}
+
+A:HOVER.logo {
+  background-color: #002040;
+}
+
+SMALL {
+  font-family: Verdana, Helvetica, sans-serif;
+  font-size: 11px;
+}
+
+SMALL.info {
+  font-family: Verdana, Helvetica, sans-serif;
+  color: #D0D0D0;
+  font-size: 11px;
+}
+
+B.HEADLINE {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #001329;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+B.SMALL {
+  font-family: Verdana, Helvetica, sans-serif;
+  font-weight: bold;
+  font-size: 10px;
+}
+
+INPUT, TEXTAREA, SELECT {
+  font-family: Tahoma;
+  font-size: 12px;
+  color: #FFFFFF;
+  border-width: 1;
+  border-color: #6078A0;
+  border-style: solid;
+  background: #001329;
+}
+
+TD.small {
+  font-family: Verdana, Helvetica, sans-serif;
+  font-size: 11px;
+  color: #D0D0D0;
+}
+
+HR {
+  color: #001329;
+}

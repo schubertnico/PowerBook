@@ -1,0 +1,17 @@
+parameters:
+    level: 5
+    paths:
+        - pbook.php
+        - pb_inc
+        - install_deu.php
+    excludePaths:
+        - pb_inc/smilies
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # Legacy code patterns that are acceptable during migration
+        - '#Variable \$[a-zA-Z_]+ might not be defined#'
+        - '#Undefined variable: \$config_#'
+        - '#Undefined variable: \$pdo#'
+        - '#Undefined variable: \$pb_#'
+        - '#Strict comparison using .* will always evaluate to true#'

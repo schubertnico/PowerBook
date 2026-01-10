@@ -1,0 +1,38 @@
+# Composer
+/vendor/
+composer.lock
+
+# IDE
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+/logs/*.log
+!/logs/.gitkeep
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# PHP
+*.cache
+*.phpunit.result.cache
+
+# Rector
+/rector-output/
+
+# Docker volumes (data is persistent in named volumes)
+
+# Windows artifacts
+nul
+
+# PHPUnit cache
+.phpunit.cache/
