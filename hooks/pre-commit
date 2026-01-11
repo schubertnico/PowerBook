@@ -30,6 +30,18 @@ if [ $PHPSTAN_EXIT -ne 0 ]; then
 fi
 echo -e "${GREEN}PHPStan: OK${NC}"
 
+# Run PHPMD
+echo -e "${YELLOW}Running PHPMD...${NC}"
+composer phpmd --quiet 2>/dev/null
+PHPMD_EXIT=$?
+
+if [ $PHPMD_EXIT -ne 0 ]; then
+    echo -e "${RED}PHPMD found issues. Please fix them before committing.${NC}"
+    composer phpmd
+    exit 1
+fi
+echo -e "${GREEN}PHPMD: OK${NC}"
+
 # Run PHPUnit
 echo -e "${YELLOW}Running PHPUnit...${NC}"
 composer test --quiet

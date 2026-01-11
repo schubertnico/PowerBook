@@ -57,6 +57,9 @@ jobs:
       - name: Run PHPStan
         run: composer phpstan
 
+      - name: Run PHPMD
+        run: composer phpmd
+
       - name: Run PHPUnit tests
         run: composer test
 
@@ -91,3 +94,6 @@ jobs:
 
       - name: Check code style (PHPStan Level 5)
         run: composer phpstan
+
+      - name: Check code quality (PHPMD)
+        run: composer phpmd

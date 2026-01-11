@@ -19,6 +19,7 @@
         "php": "^8.4"
     },
     "require-dev": {
+        "phpmd/phpmd": "^2.15",
         "phpstan/phpstan": "^2.0",
         "phpunit/phpunit": "^11.0",
         "rector/rector": "^2.0"
@@ -45,8 +46,10 @@
             "@php -r \"copy('hooks/pre-commit', '.git/hooks/pre-commit');\"",
             "@php -r \"chmod('.git/hooks/pre-commit', 0755);\""
         ],
+        "phpmd": "phpmd pb_inc text phpmd.xml --suffixes php,inc",
         "check": [
             "@phpstan",
+            "@phpmd",
             "@test"
         ]
     },

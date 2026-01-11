@@ -253,67 +253,92 @@ if ($action === 'edit' && $edit_id > 0 && validateCsrfToken($_POST['csrf_token']
     regenerateCsrfToken();
 }
 
+// Helper function to format permission as Ja/Nein
+function formatPermission(string $value): string {
+    return $value === 'Y' ? 'Ja' : 'Nein';
+}
+
+// Helper function to format admin permissions block
+function formatAdminPermissions(array $data): string {
+    return "Konfiguration: " . formatPermission($data['config']) . "\n"
+         . "Admin-Verwaltung: " . formatPermission($data['admins']) . "\n"
+         . "Eintrag-Verwaltung: " . formatPermission($data['entries']) . "\n"
+         . "Einträge Freischalten: " . formatPermission($data['release']) . "\n";
+}
+
+// Helper function to get email footer
+function getEmailFooter(): string {
+    return "\n--------------------------------------------------------\n"
+         . "PowerBook - PHP Guestbook System\n"
+         . "https://github.com/schubertnico/PowerBook.git\n\n"
+         . "DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!";
+}
+
 // Helper function to send admin notification emails
 function sendAdminEmail(string $type, array $data): void {
     $to = sanitizeEmailHeader($data['to'] ?? '');
-    if (empty($to)) return;
+    if (empty($to)) {
+        return;
+    }
 
     $subject = 'PowerBook: AdminCenter';
     $headers = "From: PowerBook <noreply@powerbook.local>\r\n";
     $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
 
-    $body = '';
+    $body = match($type) {
+        'added' => buildAddedEmailBody($data),
+        'edited' => buildEditedEmailBody($data),
+        'deleted' => buildDeletedEmailBody($data),
+        default => ''
+    };
 
-    switch ($type) {
-        case 'added':
-            $body = "Hallo!\n\n";
-            $body .= "{$data['by']} hat Sie zur Admin-Datenbank von PowerBook hinzugefügt.\n\n";
-            $body .= "Ihr Name: {$data['name']}\n";
-            $body .= "Ihre E-Mail: {$data['email']}\n";
-            $body .= "Ihr Passwort: {$data['password']}\n";
-            $body .= "Konfiguration: " . ($data['config'] === 'Y' ? 'Ja' : 'Nein') . "\n";
-            $body .= "Admin-Verwaltung: " . ($data['admins'] === 'Y' ? 'Ja' : 'Nein') . "\n";
-            $body .= "Eintrag-Verwaltung: " . ($data['entries'] === 'Y' ? 'Ja' : 'Nein') . "\n";
-            $body .= "Einträge Freischalten: " . ($data['release'] === 'Y' ? 'Ja' : 'Nein') . "\n\n";
-            $body .= "Geben Sie diese Informationen niemals weiter!\n";
-            $body .= "Ändern Sie bitte auch Ihr Passwort im AdminCenter";
-            if (!empty($data['admin_url'])) {
-                $body .= " ({$data['admin_url']})";
-            }
-            $body .= ".\n";
-            break;
-
-        case 'edited':
-            $body = "Hallo!\n\n";
-            $body .= "{$data['by']} hat Ihr Profil im AdminCenter von PowerBook bearbeitet.\n\n";
-            $body .= "Ihr (neuer) Name: {$data['name']}\n";
-            $body .= "Ihre (neue) E-Mail: {$data['email']}\n";
-            if (!empty($data['password'])) {
-                $body .= "Ihr (neues) Passwort: {$data['password']}\n";
-            }
-            $body .= "Konfiguration: " . ($data['config'] === 'Y' ? 'Ja' : 'Nein') . "\n";
-            $body .= "Admin-Verwaltung: " . ($data['admins'] === 'Y' ? 'Ja' : 'Nein') . "\n";
-            $body .= "Eintrag-Verwaltung: " . ($data['entries'] === 'Y' ? 'Ja' : 'Nein') . "\n";
-            $body .= "Einträge Freischalten: " . ($data['release'] === 'Y' ? 'Ja' : 'Nein') . "\n\n";
-            $body .= "Geben Sie diese Informationen niemals weiter!\n";
-            if (!empty($data['admin_url'])) {
-                $body .= "Die URL zum AdminCenter ist: {$data['admin_url']}\n";
-            }
-            break;
-
-        case 'deleted':
-            $body = "Hallo!\n\n";
-            $body .= "{$data['by']} hat Sie aus der Admin-Datenbank von PowerBook gelöscht.\n";
-            $body .= "Sie sind nicht mehr berechtigt, mit PowerBook zu arbeiten.\n";
-            break;
+    if (empty($body)) {
+        return;
     }
 
-    $body .= "\n--------------------------------------------------------\n";
-    $body .= "PowerBook - PHP Guestbook System\n";
-    $body .= "https://github.com/schubertnico/PowerBook.git\n\n";
-    $body .= "DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!";
-
+    $body .= getEmailFooter();
     sendEmail($to, $subject, $body, $headers, "Admin {$type}");
+}
+
+// Build email body for added admin
+function buildAddedEmailBody(array $data): string {
+    $body = "Hallo!\n\n";
+    $body .= "{$data['by']} hat Sie zur Admin-Datenbank von PowerBook hinzugefügt.\n\n";
+    $body .= "Ihr Name: {$data['name']}\n";
+    $body .= "Ihre E-Mail: {$data['email']}\n";
+    $body .= "Ihr Passwort: {$data['password']}\n";
+    $body .= formatAdminPermissions($data) . "\n";
+    $body .= "Geben Sie diese Informationen niemals weiter!\n";
+    $body .= "Ändern Sie bitte auch Ihr Passwort im AdminCenter";
+    if (!empty($data['admin_url'])) {
+        $body .= " ({$data['admin_url']})";
+    }
+    $body .= ".\n";
+    return $body;
+}
+
+// Build email body for edited admin
+function buildEditedEmailBody(array $data): string {
+    $body = "Hallo!\n\n";
+    $body .= "{$data['by']} hat Ihr Profil im AdminCenter von PowerBook bearbeitet.\n\n";
+    $body .= "Ihr (neuer) Name: {$data['name']}\n";
+    $body .= "Ihre (neue) E-Mail: {$data['email']}\n";
+    if (!empty($data['password'])) {
+        $body .= "Ihr (neues) Passwort: {$data['password']}\n";
+    }
+    $body .= formatAdminPermissions($data) . "\n";
+    $body .= "Geben Sie diese Informationen niemals weiter!\n";
+    if (!empty($data['admin_url'])) {
+        $body .= "Die URL zum AdminCenter ist: {$data['admin_url']}\n";
+    }
+    return $body;
+}
+
+// Build email body for deleted admin
+function buildDeletedEmailBody(array $data): string {
+    return "Hallo!\n\n"
+         . "{$data['by']} hat Sie aus der Admin-Datenbank von PowerBook gelöscht.\n"
+         . "Sie sind nicht mehr berechtigt, mit PowerBook zu arbeiten.\n";
 }
 
 // Get all admins
