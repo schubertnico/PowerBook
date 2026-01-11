@@ -183,7 +183,7 @@ Vor Abschluss muss jeder Handler diese Punkte erfüllen:
 | Phase 2 | Erledigt | 100% (Error-Handler in allen Admin-Dateien) |
 | Phase 3 | Erledigt | 100% (161 Unit-Tests) |
 | Phase 4 | Erledigt | 100% (CI/CD + Pre-Commit Hooks) |
-| Phase 5 | Teilweise | 30% (Logging implementiert) |
+| Phase 5 | Erledigt | 100% (Logging + Rotation) |
 
 ### Erledigte Aufgaben (Phase 1)
 
@@ -219,4 +219,19 @@ Vor Abschluss muss jeder Handler diese Punkte erfüllen:
 - [x] PHPStan: No errors
 - [x] PHPUnit: 161 tests passed
 
+### Erledigte Aufgaben (Phase 5)
+
+- [x] Security-Log separiert (security.log)
+- [x] logCsrfFailure() fuer CSRF-Fehler
+- [x] logFailedLogin() / logSuccessfulLogin()
+- [x] Log-Rotation (rotateLogIfNeeded)
+- [x] cleanOldLogs() fuer automatische Bereinigung
+- [x] getLogStats() fuer Admin-Dashboard
+- [x] CSRF-Logging in Admin-Login
+- [x] CSRF-Logging in Guestbook-Formularen
+
 **Letzte Aktualisierung:** 2026-01-11
+
+---
+
+## ALLE PHASEN ABGESCHLOSSEN
