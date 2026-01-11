@@ -69,10 +69,7 @@ if ($action === 'recover' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
                 $body .= "https://github.com/schubertnico/PowerBook.git\n\n";
                 $body .= "DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!";
 
-                $emailSent = @mail($to, $subject, $body, $headers);
-                if (!$emailSent) {
-                    logDbError('Password recovery email failed for: ' . $admin['email']);
-                }
+                sendEmail($to, $subject, $body, $headers, 'Password Recovery');
 
                 $message = "E-Mail erfolgreich verschickt an <b>" . e($admin['email']) . "</b>. Sie sollten die E-Mail in ein paar Minuten erhalten.";
                 $messageType = 'success';

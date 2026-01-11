@@ -45,5 +45,5 @@ EOT;
         'Content-Type: text/plain; charset=UTF-8',
     ];
 
-    @mail($toEmail, $subject, $message, implode("\r\n", $headers));
+    sendEmail($toEmail, $subject, $message, implode("\r\n", $headers), 'New Entry Notification');
 }

@@ -17,6 +17,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/config.inc.php';
 require_once __DIR__ . '/../error-handler.inc.php';
+require_once __DIR__ . '/../validation.inc.php';
 
 // Allowed pages whitelist (LFI protection)
 $allowedPages = [

@@ -40,5 +40,5 @@ if (!empty($toEmail) && filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
         'Content-Type: text/plain; charset=UTF-8',
     ];
 
-    @mail($toEmail, $subject, $content, implode("\r\n", $headers));
+    sendEmail($toEmail, $subject, $content, implode("\r\n", $headers), 'Thank You Email');
 }

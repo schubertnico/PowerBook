@@ -182,8 +182,14 @@ if ($action === 'edit' && $edit_id > 0 && validateCsrfToken($_POST['csrf_token']
                         $message = 'Es gibt bereits einen Admin mit dieser E-Mail-Adresse!';
                         $messageType = 'error';
                     } else {
-                        // Check passwords match
-                        if (!empty($edit_password1) && $edit_password1 !== $edit_password2) {
+                        // Check password strength and match
+                        $passwordErrors = validatePassword($edit_password1, 8, false);
+                        $confirmErrors = validatePasswordConfirmation($edit_password1, $edit_password2);
+
+                        if (!empty($passwordErrors)) {
+                            $message = $passwordErrors['password'];
+                            $messageType = 'error';
+                        } elseif (!empty($confirmErrors)) {
                             $message = 'Passwörter stimmen nicht überein!';
                             $messageType = 'error';
                         } else {
@@ -307,7 +313,7 @@ function sendAdminEmail(string $type, array $data): void {
     $body .= "https://github.com/schubertnico/PowerBook.git\n\n";
     $body .= "DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!";
 
-    @mail($to, $subject, $body, $headers);
+    sendEmail($to, $subject, $body, $headers, "Admin {$type}");
 }
 
 // Get all admins

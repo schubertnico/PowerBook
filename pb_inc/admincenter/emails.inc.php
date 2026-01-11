@@ -60,7 +60,7 @@ if ($email === 'admin_added' && !empty($safe_add_email)) {
     $body .= "https://github.com/schubertnico/PowerBook.git\n\n";
     $body .= "DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!";
 
-    @mail($safe_add_email, "PowerBook: AdminCenter", $body, $headers);
+    sendEmail($safe_add_email, "PowerBook: AdminCenter", $body, $headers, 'Admin Added');
 
 } elseif ($email === 'admin_edited' && !empty($safe_edit_email)) {
     $edit_config_display = ($edit_config ?? 'N') === 'Y' ? 'Ja' : 'Nein';
@@ -88,7 +88,7 @@ if ($email === 'admin_added' && !empty($safe_add_email)) {
     $body .= "https://github.com/schubertnico/PowerBook.git\n\n";
     $body .= "DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!";
 
-    @mail($safe_edit_email, "PowerBook: AdminCenter", $body, $headers);
+    sendEmail($safe_edit_email, "PowerBook: AdminCenter", $body, $headers, 'Admin Edited');
 
 } elseif ($email === 'admin_deleted' && !empty($safe_edit_email)) {
     $body = "Hallo!\n\n";
@@ -99,5 +99,5 @@ if ($email === 'admin_added' && !empty($safe_add_email)) {
     $body .= "https://github.com/schubertnico/PowerBook.git\n\n";
     $body .= "DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!";
 
-    @mail($safe_edit_email, "PowerBook: AdminCenter", $body, $headers);
+    sendEmail($safe_edit_email, "PowerBook: AdminCenter", $body, $headers, 'Admin Deleted');
 }
