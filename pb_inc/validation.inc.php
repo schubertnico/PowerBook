@@ -130,3 +130,45 @@ function validateUrl(string $url): array
 
     return $errors;
 }
+
+/**
+ * Validate password strength
+ *
+ * @param string $password The password to validate
+ * @param int $minLength Minimum password length (default: 8)
+ * @param bool $required Whether password is required
+ * @return array<string, string> Errors keyed by field name
+ */
+function validatePassword(string $password, int $minLength = 8, bool $required = false): array
+{
+    $errors = [];
+
+    if ($required && empty($password)) {
+        $errors['password'] = 'Passwort ist erforderlich';
+        return $errors;
+    }
+
+    if (!empty($password)) {
+        if (strlen($password) < $minLength) {
+            $errors['password'] = "Passwort muss mindestens {$minLength} Zeichen lang sein";
+        }
+    }
+
+    return $errors;
+}
+
+/**
+ * Validate password confirmation match
+ *
+ * @return array<string, string> Errors keyed by field name
+ */
+function validatePasswordConfirmation(string $password1, string $password2): array
+{
+    $errors = [];
+
+    if (!empty($password1) && $password1 !== $password2) {
+        $errors['password_confirm'] = 'Passwoerter stimmen nicht ueberein';
+    }
+
+    return $errors;
+}

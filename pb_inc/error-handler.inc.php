@@ -135,3 +135,46 @@ function handleAdminException(Throwable $e, string $context = ''): void
     logDbError($context . ': ' . $e->getMessage());
     displayAdminError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
 }
+
+/**
+ * Send email with logging
+ *
+ * @param string $to Recipient email address
+ * @param string $subject Email subject
+ * @param string $body Email body
+ * @param string $headers Email headers
+ * @param string $context Context for logging (e.g., 'Password Recovery', 'Admin Added')
+ * @return bool True if email was sent successfully
+ */
+function sendEmail(string $to, string $subject, string $body, string $headers = '', string $context = ''): bool
+{
+    // Sanitize recipient
+    $to = sanitizeEmailHeader($to);
+
+    if (empty($to)) {
+        logEmailError('Empty recipient', $context);
+        return false;
+    }
+
+    $result = @mail($to, $subject, $body, $headers);
+
+    if (!$result) {
+        logEmailError("Failed to send to: {$to}", $context);
+    }
+
+    return $result;
+}
+
+/**
+ * Log email sending errors
+ */
+function logEmailError(string $message, string $context = ''): void
+{
+    $logEntry = sprintf(
+        "[%s] Email Error%s: %s\n",
+        date('Y-m-d H:i:s'),
+        !empty($context) ? " ({$context})" : '',
+        $message
+    );
+    error_log($logEntry, 3, dirname(__DIR__) . '/logs/error.log');
+}

@@ -20,6 +20,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 #[CoversFunction('validateEmail')]
 #[CoversFunction('validateAdminData')]
 #[CoversFunction('validateUrl')]
+#[CoversFunction('validatePassword')]
+#[CoversFunction('validatePasswordConfirmation')]
 class ValidationTest extends TestCase
 {
     protected function setUp(): void
@@ -356,5 +358,106 @@ class ValidationTest extends TestCase
         $errors = validateUrl('  https://example.com  ');
 
         $this->assertEmpty($errors);
+    }
+
+    // ========================================
+    // Tests for validatePassword()
+    // ========================================
+
+    #[Test]
+    public function validatePasswordReturnsEmptyArrayForValidPassword(): void
+    {
+        $errors = validatePassword('securepassword123');
+
+        $this->assertEmpty($errors);
+    }
+
+    #[Test]
+    public function validatePasswordAcceptsEmptyWhenNotRequired(): void
+    {
+        $errors = validatePassword('', 8, false);
+
+        $this->assertEmpty($errors);
+    }
+
+    #[Test]
+    public function validatePasswordRequiresPasswordWhenRequired(): void
+    {
+        $errors = validatePassword('', 8, true);
+
+        $this->assertArrayHasKey('password', $errors);
+        $this->assertStringContainsString('erforderlich', $errors['password']);
+    }
+
+    #[Test]
+    public function validatePasswordRejectsShortPassword(): void
+    {
+        $errors = validatePassword('short', 8);
+
+        $this->assertArrayHasKey('password', $errors);
+        $this->assertStringContainsString('mindestens', $errors['password']);
+        $this->assertStringContainsString('8', $errors['password']);
+    }
+
+    #[Test]
+    public function validatePasswordAcceptsExactMinLength(): void
+    {
+        $errors = validatePassword('12345678', 8);
+
+        $this->assertEmpty($errors);
+    }
+
+    #[Test]
+    public function validatePasswordRespectsCustomMinLength(): void
+    {
+        $errors = validatePassword('1234', 6);
+
+        $this->assertArrayHasKey('password', $errors);
+        $this->assertStringContainsString('6', $errors['password']);
+    }
+
+    #[Test]
+    public function validatePasswordAcceptsLongPassword(): void
+    {
+        $errors = validatePassword('thisIsAVeryLongAndSecurePassword123!@#');
+
+        $this->assertEmpty($errors);
+    }
+
+    // ========================================
+    // Tests for validatePasswordConfirmation()
+    // ========================================
+
+    #[Test]
+    public function validatePasswordConfirmationReturnsEmptyForMatchingPasswords(): void
+    {
+        $errors = validatePasswordConfirmation('password123', 'password123');
+
+        $this->assertEmpty($errors);
+    }
+
+    #[Test]
+    public function validatePasswordConfirmationRejectsNonMatchingPasswords(): void
+    {
+        $errors = validatePasswordConfirmation('password123', 'password456');
+
+        $this->assertArrayHasKey('password_confirm', $errors);
+        $this->assertStringContainsString('stimmen nicht', $errors['password_confirm']);
+    }
+
+    #[Test]
+    public function validatePasswordConfirmationAcceptsEmptyPasswords(): void
+    {
+        $errors = validatePasswordConfirmation('', '');
+
+        $this->assertEmpty($errors);
+    }
+
+    #[Test]
+    public function validatePasswordConfirmationRejectsEmptyConfirmation(): void
+    {
+        $errors = validatePasswordConfirmation('password123', '');
+
+        $this->assertArrayHasKey('password_confirm', $errors);
     }
 }
