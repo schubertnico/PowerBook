@@ -61,6 +61,7 @@ if ($login === 'yes') {
     // CSRF validation
     if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
         $login_message = 'CSRF-Token ungültig. Bitte die Seite neu laden.<br><br>';
+        logCsrfFailure('admin_login');
     } elseif (empty($name) || empty($password)) {
         $login_message = 'Bitte <b>Name <i>und</i> Passwort</b> angeben!<br><br>';
     } else {
@@ -70,6 +71,7 @@ if ($login === 'yes') {
 
         if (!$admin) {
             $login_message = 'Admin <b>' . e($name) . '</b> nicht in der Datenbank!<br><br>';
+            logFailedLogin($name);
         } else {
             // Verify password with migration support
             if (verifyAndMigratePassword($password, $admin['password'], (int)$admin['id'])) {
@@ -99,9 +101,11 @@ if ($login === 'yes') {
                 ];
 
                 $login_message = 'Login erfolgreich, <b>' . e($name) . '</b>!';
+                logSuccessfulLogin($name);
                 regenerateCsrfToken();
             } else {
                 $login_message = 'Sie gaben ein <b>falsches Passwort</b> ein!<br><br>';
+                logFailedLogin($name);
             }
         }
     }

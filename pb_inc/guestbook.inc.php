@@ -174,6 +174,7 @@ if ($preview === 'yes') {
     if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
         $error = 'CSRF-Token ungültig. Bitte die Seite neu laden.';
         $show_form = 'yes';
+        logCsrfFailure('guestbook_preview');
     } elseif (strlen(trim($name)) === 0) {
         $error = 'Bitte einen <b>Name</b> eingeben!';
         $show_form = 'yes';
@@ -273,6 +274,7 @@ if ($add_entry === 'yes') {
     // CSRF validation FIRST
     if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
         $message = 'CSRF-Token ungültig. Bitte die Seite neu laden.';
+        logCsrfFailure('guestbook_add');
     } else {
         $ip = getVisitorIp();
         $time = time();
