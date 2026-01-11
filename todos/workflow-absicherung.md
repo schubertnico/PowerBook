@@ -202,7 +202,11 @@ Vor Abschluss muss jeder Handler diese Punkte erfüllen:
 - [x] DB-Error-Handling in admins.inc.php (add, load, delete, update, list)
 - [x] DB-Error-Handling in release.inc.php (release all, release one, load entries)
 - [x] DB-Error-Handling in statement.inc.php (update, load entry)
+- [x] validatePassword() mit Mindestlaenge (8 Zeichen)
+- [x] validatePasswordConfirmation() fuer Passwort-Bestaetigung
+- [x] sendEmail() Wrapper mit Logging
+- [x] Alle @mail() Aufrufe durch sendEmail() ersetzt
 - [x] PHPStan: No errors
-- [x] PHPUnit: 110 tests passed
+- [x] PHPUnit: 121 tests passed
 
-**Letzte Aktualisierung:** 2026-01-10
+**Letzte Aktualisierung:** 2026-01-11
