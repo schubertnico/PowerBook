@@ -181,8 +181,8 @@ Vor Abschluss muss jeder Handler diese Punkte erfüllen:
 |-------|--------|-------------|
 | Phase 1 | Erledigt | 100% |
 | Phase 2 | Erledigt | 100% (Error-Handler in allen Admin-Dateien) |
-| Phase 3 | Teilweise | 73% (Unit-Tests vorhanden) |
-| Phase 4 | Offen | 0% |
+| Phase 3 | Erledigt | 100% (161 Unit-Tests) |
+| Phase 4 | Erledigt | 100% (CI/CD + Pre-Commit Hooks) |
 | Phase 5 | Teilweise | 30% (Logging implementiert) |
 
 ### Erledigte Aufgaben (Phase 1)
@@ -208,5 +208,15 @@ Vor Abschluss muss jeder Handler diese Punkte erfüllen:
 - [x] Alle @mail() Aufrufe durch sendEmail() ersetzt
 - [x] PHPStan: No errors
 - [x] PHPUnit: 121 tests passed
+
+### Erledigte Aufgaben (Phase 3 & 4)
+
+- [x] EdgeCasesTest.php mit 40 Tests erstellt
+- [x] GitHub Actions CI/CD Workflow (.github/workflows/ci.yml)
+- [x] Pre-Commit Hook (hooks/pre-commit)
+- [x] composer setup-hooks Script
+- [x] composer check Script
+- [x] PHPStan: No errors
+- [x] PHPUnit: 161 tests passed
 
 **Letzte Aktualisierung:** 2026-01-11
