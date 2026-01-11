@@ -39,7 +39,16 @@
         "rector-dry": "rector process --dry-run",
         "test": "phpunit",
         "test:unit": "phpunit --testsuite=Unit",
-        "test:integration": "phpunit --testsuite=Integration"
+        "test:integration": "phpunit --testsuite=Integration",
+        "test:coverage": "phpunit --coverage-text",
+        "setup-hooks": [
+            "@php -r \"copy('hooks/pre-commit', '.git/hooks/pre-commit');\"",
+            "@php -r \"chmod('.git/hooks/pre-commit', 0755);\""
+        ],
+        "check": [
+            "@phpstan",
+            "@test"
+        ]
     },
     "config": {
         "sort-packages": true,

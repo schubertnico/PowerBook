@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# PowerBook Pre-Commit Hook
+# Runs PHPStan and PHPUnit before allowing commits
+#
+
+echo "Running pre-commit checks..."
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Check if composer dependencies are installed
+if [ ! -d "vendor" ]; then
+    echo -e "${YELLOW}Warning: vendor directory not found. Running composer install...${NC}"
+    composer install --quiet
+fi
+
+# Run PHPStan
+echo -e "${YELLOW}Running PHPStan...${NC}"
+composer phpstan --quiet
+PHPSTAN_EXIT=$?
+
+if [ $PHPSTAN_EXIT -ne 0 ]; then
+    echo -e "${RED}PHPStan found errors. Please fix them before committing.${NC}"
+    composer phpstan
+    exit 1
+fi
+echo -e "${GREEN}PHPStan: OK${NC}"
+
+# Run PHPUnit
+echo -e "${YELLOW}Running PHPUnit...${NC}"
+composer test --quiet
+PHPUNIT_EXIT=$?
+
+if [ $PHPUNIT_EXIT -ne 0 ]; then
+    echo -e "${RED}PHPUnit tests failed. Please fix them before committing.${NC}"
+    composer test
+    exit 1
+fi
+echo -e "${GREEN}PHPUnit: OK${NC}"
+
+echo -e "${GREEN}All pre-commit checks passed!${NC}"
+exit 0
