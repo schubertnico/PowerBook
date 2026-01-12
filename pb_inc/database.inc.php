@@ -1,10 +1,12 @@
 <?php
+
 /**
  * PowerBook - PHP Guestbook System
  * Database Connection (PDO)
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -65,6 +67,7 @@ function verifyAndMigratePassword(string $input, string $stored, int $adminId): 
         $newHash = password_hash($input, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare('UPDATE pb_admins SET password = ? WHERE id = ?');
         $stmt->execute([$newHash, $adminId]);
+
         return true;
     }
 
@@ -87,5 +90,6 @@ function e(mixed $value): string
     if ($value === null) {
         return '';
     }
+
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }

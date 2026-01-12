@@ -1,10 +1,12 @@
 <?php
+
 /**
  * PowerBook - PHP Guestbook System
  * Admin Pagination
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -14,17 +16,16 @@ declare(strict_types=1);
 /** @var int $tmp_pages */
 /** @var int $tmp_start */
 /** @var int $count_pages */
-
-$tmp_pages = $tmp_pages ?? 0;
-$tmp_start = $tmp_start ?? 0;
-$count_pages = $count_pages ?? 0;
-$tmp_search_page = $tmp_search_page ?? '';
+$tmp_pages ??= 0;
+$tmp_start ??= 0;
+$count_pages ??= 0;
+$tmp_search_page ??= '';
 
 if ($tmp_pages > 1) {
     echo '<table border="0" width="100%"><tr>';
 
     // Beginning link
-    if ($tmp_start != 0) {
+    if ($tmp_start !== 0) {
         echo '<td width="10%" align="left"><small><a href="?page=entries">&laquo;&laquo; Beginn</a></small></td>';
     } else {
         echo '<td width="10%" align="left"><small>&laquo;&laquo; Beginn</small></td>';

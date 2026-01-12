@@ -5,6 +5,7 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -23,7 +24,7 @@ require_once __DIR__ . '/../validation.inc.php';
 $allowedPages = [
     'home', 'login', 'logout', 'license', 'admins', 'emails',
     'entries', 'configuration', 'password', 'release', 'entry',
-    'pages', 'edit', 'statement', 'empty'
+    'pages', 'edit', 'statement', 'empty',
 ];
 
 // Get request parameters safely
@@ -74,13 +75,13 @@ if ($login === 'yes') {
             logFailedLogin($name);
         } else {
             // Verify password with migration support
-            if (verifyAndMigratePassword($password, $admin['password'], (int)$admin['id'])) {
+            if (verifyAndMigratePassword($password, $admin['password'], (int) $admin['id'])) {
                 // Login successful - store in session
-                $_SESSION['admin_id'] = (int)$admin['id'];
+                $_SESSION['admin_id'] = (int) $admin['id'];
                 $_SESSION['admin_name'] = $admin['name'];
                 $_SESSION['admin_logged_in'] = true;
 
-                $admin_id = (int)$admin['id'];
+                $admin_id = (int) $admin['id'];
                 $admin_name = $admin['name'];
                 $admin_email = $admin['email'];
                 $admin_config = $admin['config'] ?? 'N';
@@ -118,7 +119,7 @@ if (!empty($_SESSION['admin_logged_in']) && !empty($_SESSION['admin_id'])) {
     $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($admin) {
-        $admin_id = (int)$admin['id'];
+        $admin_id = (int) $admin['id'];
         $admin_name = $admin['name'];
         $admin_email = $admin['email'];
         $admin_config = $admin['config'] ?? 'N';
@@ -158,10 +159,10 @@ $installation_required = false;
 
 try {
     $stmt = $pdo->query("SELECT COUNT(*) FROM {$pb_entries} WHERE status = 'R'");
-    $head_count_entries = (int)$stmt->fetchColumn();
+    $head_count_entries = (int) $stmt->fetchColumn();
 
     $stmt = $pdo->query("SELECT COUNT(*) FROM {$pb_entries} WHERE status = 'U'");
-    $head_count_unreleased = (int)$stmt->fetchColumn();
+    $head_count_unreleased = (int) $stmt->fetchColumn();
 } catch (PDOException $e) {
     // Check if tables don't exist
     if (str_contains($e->getMessage(), 'doesn\'t exist') || str_contains($e->getMessage(), 'Base table or view not found')) {
@@ -238,7 +239,7 @@ if (empty($welcome_admin)) {
 <table cellpadding="4" cellspacing="1" width="100%" bgcolor="#6078A0">
 <?php
 
-if ($installation_required): ?>
+if ($installation_required) { ?>
 <tr><td bgcolor="#3F5070" align="center">
     <b class="headline">I N S T A L L A T I O N &nbsp; &nbsp; E R F O R D E R L I C H</b>
 </td></tr>
@@ -262,24 +263,24 @@ if ($installation_required): ?>
         </p>
     </div>
 </td></tr>
-<?php else:
+<?php } else {
 
-// Validate and include page (LFI protection)
-if (!in_array($page, $allowedPages, true)) {
-    $page = 'home';
+    // Validate and include page (LFI protection)
+    if (!in_array($page, $allowedPages, true)) {
+        $page = 'home';
+    }
+
+    $pageFile = __DIR__ . '/' . $page . '.inc.php';
+
+    if (!file_exists($pageFile)) {
+        echo '<tr bgcolor="#001329"><td>';
+        echo '<div align="center">Die Seite <b>' . e($page) . '</b> wurde nicht gefunden.</div>';
+        echo '</td></tr>';
+    } else {
+        include $pageFile;
+    }
+
 }
-
-$pageFile = __DIR__ . '/' . $page . '.inc.php';
-
-if (!file_exists($pageFile)) {
-    echo '<tr bgcolor="#001329"><td>';
-    echo '<div align="center">Die Seite <b>' . e($page) . '</b> wurde nicht gefunden.</div>';
-    echo '</td></tr>';
-} else {
-    include $pageFile;
-}
-
-endif;
 ?>
 </table>
 

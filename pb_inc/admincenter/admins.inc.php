@@ -5,6 +5,7 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -19,6 +20,7 @@ declare(strict_types=1);
 // Check permission
 if (($admin_session['admins'] ?? 'N') !== 'Y') {
     echo '<div style="color: #FF6666; padding: 20px;">Sie haben keine Berechtigung für die Admin-Verwaltung.</div>';
+
     return;
 }
 
@@ -31,7 +33,7 @@ $add_admins = ($_POST['add_admins'] ?? '') === 'Y' ? 'Y' : 'N';
 $add_entries = ($_POST['add_entries'] ?? '') === 'Y' ? 'Y' : 'N';
 $add_release = ($_POST['add_release'] ?? '') === 'Y' ? 'Y' : 'N';
 
-$edit_id = (int)($_POST['edit_id'] ?? 0);
+$edit_id = (int) ($_POST['edit_id'] ?? 0);
 $edit_name = trim($_POST['edit_name'] ?? '');
 $edit_email = trim($_POST['edit_email'] ?? '');
 $edit_password1 = $_POST['edit_password1'] ?? '';
@@ -90,7 +92,7 @@ if ($action === 'add' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
                         'entries' => $add_entries,
                         'release' => $add_release,
                         'admin_url' => $config_admin_url ?? '',
-                        'by' => $admin_session['name'] ?? 'Admin'
+                        'by' => $admin_session['name'] ?? 'Admin',
                     ]);
 
                     $message = 'Admin erfolgreich hinzugefügt. Er wird eine E-Mail mit seinen Daten erhalten.';
@@ -129,7 +131,7 @@ if ($action === 'edit' && $edit_id > 0 && validateCsrfToken($_POST['csrf_token']
         $messageType = 'error';
     } elseif ($editAdmin && $delete) {
         // Delete admin
-        if ($edit_id === (int)$admin_session['id']) {
+        if ($edit_id === (int) $admin_session['id']) {
             $message = 'Sie können sich selbst nicht löschen!';
             $messageType = 'error';
         } elseif ($edit_id === 1) {
@@ -147,7 +149,7 @@ if ($action === 'edit' && $edit_id > 0 && validateCsrfToken($_POST['csrf_token']
                 sendAdminEmail('deleted', [
                     'to' => $deletedEmail,
                     'name' => $deletedName,
-                    'by' => $admin_session['name'] ?? 'Admin'
+                    'by' => $admin_session['name'] ?? 'Admin',
                 ]);
 
                 $message = 'Admin erfolgreich gelöscht.';
@@ -198,7 +200,7 @@ if ($action === 'edit' && $edit_id > 0 && validateCsrfToken($_POST['csrf_token']
                                 $edit_config = $edit_admins = $edit_entries = $edit_release = 'Y';
                             }
                             // Users can't edit their own permissions
-                            elseif ($edit_id === (int)$admin_session['id']) {
+                            elseif ($edit_id === (int) $admin_session['id']) {
                                 $edit_config = $editAdmin['config'];
                                 $edit_admins = $editAdmin['admins'];
                                 $edit_entries = $editAdmin['entries'];
@@ -234,7 +236,7 @@ if ($action === 'edit' && $edit_id > 0 && validateCsrfToken($_POST['csrf_token']
                                     'entries' => $edit_entries,
                                     'release' => $edit_release,
                                     'admin_url' => $config_admin_url ?? '',
-                                    'by' => $admin_session['name'] ?? 'Admin'
+                                    'by' => $admin_session['name'] ?? 'Admin',
                                 ]);
 
                                 $message = 'Admin erfolgreich aktualisiert.';
@@ -254,28 +256,40 @@ if ($action === 'edit' && $edit_id > 0 && validateCsrfToken($_POST['csrf_token']
 }
 
 // Helper function to format permission as Ja/Nein
-function formatPermission(string $value): string {
+function formatPermission(string $value): string
+{
     return $value === 'Y' ? 'Ja' : 'Nein';
 }
 
-// Helper function to format admin permissions block
-function formatAdminPermissions(array $data): string {
-    return "Konfiguration: " . formatPermission($data['config']) . "\n"
-         . "Admin-Verwaltung: " . formatPermission($data['admins']) . "\n"
-         . "Eintrag-Verwaltung: " . formatPermission($data['entries']) . "\n"
-         . "Einträge Freischalten: " . formatPermission($data['release']) . "\n";
+/**
+ * Helper function to format admin permissions block.
+ *
+ * @param array<string, string> $data
+ */
+function formatAdminPermissions(array $data): string
+{
+    return 'Konfiguration: ' . formatPermission($data['config']) . "\n"
+         . 'Admin-Verwaltung: ' . formatPermission($data['admins']) . "\n"
+         . 'Eintrag-Verwaltung: ' . formatPermission($data['entries']) . "\n"
+         . 'Einträge Freischalten: ' . formatPermission($data['release']) . "\n";
 }
 
 // Helper function to get email footer
-function getEmailFooter(): string {
+function getEmailFooter(): string
+{
     return "\n--------------------------------------------------------\n"
          . "PowerBook - PHP Guestbook System\n"
          . "https://github.com/schubertnico/PowerBook.git\n\n"
-         . "DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!";
+         . 'DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!';
 }
 
-// Helper function to send admin notification emails
-function sendAdminEmail(string $type, array $data): void {
+/**
+ * Helper function to send admin notification emails.
+ *
+ * @param array<string, string> $data
+ */
+function sendAdminEmail(string $type, array $data): void
+{
     $to = sanitizeEmailHeader($data['to'] ?? '');
     if (empty($to)) {
         return;
@@ -300,8 +314,13 @@ function sendAdminEmail(string $type, array $data): void {
     sendEmail($to, $subject, $body, $headers, "Admin {$type}");
 }
 
-// Build email body for added admin
-function buildAddedEmailBody(array $data): string {
+/**
+ * Build email body for added admin.
+ *
+ * @param array<string, string> $data
+ */
+function buildAddedEmailBody(array $data): string
+{
     $body = "Hallo!\n\n";
     $body .= "{$data['by']} hat Sie zur Admin-Datenbank von PowerBook hinzugefügt.\n\n";
     $body .= "Ihr Name: {$data['name']}\n";
@@ -309,16 +328,22 @@ function buildAddedEmailBody(array $data): string {
     $body .= "Ihr Passwort: {$data['password']}\n";
     $body .= formatAdminPermissions($data) . "\n";
     $body .= "Geben Sie diese Informationen niemals weiter!\n";
-    $body .= "Ändern Sie bitte auch Ihr Passwort im AdminCenter";
+    $body .= 'Ändern Sie bitte auch Ihr Passwort im AdminCenter';
     if (!empty($data['admin_url'])) {
         $body .= " ({$data['admin_url']})";
     }
     $body .= ".\n";
+
     return $body;
 }
 
-// Build email body for edited admin
-function buildEditedEmailBody(array $data): string {
+/**
+ * Build email body for edited admin.
+ *
+ * @param array<string, string> $data
+ */
+function buildEditedEmailBody(array $data): string
+{
     $body = "Hallo!\n\n";
     $body .= "{$data['by']} hat Ihr Profil im AdminCenter von PowerBook bearbeitet.\n\n";
     $body .= "Ihr (neuer) Name: {$data['name']}\n";
@@ -331,11 +356,17 @@ function buildEditedEmailBody(array $data): string {
     if (!empty($data['admin_url'])) {
         $body .= "Die URL zum AdminCenter ist: {$data['admin_url']}\n";
     }
+
     return $body;
 }
 
-// Build email body for deleted admin
-function buildDeletedEmailBody(array $data): string {
+/**
+ * Build email body for deleted admin.
+ *
+ * @param array<string, string> $data
+ */
+function buildDeletedEmailBody(array $data): string
+{
     return "Hallo!\n\n"
          . "{$data['by']} hat Sie aus der Admin-Datenbank von PowerBook gelöscht.\n"
          . "Sie sind nicht mehr berechtigt, mit PowerBook zu arbeiten.\n";
@@ -344,7 +375,7 @@ function buildDeletedEmailBody(array $data): string {
 // Get all admins
 try {
     $stmt = $pdo->query("SELECT * FROM {$pb_admin} ORDER BY name ASC");
-    $admins = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $admins = $stmt !== false ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
     $countAdmins = count($admins);
 } catch (PDOException $e) {
     logDbError('Admin list: ' . $e->getMessage());
@@ -363,11 +394,11 @@ try {
 
 <tr><td bgcolor="#001F3F" valign="top">
 
-<?php if (!empty($message)): ?>
+<?php if (!empty($message)) { ?>
 <div style="padding: 10px; margin: 10px 0; background: <?= $messageType === 'success' ? '#003300' : '#330000' ?>; border: 1px solid <?= $messageType === 'success' ? '#00FF00' : '#FF0000' ?>;">
     <?= $message ?>
 </div>
-<?php endif; ?>
+<?php } ?>
 
 <p>
 Dies ist eine Liste mit allen Admins (zur Zeit <b><?= $countAdmins ?></b>), die bei dieser PowerBook-Version registriert sind.
@@ -391,18 +422,18 @@ Nutzen Sie das Formular ganz unten, um einen neuen Admin hinzuzufügen.
 
 <?php
 $rowColor = '#001329';
-foreach ($admins as $admin):
-    $isSuper = ($admin['id'] == 1);
-    $isSelf = ($admin['id'] == $admin_session['id']);
-?>
+foreach ($admins as $admin) {
+    $isSuper = ($admin['id'] === 1);
+    $isSelf = ($admin['id'] === $admin_session['id']);
+    ?>
 <form action="?page=admins" method="post">
 <tr bgcolor="<?= $rowColor ?>">
     <td align="center">
-        <?php if ($isSuper || $isSelf): ?>
+        <?php if ($isSuper || $isSelf) { ?>
             &nbsp;
-        <?php else: ?>
+        <?php } else { ?>
             <input type="checkbox" name="delete" value="yes">
-        <?php endif; ?>
+        <?php } ?>
     </td>
     <td align="center">
         <input type="text" name="edit_name" maxlength="100" size="14" value="<?= e($admin['name']) ?>">
@@ -415,32 +446,32 @@ foreach ($admins as $admin):
         <input type="password" name="edit_password2" size="15" maxlength="100" placeholder="Wiederholen">
     </td>
     <td>
-        <?php if ($isSuper || $isSelf): ?>
+        <?php if ($isSuper || $isSelf) { ?>
             &nbsp;
-        <?php else: ?>
+        <?php } else { ?>
             &nbsp;<input type="checkbox" name="edit_config" value="Y" <?= $admin['config'] === 'Y' ? 'checked' : '' ?>> <small>PowerBook Konfiguration<br>
             &nbsp;<input type="checkbox" name="edit_admins" value="Y" <?= $admin['admins'] === 'Y' ? 'checked' : '' ?>> Admin-Verwaltung</small>
-        <?php endif; ?>
+        <?php } ?>
     </td>
     <td>
-        <?php if ($isSuper || $isSelf): ?>
+        <?php if ($isSuper || $isSelf) { ?>
             &nbsp;
-        <?php else: ?>
+        <?php } else { ?>
             &nbsp;<input type="checkbox" name="edit_release" value="Y" <?= $admin['release'] === 'Y' ? 'checked' : '' ?>> <small>Eintrags-Freischaltung<br>
             &nbsp;<input type="checkbox" name="edit_entries" value="Y" <?= $admin['entries'] === 'Y' ? 'checked' : '' ?>> Eintrags-Verwaltung</small>
-        <?php endif; ?>
+        <?php } ?>
     </td>
     <td align="center">
         <input type="hidden" name="action" value="edit">
-        <input type="hidden" name="edit_id" value="<?= (int)$admin['id'] ?>">
+        <input type="hidden" name="edit_id" value="<?= (int) $admin['id'] ?>">
         <?= csrfField() ?>
         <input type="submit" value="Update">
     </td>
 </tr>
 </form>
 <?php
-    $rowColor = ($rowColor === '#001329') ? '#001930' : '#001329';
-endforeach;
+        $rowColor = ($rowColor === '#001329') ? '#001930' : '#001329';
+}
 ?>
 </table>
 

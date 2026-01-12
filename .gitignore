@@ -36,3 +36,7 @@ nul
 
 # PHPUnit cache
 .phpunit.cache/
+
+# Coverage reports
+/coverage/
+/coverage-html/

@@ -1,10 +1,12 @@
 <?php
+
 /**
  * PowerBook - PHP Guestbook System
  * New Entry Notification Email
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -22,21 +24,21 @@ if (!empty($toEmail) && filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
     $subject = 'PowerBook: Neuer Eintrag!';
 
     $message = <<<EOT
-Hallo!
+        Hallo!
 
-{$fromName} hat gerade einen neuen Eintrag in Ihrem Gaestebuch verfasst. Sollten Eintraege freigeschaltet werden muessen, tun Sie dies bitte im AdminCenter ({$adminUrl}).
-Dort koennen Sie auch diese automatische eMail, welche bei jedem neuen Eintrag an Sie geschickt wird, deaktivieren.
+        {$fromName} hat gerade einen neuen Eintrag in Ihrem Gaestebuch verfasst. Sollten Eintraege freigeschaltet werden muessen, tun Sie dies bitte im AdminCenter ({$adminUrl}).
+        Dort koennen Sie auch diese automatische eMail, welche bei jedem neuen Eintrag an Sie geschickt wird, deaktivieren.
 
---------------------------------------------------------
+        --------------------------------------------------------
 
-PowerBook (C) 2002 by Axel Habermaier
-PHP 8.4 Update: 2025
+        PowerBook (C) 2002 by Axel Habermaier
+        PHP 8.4 Update: 2025
 
-Link: https://github.com/schubertnico/PowerBook.git
+        Link: https://github.com/schubertnico/PowerBook.git
 
 
-Diese eMail wurde automatisch generiert.
-EOT;
+        Diese eMail wurde automatisch generiert.
+        EOT;
 
     $headers = [
         'From: PowerBook Automailer <noreply@powerbook.local>',

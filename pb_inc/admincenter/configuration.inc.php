@@ -5,6 +5,7 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -13,11 +14,12 @@ declare(strict_types=1);
 // Variables from parent scope (index.php)
 /** @var PDO $pdo */
 /** @var string $pb_config */
-/** @var array $admin_session */
+/** @var array<string, string> $admin_session */
 
 // Check permission
 if (($admin_session['config'] ?? 'N') !== 'Y') {
     echo '<div style="color: #FF6666; padding: 20px;">Sie haben keine Berechtigung für die Konfiguration.</div>';
+
     return;
 }
 
@@ -33,9 +35,9 @@ if (($_POST['action'] ?? '') === 'update' && validateCsrfToken($_POST['csrf_toke
     $change_email = trim($_POST['change_email'] ?? '');
     $change_date = trim($_POST['change_date'] ?? 'l, j. F Y');
     $change_time = trim($_POST['change_time'] ?? 'H:i');
-    $change_spam_check = max(0, (int)($_POST['change_spam_check'] ?? 30));
+    $change_spam_check = max(0, (int) ($_POST['change_spam_check'] ?? 30));
     $change_color = trim($_POST['change_color'] ?? '#FF0000');
-    $change_show_entries = max(1, (int)($_POST['change_show_entries'] ?? 10));
+    $change_show_entries = max(1, (int) ($_POST['change_show_entries'] ?? 10));
     $change_guestbook_name = trim($_POST['change_guestbook_name'] ?? 'pbook.php');
     $change_admin_url = trim($_POST['change_admin_url'] ?? '');
     $change_text_format = ($_POST['change_text_format'] ?? 'Y') === 'Y' ? 'Y' : 'N';
@@ -128,7 +130,7 @@ if (($_POST['action'] ?? '') === 'update' && validateCsrfToken($_POST['csrf_toke
                 $change_design,
                 $change_thanks_title,
                 $change_thanks,
-                $change_statements
+                $change_statements,
             ]);
 
             $message = 'Die Konfiguration wurde erfolgreich aktualisiert.';
@@ -147,7 +149,7 @@ if (($_POST['action'] ?? '') === 'update' && validateCsrfToken($_POST['csrf_toke
 if ($showForm) {
     try {
         $stmt = $pdo->query("SELECT * FROM {$pb_config} LIMIT 1");
-        $config = $stmt->fetch(PDO::FETCH_ASSOC);
+        $config = $stmt !== false ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
     } catch (PDOException $e) {
         logDbError('Configuration load: ' . $e->getMessage());
         $config = null;
@@ -161,9 +163,9 @@ if ($showForm) {
         $change_email = $config['email'] ?? '';
         $change_date = $config['date'] ?? 'l, j. F Y';
         $change_time = $config['time'] ?? 'H:i';
-        $change_spam_check = (int)($config['spam_check'] ?? 30);
+        $change_spam_check = (int) ($config['spam_check'] ?? 30);
         $change_color = $config['color'] ?? '#FF0000';
-        $change_show_entries = (int)($config['show_entries'] ?? 10);
+        $change_show_entries = (int) ($config['show_entries'] ?? 10);
         $change_guestbook_name = $config['guestbook_name'] ?? 'pbook.php';
         $change_admin_url = $config['admin_url'] ?? '';
         $change_text_format = $config['text_format'] ?? 'Y';
@@ -181,8 +183,8 @@ if ($showForm) {
 }
 
 // Helper for checked/selected attributes
-$checked = fn(string $value, string $expected): string => $value === $expected ? 'checked' : '';
-$selected = fn(string $value, string $expected): string => $value === $expected ? 'selected' : '';
+$checked = fn (string $value, string $expected): string => $value === $expected ? 'checked' : '';
+$selected = fn (string $value, string $expected): string => $value === $expected ? 'selected' : '';
 ?>
 
 <tr><td bgcolor="#3F5070" align="center">
@@ -191,13 +193,13 @@ $selected = fn(string $value, string $expected): string => $value === $expected 
 
 <tr><td bgcolor="#001F3F" valign="top">
 
-<?php if (!empty($message)): ?>
+<?php if (!empty($message)) { ?>
 <div style="padding: 10px; margin: 10px 0; background: <?= $messageType === 'success' ? '#003300' : '#330000' ?>; border: 1px solid <?= $messageType === 'success' ? '#00FF00' : '#FF0000' ?>;">
     <?= e($message) ?>
 </div>
-<?php endif; ?>
+<?php } ?>
 
-<?php if ($showForm): ?>
+<?php if ($showForm) { ?>
 <form action="?page=configuration" method="post">
 <?= csrfField() ?>
 <input type="hidden" name="action" value="update">
@@ -243,7 +245,7 @@ $selected = fn(string $value, string $expected): string => $value === $expected 
         <b>IP Abblocken:</b><br>
         <small class="info">Zeitintervall (Sekunden), innerhalb dessen mit der gleichen IP kein zweiter Eintrag verfasst werden kann.</small>
     </td><td width="350">
-        <input type="text" name="change_spam_check" value="<?= (int)$change_spam_check ?>" size="3" maxlength="10"> Sekunden
+        <input type="text" name="change_spam_check" value="<?= (int) $change_spam_check ?>" size="3" maxlength="10"> Sekunden
     </td></tr>
     <tr bgcolor="#001930"><td>
         <b>Freigeben:</b><br>
@@ -319,7 +321,7 @@ $selected = fn(string $value, string $expected): string => $value === $expected 
         <b>Einträge:</b><br>
         <small class="info">Anzahl der pro Seite angezeigten Einträge</small>
     </td><td width="450">
-        <input type="text" name="change_show_entries" value="<?= (int)$change_show_entries ?>" size="3" maxlength="5">
+        <input type="text" name="change_show_entries" value="<?= (int) $change_show_entries ?>" size="3" maxlength="5">
     </td></tr>
     <tr bgcolor="#001930"><td valign="top">
         <b>Seiten:</b><br>
@@ -385,6 +387,6 @@ $selected = fn(string $value, string $expected): string => $value === $expected 
     <input type="reset" value="Zurücksetzen">
 </div>
 </form>
-<?php endif; ?>
+<?php } ?>
 
 </td></tr>

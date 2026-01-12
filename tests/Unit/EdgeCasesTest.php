@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PowerBook - PHPUnit Tests
  * Edge Cases and Boundary Tests
@@ -10,19 +11,12 @@ declare(strict_types=1);
 
 namespace PowerBook\Tests\Unit;
 
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 
 class EdgeCasesTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        require_once POWERBOOK_ROOT . '/pb_inc/database.inc.php';
-        require_once POWERBOOK_ROOT . '/pb_inc/validation.inc.php';
-        require_once POWERBOOK_ROOT . '/pb_inc/csrf.inc.php';
-    }
-
     // ========================================
     // Email Validation Edge Cases
     // ========================================
@@ -303,5 +297,12 @@ class EdgeCasesTest extends TestCase
         $errors = validateAdminData('Admin', 'admin@example.com');
 
         $this->assertEmpty($errors);
+    }
+
+    protected function setUp(): void
+    {
+        require_once POWERBOOK_ROOT . '/pb_inc/database.inc.php';
+        require_once POWERBOOK_ROOT . '/pb_inc/validation.inc.php';
+        require_once POWERBOOK_ROOT . '/pb_inc/csrf.inc.php';
     }
 }

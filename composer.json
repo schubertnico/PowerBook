@@ -19,10 +19,12 @@
         "php": "^8.4"
     },
     "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.65",
         "phpmd/phpmd": "^2.15",
         "phpstan/phpstan": "^2.0",
         "phpunit/phpunit": "^11.0",
-        "rector/rector": "^2.0"
+        "rector/rector": "^2.0",
+        "vimeo/psalm": "^6.0"
     },
     "autoload": {
         "files": [
@@ -47,9 +49,15 @@
             "@php -r \"chmod('.git/hooks/pre-commit', 0755);\""
         ],
         "phpmd": "phpmd pb_inc text phpmd.xml --suffixes php,inc",
+        "cs-check": "php-cs-fixer fix --dry-run --diff",
+        "cs-fix": "php-cs-fixer fix",
+        "psalm": "psalm --no-cache",
+        "psalm-info": "psalm --no-cache --show-info=true",
         "check": [
             "@phpstan",
+            "@psalm",
             "@phpmd",
+            "@cs-check",
             "@test"
         ]
     },

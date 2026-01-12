@@ -5,6 +5,7 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -22,10 +23,11 @@ declare(strict_types=1);
 // Check permission
 if (($admin_session['entries'] ?? 'N') !== 'Y') {
     echo '<div style="color: #FF6666; padding: 20px;">Sie haben keine Berechtigung für Statements.</div>';
+
     return;
 }
 
-$id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
+$id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
 $action = $_POST['action'] ?? '';
 $message = '';
 $messageType = '';
@@ -80,21 +82,22 @@ if ($showForm && $id > 0) {
 }
 
 // Process statement for preview display
-function formatStatement(string $text): string {
+function formatStatement(string $text): string
+{
     $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
-    $text = str_replace("\n", "<br>", $text);
+    $text = str_replace("\n", '<br>', $text);
 
     // BBCode
-    $text = preg_replace('/\[b\]/i', '<b>', $text);
-    $text = preg_replace('/\[\/b\]/i', '</b>', $text);
-    $text = preg_replace('/\[u\]/i', '<u>', $text);
-    $text = preg_replace('/\[\/u\]/i', '</u>', $text);
-    $text = preg_replace('/\[i\]/i', '<i>', $text);
-    $text = preg_replace('/\[\/i\]/i', '</i>', $text);
-    $text = preg_replace('/\[small\]/i', '<small>', $text);
-    $text = preg_replace('/\[\/small\]/i', '</small>', $text);
-    $text = preg_replace('/(https?:\/\/[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="$1" target="_blank" rel="noopener">$1</a>$2', $text);
-    $text = preg_replace('/(www\.[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="http://$1" target="_blank" rel="noopener">$1</a>$2', $text);
+    $text = (string) preg_replace('/\[b\]/i', '<b>', $text);
+    $text = (string) preg_replace('/\[\/b\]/i', '</b>', $text);
+    $text = (string) preg_replace('/\[u\]/i', '<u>', $text);
+    $text = (string) preg_replace('/\[\/u\]/i', '</u>', $text);
+    $text = (string) preg_replace('/\[i\]/i', '<i>', $text);
+    $text = (string) preg_replace('/\[\/i\]/i', '</i>', $text);
+    $text = (string) preg_replace('/\[small\]/i', '<small>', $text);
+    $text = (string) preg_replace('/\[\/small\]/i', '</small>', $text);
+    $text = (string) preg_replace('/(https?:\/\/[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="$1" target="_blank" rel="noopener">$1</a>$2', $text);
+    $text = (string) preg_replace('/(www\.[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="http://$1" target="_blank" rel="noopener">$1</a>$2', $text);
 
     // Smilies
     $smilies = [
@@ -109,9 +112,8 @@ function formatStatement(string $text): string {
         ':D' => '<img src="../smilies/happy4.gif" alt=":grin:">',
         ';o)' => '<img src="../smilies/happy5.gif" alt=":happy:">',
     ];
-    $text = str_replace(array_keys($smilies), array_values($smilies), $text);
 
-    return $text;
+    return str_replace(array_keys($smilies), array_values($smilies), $text);
 }
 ?>
 
@@ -121,16 +123,16 @@ function formatStatement(string $text): string {
 
 <tr><td bgcolor="#001F3F" valign="top">
 
-<?php if (!empty($message)): ?>
+<?php if (!empty($message)) { ?>
 <div style="padding: 10px; margin: 10px 0; background: <?= $messageType === 'success' ? '#003300' : '#330000' ?>; border: 1px solid <?= $messageType === 'success' ? '#00FF00' : '#FF0000' ?>;">
     <?= $message ?>
 </div>
-<?php if ($messageType === 'success'): ?>
+<?php if ($messageType === 'success') { ?>
 <p><a href="?page=entries">Zurück zur Eintrags-Übersicht</a></p>
-<?php endif; ?>
-<?php endif; ?>
+<?php } ?>
+<?php } ?>
 
-<?php if ($showForm && $entry): ?>
+<?php if ($showForm && $entry) { ?>
 <p>
 Sie können mit dem untenstehenden Formular Statements schreiben oder bearbeiten.
 Um ein Statement zu löschen, lassen Sie das Formular einfach leer.
@@ -142,15 +144,15 @@ Bitte beachten Sie, dass es nur <b>ein</b> Statement von nur <b>einem</b> Admin 
 <?php
 // Display the entry
 $db_statement = 'N'; // Don't show statement in preview
-include __DIR__ . '/entry.inc.php';
+    include __DIR__ . '/entry.inc.php';
 
-// Show current statement if exists
-$statementPreview = '';
-if (!empty($edit_statement)) {
-    $statementPreview = formatStatement($edit_statement);
-    $currentBy = !empty($statement_by) ? e($statement_by) : e($admin_session['name'] ?? 'Admin');
-}
-?>
+    // Show current statement if exists
+    $statementPreview = '';
+    if (!empty($edit_statement)) {
+        $statementPreview = formatStatement($edit_statement);
+        $currentBy = !empty($statement_by) ? e($statement_by) : e($admin_session['name'] ?? 'Admin');
+    }
+    ?>
 
 <table width="100%" border="0">
     <tr>
@@ -164,10 +166,10 @@ if (!empty($edit_statement)) {
     <tr>
         <td valign="top" bgcolor="#001930">
             <?= $entry['text'] ?>
-            <?php if (!empty($statementPreview)): ?>
+            <?php if (!empty($statementPreview)) { ?>
             <br><br><hr noshade>
             <i><b><?= $currentBy ?></b>'s Statement:<br><br><?= $statementPreview ?></i>
-            <?php endif; ?>
+            <?php } ?>
         </td>
         <td width="121" align="right" valign="top" bgcolor="#001329">
             <?= $url ?><br>
@@ -187,9 +189,9 @@ if (!empty($edit_statement)) {
     <tr bgcolor="#001329">
         <td width="120" valign="top">
             Statement:
-            <?php if (($config_text_format ?? 'N') === 'Y'): ?>
+            <?php if (($config_text_format ?? 'N') === 'Y') { ?>
             <br><small><a href="../text-help.html" target="_blank">Hilfe</a></small>
-            <?php endif; ?>
+            <?php } ?>
         </td>
         <td>
             <textarea name="edit_statement" rows="10" cols="50"><?= e($edit_statement ?? '') ?></textarea>
@@ -211,6 +213,6 @@ if (!empty($edit_statement)) {
 Lassen Sie das Textfeld leer, um ein vorhandenes Statement zu löschen.
 </small></p>
 
-<?php endif; ?>
+<?php } ?>
 
 </td></tr>

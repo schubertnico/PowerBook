@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="4"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedBaselineEntry="false"
+    findUnusedCode="false"
+    strictBinaryOperands="false"
+    phpVersion="8.4"
+    autoloader="vendor/autoload.php"
+>
+    <projectFiles>
+        <directory name="pb_inc"/>
+        <file name="pbook.php"/>
+        <file name="install_deu.php"/>
+        <ignoreFiles>
+            <directory name="vendor"/>
+            <directory name="pb_inc/smilies"/>
+        </ignoreFiles>
+    </projectFiles>
+
+    <extraFiles>
+        <file name="pb_inc/database.inc.php"/>
+        <file name="pb_inc/csrf.inc.php"/>
+        <file name="pb_inc/error-handler.inc.php"/>
+        <file name="pb_inc/validation.inc.php"/>
+        <file name="pb_inc/functions.inc.php"/>
+    </extraFiles>
+
+    <issueHandlers>
+        <!-- Legacy code patterns during migration -->
+        <PossiblyUndefinedVariable errorLevel="suppress"/>
+        <UndefinedGlobalVariable errorLevel="suppress"/>
+
+        <!-- Suppress unused suppression warnings -->
+        <UnusedIssueHandlerSuppression errorLevel="suppress"/>
+
+        <!-- Redundant conditions are acceptable for defensive coding -->
+        <RedundantCondition errorLevel="suppress"/>
+        <TypeDoesNotContainNull errorLevel="suppress"/>
+        <RedundantCast errorLevel="suppress"/>
+        <RedundantCastGivenDocblockType errorLevel="suppress"/>
+
+        <!-- Superglobal access is expected in this legacy app -->
+        <InvalidGlobal errorLevel="suppress"/>
+
+        <!-- Allow string concatenation with integers -->
+        <InvalidOperand errorLevel="suppress"/>
+
+        <!-- Allow array type covariance for legacy code -->
+        <InvalidArgument errorLevel="suppress"/>
+
+        <!-- Suppress undefined function errors - functions are loaded at runtime -->
+        <UndefinedFunction errorLevel="suppress"/>
+
+        <!-- Type inference issues with nullable coalescing -->
+        <TypeDoesNotContainType errorLevel="suppress"/>
+    </issueHandlers>
+
+</psalm>

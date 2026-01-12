@@ -5,14 +5,14 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
 declare(strict_types=1);
 
 // Variables from parent scope
-/** @var array $admin_session */
-
+/** @var array<string, string> $admin_session */
 $logout = $_GET['logout'] ?? '';
 $message = '';
 
@@ -23,9 +23,15 @@ if (!isset($admin_session) || empty($admin_session)) {
     $_SESSION = [];
     if (ini_get('session.use_cookies')) {
         $params = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000,
-            $params['path'], $params['domain'],
-            $params['secure'], $params['httponly']
+        $sessionName = session_name();
+        setcookie(
+            $sessionName !== false ? $sessionName : 'PHPSESSID',
+            '',
+            time() - 42000,
+            $params['path'],
+            $params['domain'],
+            $params['secure'],
+            $params['httponly']
         );
     }
     session_destroy();

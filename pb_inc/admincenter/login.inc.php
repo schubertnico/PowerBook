@@ -5,6 +5,7 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -24,8 +25,8 @@ $show_form = !empty($welcome_admin) ? 'no' : 'yes';
 <?php
 echo $login_message ?? '';
 
-if ($show_form !== 'no'):
-?>
+if ($show_form !== 'no') {
+    ?>
 
 <p>Ein Login ist erforderlich, um administrative Funktionen zu nutzen.</p>
 
@@ -55,12 +56,12 @@ if ($show_form !== 'no'):
 
 <p><small>Die Anmeldung erfolgt über eine sichere Session (kein Passwort im Cookie).</small></p>
 
-<?php else: ?>
+<?php } else { ?>
 
 <p>Sie sind bereits eingeloggt als <b><?= e($welcome_admin) ?></b>.</p>
 <p><a href="?page=home">Zum AdminCenter</a> | <a href="?page=logout">Logout</a></p>
 
-<?php endif; ?>
+<?php } ?>
 
     </td>
 </tr>

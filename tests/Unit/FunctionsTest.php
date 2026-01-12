@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PowerBook - PHPUnit Tests
  * Helper Functions Tests
@@ -10,32 +11,15 @@ declare(strict_types=1);
 
 namespace PowerBook\Tests\Unit;
 
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\CoversFunction;
-use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 
 #[CoversFunction('germandate')]
 #[CoversFunction('formatText')]
 #[CoversFunction('getVisitorIp')]
 class FunctionsTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        // functions.inc.php is autoloaded via composer
-        // Reset globals for formatText tests
-        $GLOBALS['config_text_format'] = 'N';
-        $GLOBALS['config_smilies'] = 'N';
-    }
-
-    protected function tearDown(): void
-    {
-        // Reset globals
-        $GLOBALS['config_text_format'] = 'N';
-        $GLOBALS['config_smilies'] = 'N';
-        unset($_SERVER['REMOTE_ADDR']);
-    }
-
     // ========================================
     // Tests for germandate() function
     // ========================================
@@ -298,5 +282,21 @@ class FunctionsTest extends TestCase
     {
         $_SERVER['REMOTE_ADDR'] = '';
         $this->assertSame('0.0.0.0', getVisitorIp());
+    }
+
+    protected function setUp(): void
+    {
+        // functions.inc.php is autoloaded via composer
+        // Reset globals for formatText tests
+        $GLOBALS['config_text_format'] = 'N';
+        $GLOBALS['config_smilies'] = 'N';
+    }
+
+    protected function tearDown(): void
+    {
+        // Reset globals
+        $GLOBALS['config_text_format'] = 'N';
+        $GLOBALS['config_smilies'] = 'N';
+        unset($_SERVER['REMOTE_ADDR']);
     }
 }

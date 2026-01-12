@@ -30,6 +30,18 @@ if [ $PHPSTAN_EXIT -ne 0 ]; then
 fi
 echo -e "${GREEN}PHPStan: OK${NC}"
 
+# Run Psalm
+echo -e "${YELLOW}Running Psalm...${NC}"
+composer psalm --quiet 2>/dev/null
+PSALM_EXIT=$?
+
+if [ $PSALM_EXIT -ne 0 ]; then
+    echo -e "${RED}Psalm found type errors. Please fix them before committing.${NC}"
+    composer psalm
+    exit 1
+fi
+echo -e "${GREEN}Psalm: OK${NC}"
+
 # Run PHPMD
 echo -e "${YELLOW}Running PHPMD...${NC}"
 composer phpmd --quiet 2>/dev/null
@@ -41,6 +53,19 @@ if [ $PHPMD_EXIT -ne 0 ]; then
     exit 1
 fi
 echo -e "${GREEN}PHPMD: OK${NC}"
+
+# Run PHP-CS-Fixer
+echo -e "${YELLOW}Running PHP-CS-Fixer...${NC}"
+composer cs-check --quiet 2>/dev/null
+CSFIXER_EXIT=$?
+
+if [ $CSFIXER_EXIT -ne 0 ]; then
+    echo -e "${RED}PHP-CS-Fixer found code style issues.${NC}"
+    echo -e "${YELLOW}Run 'composer cs-fix' to auto-fix them.${NC}"
+    composer cs-check
+    exit 1
+fi
+echo -e "${GREEN}PHP-CS-Fixer: OK${NC}"
 
 # Run PHPUnit
 echo -e "${YELLOW}Running PHPUnit...${NC}"

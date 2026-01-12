@@ -5,6 +5,7 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -23,6 +24,7 @@ declare(strict_types=1);
 // Check permission
 if (($admin_session['release'] ?? 'N') !== 'Y') {
     echo '<div style="color: #FF6666; padding: 20px;">Sie haben keine Berechtigung für die Eintrags-Freischaltung.</div>';
+
     return;
 }
 
@@ -48,7 +50,7 @@ if ($action === 'release_all' && validateCsrfToken($_POST['csrf_token'] ?? '')) 
 
 // Release single entry
 if ($action === 'release_one' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
-    $entry_id = (int)($_POST['entry_id'] ?? 0);
+    $entry_id = (int) ($_POST['entry_id'] ?? 0);
     if ($entry_id > 0) {
         try {
             $stmt = $pdo->prepare("UPDATE {$pb_entries} SET status = 'R' WHERE id = ?");
@@ -90,17 +92,17 @@ try {
 
 <tr><td bgcolor="#001F3F" valign="top">
 
-<?php if (!empty($message)): ?>
+<?php if (!empty($message)) { ?>
 <div style="padding: 10px; margin: 10px 0; background: <?= $messageType === 'success' ? '#003300' : '#330000' ?>; border: 1px solid <?= $messageType === 'success' ? '#00FF00' : '#FF0000' ?>;">
     <?= e($message) ?>
 </div>
-<?php endif; ?>
+<?php } ?>
 
-<?php if ($count_unreleased === 0): ?>
+<?php if ($count_unreleased === 0) { ?>
 <div align="center">
     <p>Keine Einträge zum Freischalten vorhanden!</p>
 </div>
-<?php else: ?>
+<?php } else { ?>
 
 <p>
 Um einen Eintrag freizuschalten (d.h., ihn allen Besuchern sichtbar zu machen),
@@ -109,11 +111,11 @@ Um alle Einträge auf einmal freizuschalten, klicken Sie auf "Alle freischalten"
 </p>
 
 <div align="center">
-    <?php if ($count_unreleased === 1): ?>
+    <?php if ($count_unreleased === 1) { ?>
         <p>Es gibt <b>einen</b> nicht freigegebenen Eintrag.</p>
-    <?php else: ?>
+    <?php } else { ?>
         <p>Es gibt <b><?= $count_unreleased ?></b> nicht freigegebene Einträge.</p>
-    <?php endif; ?>
+    <?php } ?>
 
     <form action="?page=release" method="post" style="margin-bottom: 20px;">
         <?= csrfField() ?>
@@ -126,18 +128,18 @@ Um alle Einträge auf einmal freizuschalten, klicken Sie auf "Alle freischalten"
 <?= csrfField() ?>
 <input type="hidden" name="action" value="release_one">
 
-<?php foreach ($unreleasedEntries as $entry):
+<?php foreach ($unreleasedEntries as $entry) {
     // Process entry for display
     include __DIR__ . '/entry.inc.php';
-?>
+    ?>
 <table width="100%" border="0">
     <tr>
         <td width="40">
-            <input type="radio" name="entry_id" value="<?= (int)$entry['id'] ?>">
+            <input type="radio" name="entry_id" value="<?= (int) $entry['id'] ?>">
         </td>
         <td align="left" bgcolor="#001329">
             <?= $show_icon ?><b><?= $date ?></b>, <small><?= $time ?></small> -
-            <a href="?page=edit&amp;edit_id=<?= (int)$entry['id'] ?>">Bearbeiten/Löschen</a>
+            <a href="?page=edit&amp;edit_id=<?= (int) $entry['id'] ?>">Bearbeiten/Löschen</a>
         </td>
         <td align="right" width="121" bgcolor="#001329">
             <?= $email_name ?>
@@ -155,13 +157,13 @@ Um alle Einträge auf einmal freizuschalten, klicken Sie auf "Alle freischalten"
     </tr>
 </table>
 <br>
-<?php endforeach; ?>
+<?php } ?>
 
 <div align="center">
     <input type="submit" value="Ausgewählten Eintrag freischalten">
 </div>
 </form>
 
-<?php endif; ?>
+<?php } ?>
 
 </td></tr>

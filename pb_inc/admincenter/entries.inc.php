@@ -5,6 +5,7 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -23,11 +24,12 @@ declare(strict_types=1);
 // Check permission
 if (($admin_session['entries'] ?? 'N') !== 'Y') {
     echo '<div style="color: #FF6666; padding: 20px;">Sie haben keine Berechtigung für die Eintrags-Verwaltung.</div>';
+
     return;
 }
 
 // Pagination
-$tmp_start = max(0, (int)($_GET['tmp_start'] ?? 0));
+$tmp_start = max(0, (int) ($_GET['tmp_start'] ?? 0));
 $perPage = 15;
 
 // Get entries
@@ -40,8 +42,8 @@ $count_entry = count($entries);
 
 // Get total count for pagination
 $stmt = $pdo->query("SELECT COUNT(*) FROM {$pb_entries}");
-$count_pages = (int)$stmt->fetchColumn();
-$tmp_pages = (int)ceil($count_pages / $perPage);
+$count_pages = $stmt !== false ? (int) $stmt->fetchColumn() : 0;
+$tmp_pages = (int) ceil($count_pages / $perPage);
 ?>
 
 <tr><td bgcolor="#3F5070" align="center">
@@ -55,16 +57,16 @@ Um Einträge zu bearbeiten oder zu löschen, klicken Sie bitte auf den Link "Bea
 Um ein Statement zu schreiben, klicken Sie bitte auf den "Statement"-Link.
 </p>
 
-<?php if ($count_pages === 0): ?>
+<?php if ($count_pages === 0) { ?>
 <p><i>Keine Einträge vorhanden.</i></p>
-<?php else: ?>
+<?php } else { ?>
 
 <?php include __DIR__ . '/pages.inc.php'; ?>
 
-<?php foreach ($entries as $entry):
+<?php foreach ($entries as $entry) {
     // Process entry for display
     include __DIR__ . '/entry.inc.php';
-?>
+    ?>
 <table width="100%" border="0">
     <tr>
         <td align="left" bgcolor="#001329">
@@ -80,8 +82,8 @@ Um ein Statement zu schreiben, klicken Sie bitte auf den "Statement"-Link.
             <hr color="#001329">
             <div align="right"><small>
                 IP: <b><?= $ip ?></b> |
-                <a href="?page=edit&amp;edit_id=<?= (int)$entry['id'] ?>">Bearbeiten/Löschen</a> |
-                <a href="?page=statement&amp;id=<?= (int)$entry['id'] ?>">Statement</a>
+                <a href="?page=edit&amp;edit_id=<?= (int) $entry['id'] ?>">Bearbeiten/Löschen</a> |
+                <a href="?page=statement&amp;id=<?= (int) $entry['id'] ?>">Statement</a>
             </small></div>
         </td>
         <td width="121" align="right" valign="top" bgcolor="#001329">
@@ -91,10 +93,10 @@ Um ein Statement zu schreiben, klicken Sie bitte auf den "Statement"-Link.
     </tr>
 </table>
 <br>
-<?php endforeach; ?>
+<?php } ?>
 
 <?php include __DIR__ . '/pages.inc.php'; ?>
 
-<?php endif; ?>
+<?php } ?>
 
 </td></tr>

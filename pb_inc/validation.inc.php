@@ -1,10 +1,12 @@
 <?php
+
 /**
  * PowerBook - PHP Guestbook System
  * Validation Functions
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -67,6 +69,7 @@ function validateEmail(string $email, bool $required = false): array
 
     if ($required && empty($email)) {
         $errors['email'] = 'E-Mail-Adresse ist erforderlich';
+
         return $errors;
     }
 
@@ -137,6 +140,7 @@ function validateUrl(string $url): array
  * @param string $password The password to validate
  * @param int $minLength Minimum password length (default: 8)
  * @param bool $required Whether password is required
+ *
  * @return array<string, string> Errors keyed by field name
  */
 function validatePassword(string $password, int $minLength = 8, bool $required = false): array
@@ -145,6 +149,7 @@ function validatePassword(string $password, int $minLength = 8, bool $required =
 
     if ($required && empty($password)) {
         $errors['password'] = 'Passwort ist erforderlich';
+
         return $errors;
     }
 

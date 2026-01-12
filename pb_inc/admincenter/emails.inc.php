@@ -1,10 +1,12 @@
 <?php
+
 /**
  * PowerBook - PHP Guestbook System
  * Admin Email Notifications (Legacy Support)
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  *
  * Note: This file is kept for backward compatibility.
@@ -18,13 +20,13 @@ declare(strict_types=1);
 // The functions below are kept for any legacy code that might still include this file.
 
 // Variables that might be set from calling code
-$email = $email ?? '';
-$add_email = $add_email ?? '';
-$add_name = $add_name ?? '';
-$edit_email = $edit_email ?? '';
-$edit_name = $edit_name ?? '';
-$admin_name = $admin_name ?? '';
-$config_admin_url = $config_admin_url ?? '';
+$email ??= '';
+$add_email ??= '';
+$add_name ??= '';
+$edit_email ??= '';
+$edit_name ??= '';
+$admin_name ??= '';
+$config_admin_url ??= '';
 
 // Sanitize email addresses for header injection prevention
 $safe_add_email = sanitizeEmailHeader($add_email);
@@ -42,25 +44,25 @@ if ($email === 'admin_added' && !empty($safe_add_email)) {
 
     $body = "Hallo!\n\n";
     $body .= e($admin_name) . " hat Sie zur Admin-Datenbank von PowerBook hinzugefügt.\n\n";
-    $body .= "Ihr Name: " . e($add_name) . "\n";
-    $body .= "Ihre E-Mail: " . e($add_email) . "\n";
+    $body .= 'Ihr Name: ' . e($add_name) . "\n";
+    $body .= 'Ihre E-Mail: ' . e($add_email) . "\n";
     $body .= "Ihr Passwort: {$tempPassword}\n";
     $body .= "Konfiguration: {$add_config_display}\n";
     $body .= "Admin-Verwaltung: {$add_admins_display}\n";
     $body .= "Eintrag-Verwaltung: {$add_entries_display}\n";
     $body .= "Einträge Freischalten: {$add_release_display}\n\n";
     $body .= "Geben Sie diese Informationen niemals weiter!\n";
-    $body .= "Ändern Sie bitte auch Ihr Passwort im AdminCenter";
+    $body .= 'Ändern Sie bitte auch Ihr Passwort im AdminCenter';
     if (!empty($config_admin_url)) {
-        $body .= " (" . e($config_admin_url) . ")";
+        $body .= ' (' . e($config_admin_url) . ')';
     }
     $body .= ".\n\n";
     $body .= "--------------------------------------------------------\n";
     $body .= "PowerBook - PHP Guestbook System\n";
     $body .= "https://github.com/schubertnico/PowerBook.git\n\n";
-    $body .= "DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!";
+    $body .= 'DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!';
 
-    sendEmail($safe_add_email, "PowerBook: AdminCenter", $body, $headers, 'Admin Added');
+    sendEmail($safe_add_email, 'PowerBook: AdminCenter', $body, $headers, 'Admin Added');
 
 } elseif ($email === 'admin_edited' && !empty($safe_edit_email)) {
     $edit_config_display = ($edit_config ?? 'N') === 'Y' ? 'Ja' : 'Nein';
@@ -70,8 +72,8 @@ if ($email === 'admin_added' && !empty($safe_add_email)) {
 
     $body = "Hallo!\n\n";
     $body .= e($admin_name) . " hat Ihr Profil im AdminCenter von PowerBook bearbeitet.\n\n";
-    $body .= "Ihr (neuer) Name: " . e($edit_name) . "\n";
-    $body .= "Ihre (neue) E-Mail: " . e($edit_email) . "\n";
+    $body .= 'Ihr (neuer) Name: ' . e($edit_name) . "\n";
+    $body .= 'Ihre (neue) E-Mail: ' . e($edit_email) . "\n";
     if (!empty($edit_password1)) {
         $body .= "Ihr (neues) Passwort: {$edit_password1}\n";
     }
@@ -81,14 +83,14 @@ if ($email === 'admin_added' && !empty($safe_add_email)) {
     $body .= "Einträge Freischalten: {$edit_release_display}\n\n";
     $body .= "Geben Sie diese Informationen niemals weiter!\n";
     if (!empty($config_admin_url)) {
-        $body .= "Die URL zum AdminCenter ist: " . e($config_admin_url) . "\n";
+        $body .= 'Die URL zum AdminCenter ist: ' . e($config_admin_url) . "\n";
     }
     $body .= "\n--------------------------------------------------------\n";
     $body .= "PowerBook - PHP Guestbook System\n";
     $body .= "https://github.com/schubertnico/PowerBook.git\n\n";
-    $body .= "DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!";
+    $body .= 'DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!';
 
-    sendEmail($safe_edit_email, "PowerBook: AdminCenter", $body, $headers, 'Admin Edited');
+    sendEmail($safe_edit_email, 'PowerBook: AdminCenter', $body, $headers, 'Admin Edited');
 
 } elseif ($email === 'admin_deleted' && !empty($safe_edit_email)) {
     $body = "Hallo!\n\n";
@@ -97,7 +99,7 @@ if ($email === 'admin_added' && !empty($safe_add_email)) {
     $body .= "--------------------------------------------------------\n";
     $body .= "PowerBook - PHP Guestbook System\n";
     $body .= "https://github.com/schubertnico/PowerBook.git\n\n";
-    $body .= "DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!";
+    $body .= 'DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!';
 
-    sendEmail($safe_edit_email, "PowerBook: AdminCenter", $body, $headers, 'Admin Deleted');
+    sendEmail($safe_edit_email, 'PowerBook: AdminCenter', $body, $headers, 'Admin Deleted');
 }

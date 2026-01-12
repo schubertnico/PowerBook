@@ -5,6 +5,7 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -48,7 +49,7 @@ $section = $_GET['section'] ?? '';
 </head>
 <body>
 
-<?php if ($section === 'date'): ?>
+<?php if ($section === 'date') { ?>
 <table border="0" width="250">
     <tr><th colspan="2">Datumsformate</th></tr>
     <tr>
@@ -100,7 +101,7 @@ $section = $_GET['section'] ?? '';
 <p><b>Beispiel:</b> <span class="code">l, j. F Y</span><br>
 Ergibt: "Montag, 1. Januar 2025"</p>
 
-<?php elseif ($section === 'time'): ?>
+<?php } elseif ($section === 'time') { ?>
 <table border="0" width="180">
     <tr><th colspan="2">Zeitformate</th></tr>
     <tr>
@@ -140,10 +141,10 @@ Ergibt: "Montag, 1. Januar 2025"</p>
 <p><b>Beispiel:</b> <span class="code">H:i</span><br>
 Ergibt: "14:30"</p>
 
-<?php else: ?>
+<?php } else { ?>
 <p>Kein Abschnitt ausgewählt!</p>
 <p><a href="?section=date">Datumsformate</a> | <a href="?section=time">Zeitformate</a></p>
-<?php endif; ?>
+<?php } ?>
 
 </body>
 </html>

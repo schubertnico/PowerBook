@@ -1,10 +1,12 @@
 <?php
+
 /**
  * PowerBook - PHP Guestbook System
  * CSRF Protection Functions
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -60,5 +62,6 @@ function regenerateCsrfToken(): string
     }
 
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+
     return $_SESSION['csrf_token'];
 }

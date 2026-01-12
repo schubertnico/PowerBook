@@ -5,6 +5,7 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -13,7 +14,6 @@ declare(strict_types=1);
 // Variables from parent scope (index.php)
 /** @var PDO $pdo */
 /** @var string $pb_admin */
-
 $message = '';
 $messageType = '';
 $showForm = true;
@@ -67,11 +67,11 @@ if ($action === 'recover' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
                 $body .= "--------------------------------------------------------\n";
                 $body .= "PowerBook - PHP Guestbook System\n";
                 $body .= "https://github.com/schubertnico/PowerBook.git\n\n";
-                $body .= "DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!";
+                $body .= 'DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!';
 
                 sendEmail($to, $subject, $body, $headers, 'Password Recovery');
 
-                $message = "E-Mail erfolgreich verschickt an <b>" . e($admin['email']) . "</b>. Sie sollten die E-Mail in ein paar Minuten erhalten.";
+                $message = 'E-Mail erfolgreich verschickt an <b>' . e($admin['email']) . '</b>. Sie sollten die E-Mail in ein paar Minuten erhalten.';
                 $messageType = 'success';
                 $showForm = false;
             }
@@ -91,13 +91,13 @@ if ($action === 'recover' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
 
 <tr><td bgcolor="#001F3F" valign="top">
 
-<?php if (!empty($message)): ?>
+<?php if (!empty($message)) { ?>
 <div style="padding: 10px; margin: 10px 0; background: <?= $messageType === 'success' ? '#003300' : '#330000' ?>; border: 1px solid <?= $messageType === 'success' ? '#00FF00' : '#FF0000' ?>;">
     <?= $message ?>
 </div>
-<?php endif; ?>
+<?php } ?>
 
-<?php if ($showForm): ?>
+<?php if ($showForm) { ?>
 <p>
 Sie haben Ihr Passwort vergessen? <b>Kein Problem!</b>
 Falls Sie noch Ihre E-Mail-Adresse oder Ihren Admin-Namen wissen,
@@ -132,6 +132,6 @@ kann Ihnen PowerBook ein neues Passwort per E-Mail zuschicken.
 und Sie erhalten ein neues temporäres Passwort per E-Mail.
 Bitte ändern Sie dieses Passwort nach dem Login.
 </small></p>
-<?php endif; ?>
+<?php } ?>
 
 </td></tr>

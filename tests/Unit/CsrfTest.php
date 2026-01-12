@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PowerBook - PHPUnit Tests
  * CSRF Protection Functions Tests
@@ -10,9 +11,9 @@ declare(strict_types=1);
 
 namespace PowerBook\Tests\Unit;
 
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\CoversFunction;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 
 #[CoversFunction('generateCsrfToken')]
 #[CoversFunction('validateCsrfToken')]
@@ -20,19 +21,6 @@ use PHPUnit\Framework\Attributes\CoversFunction;
 #[CoversFunction('regenerateCsrfToken')]
 class CsrfTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        // Clear session before each test
-        $_SESSION = [];
-        require_once POWERBOOK_ROOT . '/pb_inc/csrf.inc.php';
-    }
-
-    protected function tearDown(): void
-    {
-        // Clear session after each test
-        $_SESSION = [];
-    }
-
     // ========================================
     // Tests for generateCsrfToken() function
     // ========================================
@@ -239,5 +227,18 @@ class CsrfTest extends TestCase
         $this->assertNotEmpty($token);
         $this->assertSame(64, strlen($token));
         $this->assertTrue(validateCsrfToken($token));
+    }
+
+    protected function setUp(): void
+    {
+        // Clear session before each test
+        $_SESSION = [];
+        require_once POWERBOOK_ROOT . '/pb_inc/csrf.inc.php';
+    }
+
+    protected function tearDown(): void
+    {
+        // Clear session after each test
+        $_SESSION = [];
     }
 }

@@ -1,10 +1,12 @@
 <?php
+
 /**
  * PowerBook - PHP Guestbook System
  * Pagination Component
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -29,7 +31,7 @@ if (($config_pages ?? 'N') === 'L') {
         echo '<table border="0" width="100%"><tr>';
 
         // Start link
-        if ($tmp_start != 0) {
+        if ($tmp_start !== 0) {
             echo '<td width="10%" align="left"><small>';
             echo '<a href="' . $guestbookUrl . $tmp_search_page2 . '">&laquo;&laquo; Anfang</a></small></td>';
         } else {
@@ -39,7 +41,7 @@ if (($config_pages ?? 'N') === 'L') {
         // Previous page link
         $last_page = $tmp_start - $config_show_entries;
         if ($last_page >= 0) {
-            $last_page_param = ($last_page === 0) ? '' : (string)$last_page;
+            $last_page_param = ($last_page === 0) ? '' : (string) $last_page;
             echo '<td width="40%" align="right"><small>';
             echo '<a href="' . $guestbookUrl . '?tmp_start=' . $last_page_param . $tmp_search_page . '">&laquo; Vorherige Seite</a> &nbsp; &nbsp;</small></td>';
         } else {
@@ -68,7 +70,7 @@ if (($config_pages ?? 'N') === 'L') {
         echo '</tr></table>';
     }
 
-// Direct page numbers pagination
+    // Direct page numbers pagination
 } elseif (($config_pages ?? 'N') === 'D') {
     if ($tmp_pages > 1) {
         echo '<small>Seite';

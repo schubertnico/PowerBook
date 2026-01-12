@@ -1,17 +1,19 @@
 <?php
+
 /**
  * PowerBook - PHP Guestbook System
  * Admin Entry Display Helper
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
 declare(strict_types=1);
 
 // Variables from parent scope
-/** @var array $entry */
+/** @var array<string, mixed> $entry */
 /** @var string $config_icons */
 /** @var string $config_text_format */
 /** @var string $config_smilies */
@@ -30,21 +32,21 @@ if (!empty($entry['icon']) && $entry['icon'] !== 'no' && ($config_icons ?? 'N') 
 
 // Text processing - escape first, then apply formatting
 $entryText = htmlspecialchars($entry['text'] ?? '', ENT_QUOTES, 'UTF-8');
-$entryText = str_replace("\n", "<br>", $entryText);
+$entryText = str_replace("\n", '<br>', $entryText);
 
 // BBCode formatting
 if (($config_text_format ?? 'N') === 'Y') {
-    $entryText = preg_replace('/\[b\]/i', '<b>', $entryText);
-    $entryText = preg_replace('/\[\/b\]/i', '</b>', $entryText);
-    $entryText = preg_replace('/\[u\]/i', '<u>', $entryText);
-    $entryText = preg_replace('/\[\/u\]/i', '</u>', $entryText);
-    $entryText = preg_replace('/\[i\]/i', '<i>', $entryText);
-    $entryText = preg_replace('/\[\/i\]/i', '</i>', $entryText);
-    $entryText = preg_replace('/\[small\]/i', '<small>', $entryText);
-    $entryText = preg_replace('/\[\/small\]/i', '</small>', $entryText);
+    $entryText = (string) preg_replace('/\[b\]/i', '<b>', $entryText);
+    $entryText = (string) preg_replace('/\[\/b\]/i', '</b>', $entryText);
+    $entryText = (string) preg_replace('/\[u\]/i', '<u>', $entryText);
+    $entryText = (string) preg_replace('/\[\/u\]/i', '</u>', $entryText);
+    $entryText = (string) preg_replace('/\[i\]/i', '<i>', $entryText);
+    $entryText = (string) preg_replace('/\[\/i\]/i', '</i>', $entryText);
+    $entryText = (string) preg_replace('/\[small\]/i', '<small>', $entryText);
+    $entryText = (string) preg_replace('/\[\/small\]/i', '</small>', $entryText);
     // Auto-link URLs
-    $entryText = preg_replace('/(https?:\/\/[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="$1" target="_blank" rel="noopener">$1</a>$2', $entryText);
-    $entryText = preg_replace('/(ftp:\/\/[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="$1" target="_blank" rel="noopener">$1</a>$2', $entryText);
+    $entryText = (string) preg_replace('/(https?:\/\/[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="$1" target="_blank" rel="noopener">$1</a>$2', $entryText);
+    $entryText = (string) preg_replace('/(ftp:\/\/[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="$1" target="_blank" rel="noopener">$1</a>$2', $entryText);
 }
 
 // Smilies
@@ -96,29 +98,30 @@ if (($config_icq ?? 'N') === 'Y') {
 }
 
 // Date and time
-$timestamp = (int)($entry['date'] ?? 0);
+$timestamp = (int) ($entry['date'] ?? 0);
 $date = $timestamp > 0 ? date('l, jS F Y', $timestamp) : '';
 $time = $timestamp > 0 ? date('H:i\h', $timestamp) : '';
 
 // Statement (admin response)
 if (!empty($entry['statement']) && strlen($entry['statement']) > 1 && ($db_statement ?? 'N') !== 'N') {
     $statementText = htmlspecialchars($entry['statement'], ENT_QUOTES, 'UTF-8');
-    $statementText = str_replace("\n", "<br>", $statementText);
+    $statementText = str_replace("\n", '<br>', $statementText);
 
     // BBCode for statement
-    $statementText = preg_replace('/\[b\]/i', '<b>', $statementText);
-    $statementText = preg_replace('/\[\/b\]/i', '</b>', $statementText);
-    $statementText = preg_replace('/\[u\]/i', '<u>', $statementText);
-    $statementText = preg_replace('/\[\/u\]/i', '</u>', $statementText);
-    $statementText = preg_replace('/\[i\]/i', '<i>', $statementText);
-    $statementText = preg_replace('/\[\/i\]/i', '</i>', $statementText);
-    $statementText = preg_replace('/\[small\]/i', '<small>', $statementText);
-    $statementText = preg_replace('/\[\/small\]/i', '</small>', $statementText);
-    $statementText = preg_replace('/(https?:\/\/[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="$1" target="_blank" rel="noopener">$1</a>$2', $statementText);
-    $statementText = preg_replace('/(www\.[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="http://$1" target="_blank" rel="noopener">$1</a>$2', $statementText);
+    $statementText = (string) preg_replace('/\[b\]/i', '<b>', $statementText);
+    $statementText = (string) preg_replace('/\[\/b\]/i', '</b>', $statementText);
+    $statementText = (string) preg_replace('/\[u\]/i', '<u>', $statementText);
+    $statementText = (string) preg_replace('/\[\/u\]/i', '</u>', $statementText);
+    $statementText = (string) preg_replace('/\[i\]/i', '<i>', $statementText);
+    $statementText = (string) preg_replace('/\[\/i\]/i', '</i>', $statementText);
+    $statementText = (string) preg_replace('/\[small\]/i', '<small>', $statementText);
+    $statementText = (string) preg_replace('/\[\/small\]/i', '</small>', $statementText);
+    $statementText = (string) preg_replace('/(https?:\/\/[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="$1" target="_blank" rel="noopener">$1</a>$2', $statementText);
+    $statementText = (string) preg_replace('/(www\.[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="http://$1" target="_blank" rel="noopener">$1</a>$2', $statementText);
 
     // Smilies for statement
     if (isset($smilieReplacements)) {
+        /** @var array<string, string> $smilieReplacements */
         $statementText = str_replace(array_keys($smilieReplacements), array_values($smilieReplacements), $statementText);
     }
 

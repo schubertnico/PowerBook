@@ -5,6 +5,7 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -20,7 +21,7 @@ $formIcq = e($icq2 ?? '');
 $formText = e($text ?? '');
 
 // Icon checked states
-$icon = $icon ?? '';
+$icon ??= '';
 $iconChecked = [
     'no' => ($icon === 'no' || $icon === '') ? 'checked' : '',
     'text' => ($icon === 'text') ? 'checked' : '',
@@ -55,14 +56,14 @@ $smiliesChecked = (($smilies2 ?? '') === 'Y' || ($show_gb ?? '') !== 'no') ? 'ch
             </td>
         </tr>
 
-        <?php if (($config_icq ?? 'N') === 'Y'): ?>
+        <?php if (($config_icq ?? 'N') === 'Y') { ?>
         <tr>
             <td width="120">ICQ#:</td>
             <td><input name="icq2" maxlength="20" size="10" value="<?= $formIcq ?>"></td>
         </tr>
-        <?php endif; ?>
+        <?php } ?>
 
-        <?php if (($config_icons ?? 'N') === 'Y'): ?>
+        <?php if (($config_icons ?? 'N') === 'Y') { ?>
         <tr>
             <td width="120" valign="top">Icon:</td>
             <td>
@@ -83,22 +84,22 @@ $smiliesChecked = (($smilies2 ?? '') === 'Y' || ($show_gb ?? '') !== 'no') ? 'ch
                     <img src="pb_inc/smilies/happy5.gif" alt="happy">
             </td>
         </tr>
-        <?php endif; ?>
+        <?php } ?>
 
         <tr>
             <td width="120" valign="top">
-                Text<?php if (($config_text_format ?? 'N') === 'Y'): ?>
+                Text<?php if (($config_text_format ?? 'N') === 'Y') { ?>
                     &nbsp; <small>(<a href="javascript:TextHelp()">Hilfe</a>)</small>
-                <?php endif; ?>:
+                <?php } ?>:
             </td>
             <td>
                 <textarea name="text" rows="10" cols="35"><?= $formText ?></textarea><br>
 
-                <?php if (($config_smilies ?? 'N') === 'Y'): ?>
+                <?php if (($config_smilies ?? 'N') === 'Y') { ?>
                 <input type="checkbox" name="smilies2" <?= $smiliesChecked ?> value="Y">
                 Smilies aktivieren &nbsp;
                 <small>(<a href="javascript:SmiliesHelp()">Hilfe</a>)</small>
-                <?php endif; ?>
+                <?php } ?>
             </td>
         </tr>
         <tr>

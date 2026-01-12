@@ -54,11 +54,17 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
-      - name: Run PHPStan
+      - name: Run PHPStan (Level 8)
         run: composer phpstan
+
+      - name: Run Psalm (Level 4)
+        run: composer psalm
 
       - name: Run PHPMD
         run: composer phpmd
+
+      - name: Check code style (PHP-CS-Fixer)
+        run: composer cs-check
 
       - name: Run PHPUnit tests
         run: composer test
@@ -92,8 +98,14 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
-      - name: Check code style (PHPStan Level 5)
+      - name: Check code style (PHPStan Level 8)
         run: composer phpstan
+
+      - name: Run Psalm (Level 4)
+        run: composer psalm
 
       - name: Check code quality (PHPMD)
         run: composer phpmd
+
+      - name: Check code style (PHP-CS-Fixer)
+        run: composer cs-check

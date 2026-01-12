@@ -5,6 +5,7 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -76,7 +77,7 @@ if ($install === 'yes') {
         $pdo = getDatabase();
 
         // Drop existing tables
-        echo "Lösche alte Tabellen (falls vorhanden)...<br>";
+        echo 'Lösche alte Tabellen (falls vorhanden)...<br>';
         $pdo->exec("DROP TABLE IF EXISTS {$pb_entries}");
         $pdo->exec("DROP TABLE IF EXISTS {$pb_config}");
         $pdo->exec("DROP TABLE IF EXISTS {$pb_admin}");
@@ -138,8 +139,8 @@ if ($install === 'yes') {
             status ENUM('R','U') DEFAULT 'R' NOT NULL,
             icon VARCHAR(100) DEFAULT '' NOT NULL,
             smilies ENUM('Y','N') DEFAULT 'Y' NOT NULL,
-            statement TEXT DEFAULT '' NOT NULL,
-            statement_by VARCHAR(250) DEFAULT '' NOT NULL,
+            statement TEXT NOT NULL DEFAULT '',
+            statement_by VARCHAR(250) NOT NULL DEFAULT '',
             PRIMARY KEY (id),
             INDEX idx_status (status),
             INDEX idx_ip (ip)
@@ -147,7 +148,7 @@ if ($install === 'yes') {
         echo " <span class='success'>Abgeschlossen.</span><br>";
 
         // Insert standard config
-        echo "Füge Standard-Konfiguration ein...";
+        echo 'Füge Standard-Konfiguration ein...';
         $defaultDesign = '<table width="560" border="0">
 <tr bgcolor="#001329"><td align="left">
 (#ICON#)<b>(#DATE#)</b>, <small>(#TIME#)h</small>
@@ -175,7 +176,7 @@ Der Admin';
         echo " <span class='success'>Abgeschlossen.</span><br>";
 
         // Create standard admin with password_hash
-        echo "Erstelle Standard-Admin...";
+        echo 'Erstelle Standard-Admin...';
         $adminPassword = password_hash('powerbook', PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("INSERT INTO {$pb_admin} (name, email, password, config, `release`, entries, admins) VALUES (:name, :email, :password, 'Y', 'Y', 'Y', 'Y')");
         $stmt->execute([
@@ -185,26 +186,26 @@ Der Admin';
         ]);
         echo " <span class='success'>Abgeschlossen.</span><br>";
 
-        echo "<br><br>";
+        echo '<br><br>';
         echo "<div style='background: #003300; padding: 15px; border: 2px solid #00FF00;'>";
         echo "<b class='success'>Installation erfolgreich!</b><br><br>";
-        echo "Bitte <b>löschen Sie diese Datei</b> (install_deu.php) aus Sicherheitsgründen.<br><br>";
-        echo "Bearbeiten Sie die Konfiguration und Ihre Admin-Daten im <a href=\"pb_inc/admincenter/\">AdminCenter</a>.<br><br>";
-        echo "Login-Daten:<br>";
-        echo "- <b>Name:</b> PowerBook<br>";
-        echo "- <b>Passwort:</b> powerbook<br><br>";
-        echo "<b>Wichtig:</b> Ändern Sie das Passwort nach dem ersten Login!";
-        echo "</div>";
+        echo 'Bitte <b>löschen Sie diese Datei</b> (install_deu.php) aus Sicherheitsgründen.<br><br>';
+        echo 'Bearbeiten Sie die Konfiguration und Ihre Admin-Daten im <a href="pb_inc/admincenter/">AdminCenter</a>.<br><br>';
+        echo 'Login-Daten:<br>';
+        echo '- <b>Name:</b> PowerBook<br>';
+        echo '- <b>Passwort:</b> powerbook<br><br>';
+        echo '<b>Wichtig:</b> Ändern Sie das Passwort nach dem ersten Login!';
+        echo '</div>';
 
     } catch (PDOException $e) {
         echo "<br><span class='error'><b>Fehler bei der Installation:</b><br>";
         echo htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
-        echo "</span><br><br>";
-        echo "Bitte überprüfen Sie die Datenbankeinstellungen in <b>pb_inc/mysql.inc.php</b>.";
+        echo '</span><br><br>';
+        echo 'Bitte überprüfen Sie die Datenbankeinstellungen in <b>pb_inc/mysql.inc.php</b>.';
     }
 
 } else {
-?>
+    ?>
 
 <h2>Willkommen zur Installation von PowerBook!</h2>
 

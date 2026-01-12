@@ -1,10 +1,12 @@
 <?php
+
 /**
  * PowerBook - PHP Guestbook System
  * Error Handler Functions
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -15,8 +17,10 @@ declare(strict_types=1);
  *
  * @param callable $operation The database operation to execute
  * @param string $errorMessage User-friendly error message on failure
- * @return mixed The result of the operation
+ *
  * @throws RuntimeException If the operation fails and should be re-thrown
+ *
+ * @return mixed The result of the operation
  */
 function safeDbOperation(callable $operation, string $errorMessage = 'Datenbankfehler'): mixed
 {
@@ -41,6 +45,7 @@ function safeDbOperation(callable $operation, string $errorMessage = 'Datenbankf
  * @param PDO $pdo The PDO connection
  * @param callable $operation The database operation to execute
  * @param string $errorMessage User-friendly error message on failure
+ *
  * @return mixed The result of the operation
  */
 function safeDbTransaction(PDO $pdo, callable $operation, string $errorMessage = 'Datenbankfehler'): mixed
@@ -49,17 +54,20 @@ function safeDbTransaction(PDO $pdo, callable $operation, string $errorMessage =
         $pdo->beginTransaction();
         $result = $operation();
         $pdo->commit();
+
         return $result;
     } catch (PDOException $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
         logDbError($e->getMessage());
+
         throw new RuntimeException($errorMessage);
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
+
         throw $e;
     }
 }
@@ -78,7 +86,9 @@ function logDbError(string $message): void
 }
 
 /**
- * Log a security-related event to security.log
+ * Log a security-related event to security.log.
+ *
+ * @param array<string, mixed> $context
  */
 function logSecurityEvent(string $event, array $context = []): void
 {
@@ -104,7 +114,7 @@ function logCsrfFailure(string $formName): void
 {
     logSecurityEvent('CSRF_FAILURE', [
         'form' => $formName,
-        'referer' => $_SERVER['HTTP_REFERER'] ?? 'none'
+        'referer' => $_SERVER['HTTP_REFERER'] ?? 'none',
     ]);
 }
 
@@ -114,7 +124,7 @@ function logCsrfFailure(string $formName): void
 function logFailedLogin(string $username): void
 {
     logSecurityEvent('LOGIN_FAILED', [
-        'username' => $username
+        'username' => $username,
     ]);
 }
 
@@ -124,12 +134,14 @@ function logFailedLogin(string $username): void
 function logSuccessfulLogin(string $username): void
 {
     logSecurityEvent('LOGIN_SUCCESS', [
-        'username' => $username
+        'username' => $username,
     ]);
 }
 
 /**
- * Log a form submission event
+ * Log a form submission event.
+ *
+ * @param array<string, mixed> $data
  */
 function logFormSubmission(string $formName, bool $success, array $data = []): void
 {
@@ -179,6 +191,7 @@ function handleAdminException(Throwable $e, string $context = ''): void
  * @param string $body Email body
  * @param string $headers Email headers
  * @param string $context Context for logging (e.g., 'Password Recovery', 'Admin Added')
+ *
  * @return bool True if email was sent successfully
  */
 function sendEmail(string $to, string $subject, string $body, string $headers = '', string $context = ''): bool
@@ -188,6 +201,7 @@ function sendEmail(string $to, string $subject, string $body, string $headers = 
 
     if (empty($to)) {
         logEmailError('Empty recipient', $context);
+
         return false;
     }
 
@@ -292,13 +306,13 @@ function getLogStats(): array
             $stats[$logFile] = [
                 'size' => $size,
                 'lines' => $lines !== false ? count($lines) : 0,
-                'last_modified' => @filemtime($path)
+                'last_modified' => @filemtime($path),
             ];
         } else {
             $stats[$logFile] = [
                 'size' => 0,
                 'lines' => 0,
-                'last_modified' => false
+                'last_modified' => false,
             ];
         }
     }

@@ -1,10 +1,12 @@
 <?php
+
 /**
  * PowerBook - PHP Guestbook System
  * Helper Functions
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -58,9 +60,8 @@ function germandate(string $sub_date): string
     $sub_date = str_replace('sep', 'Sep', $sub_date);
     $sub_date = str_replace('oct', 'Okt', $sub_date);
     $sub_date = str_replace('nov', 'Nov', $sub_date);
-    $sub_date = str_replace('dec', 'Dez', $sub_date);
 
-    return $sub_date;
+    return str_replace('dec', 'Dez', $sub_date);
 }
 
 /**

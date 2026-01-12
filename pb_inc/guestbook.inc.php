@@ -5,6 +5,7 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -15,30 +16,30 @@ require_once __DIR__ . '/config.inc.php';
 require_once __DIR__ . '/functions.inc.php';
 
 // Get request parameters safely
-$show_gb     = $_GET['show_gb'] ?? $_POST['show_gb'] ?? 'yes';
-$show_form   = $_GET['show_form'] ?? $_POST['show_form'] ?? 'yes';
-$preview     = $_POST['preview'] ?? 'no';
-$add_entry   = $_POST['add_entry'] ?? 'no';
-$search      = $_GET['search'] ?? 'no';
-$tmp_start   = (int) ($_GET['tmp_start'] ?? 0);
-$tmp_page    = (int) ($_GET['tmp_page'] ?? 1);
-$tmp_search  = trim($_GET['tmp_search'] ?? $_POST['tmp_search'] ?? '');
-$tmp_where   = $_GET['tmp_where'] ?? $_POST['tmp_where'] ?? '';
+$show_gb = $_GET['show_gb'] ?? $_POST['show_gb'] ?? 'yes';
+$show_form = $_GET['show_form'] ?? $_POST['show_form'] ?? 'yes';
+$preview = $_POST['preview'] ?? 'no';
+$add_entry = $_POST['add_entry'] ?? 'no';
+$search = $_GET['search'] ?? 'no';
+$tmp_start = (int) ($_GET['tmp_start'] ?? 0);
+$tmp_page = (int) ($_GET['tmp_page'] ?? 1);
+$tmp_search = trim($_GET['tmp_search'] ?? $_POST['tmp_search'] ?? '');
+$tmp_where = $_GET['tmp_where'] ?? $_POST['tmp_where'] ?? '';
 
 // Form input variables
-$name     = trim($_POST['name'] ?? '');
-$email2   = trim($_POST['email2'] ?? '');
-$url      = trim($_POST['url'] ?? '');
-$icq2     = trim($_POST['icq2'] ?? '');
-$text     = $_POST['text'] ?? '';
+$name = trim($_POST['name'] ?? '');
+$email2 = trim($_POST['email2'] ?? '');
+$url = trim($_POST['url'] ?? '');
+$icq2 = trim($_POST['icq2'] ?? '');
+$text = $_POST['text'] ?? '';
 $smilies2 = $_POST['smilies2'] ?? 'N';
-$icon     = $_POST['icon'] ?? '';
+$icon = $_POST['icon'] ?? '';
 
 // Hidden form variables for preview submission
-$name2    = trim($_POST['name2'] ?? '');
-$text2    = $_POST['text2'] ?? '';
-$url2     = trim($_POST['url2'] ?? '');
-$icon2    = $_POST['icon2'] ?? '';
+$name2 = trim($_POST['name2'] ?? '');
+$text2 = $_POST['text2'] ?? '';
+$url2 = trim($_POST['url2'] ?? '');
+$icon2 = $_POST['icon2'] ?? '';
 
 $installation_required = false;
 
@@ -104,7 +105,7 @@ if ($show_gb !== 'no') {
     $entries_word = ($count_pages === 1) ? 'Eintrag' : 'Einträge';
 
     // Get entries for current page
-    $entriesQuery = $baseQuery . " ORDER BY id DESC LIMIT :offset, :limit";
+    $entriesQuery = $baseQuery . ' ORDER BY id DESC LIMIT :offset, :limit';
     $entriesStmt = $pdo->prepare($entriesQuery);
 
     foreach ($params as $key => $value) {
@@ -126,7 +127,7 @@ if ($show_gb !== 'no') {
     if ($tmp_search === '') {
         $count_entries = "Dieses Gästebuch enthält <b>{$count_pages}</b> {$entries_word}.";
     } else {
-        $count_entries = "<b>{$count_pages}</b> {$entries_word} gefunden.<br><a href=\"" . e($config_guestbook_name) . "\">Alle Einträge Auflisten</a>";
+        $count_entries = "<b>{$count_pages}</b> {$entries_word} gefunden.<br><a href=\"" . e($config_guestbook_name) . '">Alle Einträge Auflisten</a>';
     }
 
     ?>
@@ -143,7 +144,7 @@ if ($show_gb !== 'no') {
 <!-- Entry List -->
 <?php
 
-    echo "<div align=\"center\"><b>" . e($message) . "</b></div>";
+    echo '<div align="center"><b>' . e($message) . '</b></div>';
 
     while ($entry = $entriesStmt->fetch(PDO::FETCH_ASSOC)) {
         include __DIR__ . '/entry.inc.php';
@@ -306,8 +307,8 @@ if ($add_entry === 'yes') {
 
                 $insertStmt = $pdo->prepare("
                     INSERT INTO {$pb_entries}
-                    (name, email, text, date, homepage, icq, ip, status, icon, smilies)
-                    VALUES (:name, :email, :text, :date, :homepage, :icq, :ip, :status, :icon, :smilies)
+                    (name, email, text, date, homepage, icq, ip, status, icon, smilies, statement, statement_by)
+                    VALUES (:name, :email, :text, :date, :homepage, :icq, :ip, :status, :icon, :smilies, :statement, :statement_by)
                 ");
 
                 $insertStmt->execute([
@@ -321,6 +322,8 @@ if ($add_entry === 'yes') {
                     ':status' => $config_release,
                     ':icon' => $icon2,
                     ':smilies' => $smilies2,
+                    ':statement' => '',
+                    ':statement_by' => '',
                 ]);
 
                 $pdo->commit();

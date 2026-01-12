@@ -5,6 +5,7 @@
  *
  * @license MIT
  * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ *
  * @see https://github.com/schubertnico/PowerBook.git
  */
 
@@ -22,10 +23,11 @@ declare(strict_types=1);
 // Check permission
 if (($admin_session['entries'] ?? 'N') !== 'Y') {
     echo '<div style="color: #FF6666; padding: 20px;">Sie haben keine Berechtigung für die Eintrags-Verwaltung.</div>';
+
     return;
 }
 
-$edit_id = (int)($_GET['edit_id'] ?? $_POST['edit_id'] ?? 0);
+$edit_id = (int) ($_GET['edit_id'] ?? $_POST['edit_id'] ?? 0);
 $action = $_POST['action'] ?? '';
 $message = '';
 $messageType = '';
@@ -80,7 +82,7 @@ if ($action === 'update' && $edit_id > 0 && validateCsrfToken($_POST['csrf_token
             $stmt->execute([
                 $edit_name, $edit_email, $edit_text, $edit_homepage,
                 $edit_icq, $edit_status, $edit_icon, $edit_smilies,
-                $edit_id
+                $edit_id,
             ]);
             $message = 'Eintrag erfolgreich bearbeitet!';
             $messageType = 'success';
@@ -115,7 +117,7 @@ if ($showForm && $edit_id > 0) {
             $edit_name = $entry['name'] ?? '';
             $edit_email = $entry['email'] ?? '';
             $edit_text = $entry['text'] ?? '';
-            $edit_date = (int)($entry['date'] ?? 0);
+            $edit_date = (int) ($entry['date'] ?? 0);
             $edit_homepage = $entry['homepage'] ?? '';
             $edit_icq = $entry['icq'] ?? '';
             $edit_ip = $entry['ip'] ?? '';
@@ -138,16 +140,16 @@ if ($showForm && $edit_id > 0) {
 
 <tr><td bgcolor="#001F3F" valign="top">
 
-<?php if (!empty($message)): ?>
+<?php if (!empty($message)) { ?>
 <div style="padding: 10px; margin: 10px 0; background: <?= $messageType === 'success' ? '#003300' : '#330000' ?>; border: 1px solid <?= $messageType === 'success' ? '#00FF00' : '#FF0000' ?>;">
     <?= $message ?>
 </div>
-<?php if ($messageType === 'success'): ?>
+<?php if ($messageType === 'success') { ?>
 <p><a href="?page=entries">Zurück zur Eintrags-Übersicht</a></p>
-<?php endif; ?>
-<?php endif; ?>
+<?php } ?>
+<?php } ?>
 
-<?php if ($showConfirm): ?>
+<?php if ($showConfirm) { ?>
 <div style="padding: 20px; text-align: center;">
     <p><font color="#FF0000"><b>Sind Sie sicher, dass Sie diesen Eintrag löschen wollen?</b></font></p>
     <form action="?page=edit" method="post" style="display: inline;">
@@ -159,9 +161,9 @@ if ($showForm && $edit_id > 0) {
     &nbsp;&nbsp;
     <a href="?page=edit&edit_id=<?= $edit_id ?>">Nein, abbrechen</a>
 </div>
-<?php endif; ?>
+<?php } ?>
 
-<?php if ($showForm): ?>
+<?php if ($showForm) { ?>
 <form action="?page=edit" method="post">
 <?= csrfField() ?>
 <input type="hidden" name="action" value="update">
@@ -187,41 +189,41 @@ if ($showForm && $edit_id > 0) {
     <tr bgcolor="#001930">
         <td width="120">ICQ#:</td>
         <td>
-            <?php if (($config_icq ?? 'N') === 'Y'): ?>
+            <?php if (($config_icq ?? 'N') === 'Y') { ?>
                 <input name="edit_icq" maxlength="20" size="10" value="<?= e($edit_icq) ?>">
-            <?php else: ?>
+            <?php } else { ?>
                 <span style="color: #888;">ICQ ist deaktiviert.</span>
-            <?php endif; ?>
+            <?php } ?>
         </td>
     </tr>
     <tr bgcolor="#001329">
         <td width="120" valign="top">Icon:</td>
         <td>
-            <?php if (($config_icons ?? 'N') === 'Y'):
+            <?php if (($config_icons ?? 'N') === 'Y') {
                 $icons = ['no' => 'Kein Icon', 'text' => 'text', 'question' => 'question', 'mark' => 'mark', 'shock' => 'shock', 'sad2' => 'sad2', 'happy1' => 'happy1', 'happy5' => 'happy5'];
-            ?>
+                ?>
                 <input type="radio" name="edit_icon" value="no" <?= (empty($edit_icon) || $edit_icon === 'no') ? 'checked' : '' ?>> Kein Icon<br>
-                <?php foreach (['text', 'question', 'mark', 'shock', 'sad2', 'happy1', 'happy5'] as $icon): ?>
+                <?php foreach (['text', 'question', 'mark', 'shock', 'sad2', 'happy1', 'happy5'] as $icon) { ?>
                 <input type="radio" name="edit_icon" value="<?= $icon ?>" <?= $edit_icon === $icon ? 'checked' : '' ?>>
                 <img src="../smilies/<?= $icon ?>.gif" alt="<?= $icon ?>">
-                <?php endforeach; ?>
-            <?php else: ?>
+                <?php } ?>
+            <?php } else { ?>
                 <span style="color: #888;">Icons sind deaktiviert.</span>
-            <?php endif; ?>
+            <?php } ?>
         </td>
     </tr>
     <tr bgcolor="#001930">
         <td width="120" valign="top">
-            Text<?php if (($config_text_format ?? 'N') === 'Y'): ?>
+            Text<?php if (($config_text_format ?? 'N') === 'Y') { ?>
             <br><small><a href="../text-help.html" target="_blank">Hilfe</a></small>
-            <?php endif; ?>:
+            <?php } ?>:
         </td>
         <td>
             <textarea name="edit_text" rows="10" cols="55"><?= e($edit_text) ?></textarea><br>
-            <?php if (($config_smilies ?? 'N') === 'Y'): ?>
+            <?php if (($config_smilies ?? 'N') === 'Y') { ?>
             <input type="checkbox" name="edit_smilies" value="Y" <?= ($edit_smilies ?? 'N') === 'Y' ? 'checked' : '' ?>>
             Smilies aktivieren <small>(<a href="../smilies-help.html" target="_blank">Hilfe</a>)</small>
-            <?php endif; ?>
+            <?php } ?>
         </td>
     </tr>
     <tr bgcolor="#001329">
@@ -260,6 +262,6 @@ if ($showForm && $edit_id > 0) {
     <input type="submit" value="Eintrag löschen" style="background: #660000; color: white;">
 </form>
 
-<?php endif; ?>
+<?php } ?>
 
 </td></tr>

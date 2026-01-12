@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PowerBook - PHPUnit Tests
  * Database Utility Functions Tests
@@ -10,20 +11,14 @@ declare(strict_types=1);
 
 namespace PowerBook\Tests\Unit;
 
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\CoversFunction;
-use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 
 #[CoversFunction('e')]
 #[CoversFunction('sanitizeEmailHeader')]
 class DatabaseUtilsTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        require_once POWERBOOK_ROOT . '/pb_inc/database.inc.php';
-    }
-
     // ========================================
     // Tests for e() function
     // ========================================
@@ -144,5 +139,10 @@ class DatabaseUtilsTest extends TestCase
 
         $this->assertStringNotContainsString("\n", $result);
         $this->assertStringNotContainsString("\r", $result);
+    }
+
+    protected function setUp(): void
+    {
+        require_once POWERBOOK_ROOT . '/pb_inc/database.inc.php';
     }
 }

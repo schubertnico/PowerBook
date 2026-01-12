@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PowerBook - PHPUnit Tests
  * Validation Functions Tests
@@ -10,10 +11,9 @@ declare(strict_types=1);
 
 namespace PowerBook\Tests\Unit;
 
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\CoversFunction;
-use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 
 #[CoversFunction('validateGuestbookEntry')]
 #[CoversFunction('validateAdminLogin')]
@@ -24,11 +24,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 #[CoversFunction('validatePasswordConfirmation')]
 class ValidationTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        require_once POWERBOOK_ROOT . '/pb_inc/validation.inc.php';
-    }
-
     // ========================================
     // Tests for validateGuestbookEntry()
     // ========================================
@@ -459,5 +454,10 @@ class ValidationTest extends TestCase
         $errors = validatePasswordConfirmation('password123', '');
 
         $this->assertArrayHasKey('password_confirm', $errors);
+    }
+
+    protected function setUp(): void
+    {
+        require_once POWERBOOK_ROOT . '/pb_inc/validation.inc.php';
     }
 }
