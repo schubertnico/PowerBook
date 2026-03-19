@@ -82,8 +82,9 @@ if ($showForm && $id > 0) {
 }
 
 // Process statement for preview display
-function formatStatement(string $text): string
-{
+if (!function_exists('formatStatement')) {
+    function formatStatement(string $text): string
+    {
     $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
     $text = str_replace("\n", '<br>', $text);
 
@@ -114,6 +115,7 @@ function formatStatement(string $text): string
     ];
 
     return str_replace(array_keys($smilies), array_values($smilies), $text);
+    }
 }
 ?>
 

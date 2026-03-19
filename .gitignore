@@ -40,3 +40,6 @@ nul
 # Coverage reports
 /coverage/
 /coverage-html/
+/coverage-report/
+coverage.xml
+coverage_report.php

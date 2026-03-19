@@ -256,40 +256,47 @@ if ($action === 'edit' && $edit_id > 0 && validateCsrfToken($_POST['csrf_token']
 }
 
 // Helper function to format permission as Ja/Nein
-function formatPermission(string $value): string
-{
-    return $value === 'Y' ? 'Ja' : 'Nein';
+if (!function_exists('formatPermission')) {
+    function formatPermission(string $value): string
+    {
+        return $value === 'Y' ? 'Ja' : 'Nein';
+    }
 }
 
-/**
- * Helper function to format admin permissions block.
- *
- * @param array<string, string> $data
- */
-function formatAdminPermissions(array $data): string
-{
-    return 'Konfiguration: ' . formatPermission($data['config']) . "\n"
-         . 'Admin-Verwaltung: ' . formatPermission($data['admins']) . "\n"
-         . 'Eintrag-Verwaltung: ' . formatPermission($data['entries']) . "\n"
-         . 'Einträge Freischalten: ' . formatPermission($data['release']) . "\n";
+if (!function_exists('formatAdminPermissions')) {
+    /**
+     * Helper function to format admin permissions block.
+     *
+     * @param array<string, string> $data
+     */
+    function formatAdminPermissions(array $data): string
+    {
+        return 'Konfiguration: ' . formatPermission($data['config']) . "\n"
+             . 'Admin-Verwaltung: ' . formatPermission($data['admins']) . "\n"
+             . 'Eintrag-Verwaltung: ' . formatPermission($data['entries']) . "\n"
+             . 'Einträge Freischalten: ' . formatPermission($data['release']) . "\n";
+    }
 }
 
 // Helper function to get email footer
-function getEmailFooter(): string
-{
-    return "\n--------------------------------------------------------\n"
-         . "PowerBook - PHP Guestbook System\n"
-         . "https://github.com/schubertnico/PowerBook.git\n\n"
-         . 'DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!';
+if (!function_exists('getEmailFooter')) {
+    function getEmailFooter(): string
+    {
+        return "\n--------------------------------------------------------\n"
+             . "PowerBook - PHP Guestbook System\n"
+             . "https://github.com/schubertnico/PowerBook.git\n\n"
+             . 'DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!';
+    }
 }
 
-/**
- * Helper function to send admin notification emails.
- *
- * @param array<string, string> $data
- */
-function sendAdminEmail(string $type, array $data): void
-{
+if (!function_exists('sendAdminEmail')) {
+    /**
+     * Helper function to send admin notification emails.
+     *
+     * @param array<string, string> $data
+     */
+    function sendAdminEmail(string $type, array $data): void
+    {
     $to = sanitizeEmailHeader($data['to'] ?? '');
     if (empty($to)) {
         return;
@@ -312,15 +319,17 @@ function sendAdminEmail(string $type, array $data): void
 
     $body .= getEmailFooter();
     sendEmail($to, $subject, $body, $headers, "Admin {$type}");
+    }
 }
 
-/**
- * Build email body for added admin.
- *
- * @param array<string, string> $data
- */
-function buildAddedEmailBody(array $data): string
-{
+if (!function_exists('buildAddedEmailBody')) {
+    /**
+     * Build email body for added admin.
+     *
+     * @param array<string, string> $data
+     */
+    function buildAddedEmailBody(array $data): string
+    {
     $body = "Hallo!\n\n";
     $body .= "{$data['by']} hat Sie zur Admin-Datenbank von PowerBook hinzugefügt.\n\n";
     $body .= "Ihr Name: {$data['name']}\n";
@@ -335,15 +344,17 @@ function buildAddedEmailBody(array $data): string
     $body .= ".\n";
 
     return $body;
+    }
 }
 
-/**
- * Build email body for edited admin.
- *
- * @param array<string, string> $data
- */
-function buildEditedEmailBody(array $data): string
-{
+if (!function_exists('buildEditedEmailBody')) {
+    /**
+     * Build email body for edited admin.
+     *
+     * @param array<string, string> $data
+     */
+    function buildEditedEmailBody(array $data): string
+    {
     $body = "Hallo!\n\n";
     $body .= "{$data['by']} hat Ihr Profil im AdminCenter von PowerBook bearbeitet.\n\n";
     $body .= "Ihr (neuer) Name: {$data['name']}\n";
@@ -358,18 +369,21 @@ function buildEditedEmailBody(array $data): string
     }
 
     return $body;
+    }
 }
 
-/**
- * Build email body for deleted admin.
- *
- * @param array<string, string> $data
- */
-function buildDeletedEmailBody(array $data): string
-{
-    return "Hallo!\n\n"
-         . "{$data['by']} hat Sie aus der Admin-Datenbank von PowerBook gelöscht.\n"
+if (!function_exists('buildDeletedEmailBody')) {
+    /**
+     * Build email body for deleted admin.
+     *
+     * @param array<string, string> $data
+     */
+    function buildDeletedEmailBody(array $data): string
+    {
+        return "Hallo!\n\n"
+             . "{$data['by']} hat Sie aus der Admin-Datenbank von PowerBook gelöscht.\n"
          . "Sie sind nicht mehr berechtigt, mit PowerBook zu arbeiten.\n";
+    }
 }
 
 // Get all admins

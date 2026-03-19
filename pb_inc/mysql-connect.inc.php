@@ -17,8 +17,11 @@ require_once __DIR__ . '/database.inc.php';
 
 // Get PDO connection for use in legacy code
 // The old $sql_conn variable is replaced by the getDatabase() function
-try {
-    $pdo = getDatabase();
-} catch (RuntimeException $e) {
-    die($e->getMessage());
+// If $pdo is already set (e.g. in test environment), skip connection
+if (!isset($pdo) || !$pdo instanceof PDO) {
+    try {
+        $pdo = getDatabase();
+    } catch (RuntimeException $e) {
+        die($e->getMessage());
+    }
 }
