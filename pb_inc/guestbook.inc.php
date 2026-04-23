@@ -14,6 +14,7 @@ declare(strict_types=1);
 // Include required files
 require_once __DIR__ . '/config.inc.php';
 require_once __DIR__ . '/functions.inc.php';
+require_once __DIR__ . '/error-handler.inc.php';
 
 // Get request parameters safely
 $show_gb = $_GET['show_gb'] ?? $_POST['show_gb'] ?? 'yes';
