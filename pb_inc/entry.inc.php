@@ -69,16 +69,19 @@ if (($entry['smilies'] ?? 'N') === 'Y' && ($config_smilies ?? 'N') === 'Y') {
     }
 }
 
-// Homepage URL
-$url = '<small>Keine Homepage</small>';
+// Homepage URL — BUG-001: eigene Variable $homepage_link, um nicht mit $url
+// des Formular-Input-Scope (guestbook.inc.php Preview) zu kollidieren.
+$homepage_link = '<small>Keine Homepage</small>';
 if (!empty($entry['homepage']) && strlen($entry['homepage']) > 1) {
     $homepage = $entry['homepage'];
     // Add http:// if missing
     if (!preg_match('/^https?:\/\//i', $homepage)) {
         $homepage = 'http://' . $homepage;
     }
-    $url = '<small><a href="' . e($homepage) . '" target="_blank" rel="noopener noreferrer">Homepage</a></small>';
+    $homepage_link = '<small><a href="' . e($homepage) . '" target="_blank" rel="noopener noreferrer">Homepage</a></small>';
 }
+// Backwards-compat Alias fuer Templates, die noch $url verwenden.
+$url = $homepage_link;
 
 // Email and name
 $email_name = e($entry['name'] ?? 'Anonym');

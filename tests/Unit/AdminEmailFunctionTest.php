@@ -10,28 +10,40 @@ final class AdminEmailFunctionTest extends TestCase
 {
     public function testSendAdminEmailIsDefinedAtRootScope(): void
     {
-        $source = file_get_contents(POWERBOOK_ROOT . '/pb_inc/admincenter/admins.inc.php');
-        self::assertNotFalse($source);
+        // BUG-006: Helpers wurden in admin_email_helpers.inc.php ausgelagert.
+        $helpers = file_get_contents(POWERBOOK_ROOT . '/pb_inc/admincenter/admin_email_helpers.inc.php');
+        self::assertNotFalse($helpers);
 
         self::assertStringNotContainsString(
             "if (!function_exists('sendAdminEmail'))",
-            $source,
+            $helpers,
             'sendAdminEmail muss ausserhalb eines if-Blocks deklariert werden.'
         );
 
         self::assertStringContainsString(
             'function sendAdminEmail(',
-            $source,
+            $helpers,
             'sendAdminEmail() muss weiterhin deklariert sein.'
+        );
+    }
+
+    public function testAdminsIncLoadsHelpersViaRequireOnce(): void
+    {
+        $source = file_get_contents(POWERBOOK_ROOT . '/pb_inc/admincenter/admins.inc.php');
+        self::assertNotFalse($source);
+        self::assertStringContainsString(
+            "require_once __DIR__ . '/admin_email_helpers.inc.php'",
+            $source,
+            'admins.inc.php muss admin_email_helpers.inc.php per require_once laden.'
         );
     }
 
     public function testRelatedHelperFunctionsAreAtRootScope(): void
     {
-        $source = file_get_contents(POWERBOOK_ROOT . '/pb_inc/admincenter/admins.inc.php');
-        self::assertNotFalse($source);
+        $helpers = file_get_contents(POWERBOOK_ROOT . '/pb_inc/admincenter/admin_email_helpers.inc.php');
+        self::assertNotFalse($helpers);
 
-        $helpers = [
+        $fns = [
             'formatPermission',
             'formatAdminPermissions',
             'getEmailFooter',
@@ -39,11 +51,11 @@ final class AdminEmailFunctionTest extends TestCase
             'buildEditedEmailBody',
             'buildDeletedEmailBody',
         ];
-        foreach ($helpers as $helper) {
+        foreach ($fns as $fn) {
             self::assertStringNotContainsString(
-                "if (!function_exists('{$helper}'))",
-                $source,
-                "{$helper}() muss ausserhalb eines if-Blocks deklariert werden (hoisting)."
+                "if (!function_exists('{$fn}'))",
+                $helpers,
+                "{$fn}() muss ausserhalb eines if-Blocks deklariert werden (hoisting)."
             );
         }
     }

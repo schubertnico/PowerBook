@@ -66,17 +66,20 @@ if (($entry['smilies'] ?? 'N') === 'Y' && ($config_smilies ?? 'N') === 'Y') {
     $entryText = str_replace(array_keys($smilieReplacements), array_values($smilieReplacements), $entryText);
 }
 
-// Homepage URL
+// Homepage URL — BUG-001: eigene Variable $homepage_link, um nicht mit $url
+// des Formular-Input-Scope zu kollidieren.
 if (!empty($entry['homepage']) && strlen($entry['homepage']) > 1) {
     $homepage = $entry['homepage'];
     // Add http:// if not present
     if (!preg_match('/^https?:\/\//i', $homepage)) {
         $homepage = 'http://' . $homepage;
     }
-    $url = '<small><a href="' . e($homepage) . '" target="_blank" rel="noopener">Homepage</a></small>';
+    $homepage_link = '<small><a href="' . e($homepage) . '" target="_blank" rel="noopener">Homepage</a></small>';
 } else {
-    $url = '<small>Keine Homepage</small>';
+    $homepage_link = '<small>Keine Homepage</small>';
 }
+// Backwards-compat Alias.
+$url = $homepage_link;
 
 // Email and name
 $entryName = e($entry['name'] ?? '');

@@ -191,6 +191,13 @@ if ($preview === 'yes') {
         $show_preview = 'yes';
     }
 
+    // BUG-003: Roh-Werte vor der Escape-Runde bewahren, damit die Preview-
+    // Hidden-Fields (url2, name2, ...) NICHT doppelt escaped werden.
+    $raw_name   = $name;
+    $raw_email2 = $email2;
+    $raw_url    = $url;
+    $raw_icq2   = $icq2;
+
     // Sanitize input for display AFTER validation
     $name = e($name);
     $email2 = e($email2);
@@ -219,11 +226,11 @@ if ($preview === 'yes') {
         echo '
          <form action="' . e($config_guestbook_name) . '" method="post">
             ' . csrfField() . '
-            <input type="hidden" name="name2" value="' . e($name) . '">
-            <input type="hidden" name="email2" value="' . e($email2) . '">
-            <input type="hidden" name="url2" value="' . e($url) . '">
+            <input type="hidden" name="name2" value="' . e($raw_name) . '">
+            <input type="hidden" name="email2" value="' . e($raw_email2) . '">
+            <input type="hidden" name="url2" value="' . e($raw_url) . '">
             <input type="hidden" name="icon2" value="' . e($icon) . '">
-            <input type="hidden" name="icq2" value="' . e($icq2) . '">
+            <input type="hidden" name="icq2" value="' . e($raw_icq2) . '">
             <input type="hidden" name="text2" value="' . e($text_escaped) . '">
             <input type="hidden" name="smilies2" value="' . e($smilies2) . '">
             <input type="hidden" name="show_gb" value="no">
