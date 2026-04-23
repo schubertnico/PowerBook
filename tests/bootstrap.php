@@ -20,6 +20,11 @@ if (session_status() === PHP_SESSION_NONE) {
 define('POWERBOOK_TEST_MODE', true);
 define('POWERBOOK_ROOT', dirname(__DIR__));
 
+// BUG-013: PB_ENTRY erlaubt Tests das Inkludieren von guestbook.inc.php ohne 403.
+if (!defined('PB_ENTRY')) {
+    define('PB_ENTRY', true);
+}
+
 // Set up SQLite test database before any file tries to connect to MySQL
 $pdo = new PDO('sqlite::memory:');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

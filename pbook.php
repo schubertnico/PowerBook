@@ -11,6 +11,11 @@
 
 declare(strict_types=1);
 
+// BUG-013: Entry-Konstante setzen, damit guestbook.inc.php Direktaufruf ablehnen kann.
+if (!defined('PB_ENTRY')) {
+    define('PB_ENTRY', true);
+}
+
 // Include config early for session_start() before any output
 require_once __DIR__ . '/pb_inc/config.inc.php';
 ?>
