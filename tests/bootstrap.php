@@ -64,7 +64,9 @@ $pdo->exec('CREATE TABLE pb_admins (
     config TEXT DEFAULT "N",
     admins TEXT DEFAULT "N",
     entries TEXT DEFAULT "N",
-    "release" TEXT DEFAULT "N"
+    "release" TEXT DEFAULT "N",
+    reset_token TEXT DEFAULT NULL,
+    reset_token_expires INTEGER DEFAULT NULL
 )');
 
 $pdo->exec('CREATE TABLE pb_entries (

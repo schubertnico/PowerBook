@@ -19,6 +19,8 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/config.inc.php';
 require_once __DIR__ . '/../error-handler.inc.php';
 require_once __DIR__ . '/../validation.inc.php';
+// BUG-010: Falls die DB noch keine reset_token-Spalten hat, nachziehen.
+require_once __DIR__ . '/password_migrate.php';
 
 // Allowed pages whitelist (LFI protection)
 // BUG-004: Die Legacy-/Helper-/Platzhalter-Seiten (Email-Notifications, Paginierungs-Helper,

@@ -68,7 +68,9 @@ class AdminPagesTest extends TestCase
             config TEXT DEFAULT "N",
             admins TEXT DEFAULT "N",
             entries TEXT DEFAULT "N",
-            "release" TEXT DEFAULT "N"
+            "release" TEXT DEFAULT "N",
+            reset_token TEXT DEFAULT NULL,
+            reset_token_expires INTEGER DEFAULT NULL
         )');
 
         $pdo->exec('CREATE TABLE pb_entries (
@@ -1014,7 +1016,13 @@ class AdminPagesTest extends TestCase
 
         $output = $this->renderAdminPage('password.inc.php');
 
-        $this->assertStringContainsString('admin@test.com', $output);
+        // BUG-009/010: Recovery-Response ist jetzt generisch (kein Leak der Mail-Adresse).
+        $this->assertStringContainsString('Falls ein Konto', $output);
+
+        // Token wurde in DB persistiert.
+        $row = $this->db()->query("SELECT reset_token, reset_token_expires FROM pb_admins WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
+        $this->assertNotEmpty($row['reset_token']);
+        $this->assertGreaterThan(time(), (int) $row['reset_token_expires']);
     }
 
     #[Test]
@@ -1030,10 +1038,15 @@ class AdminPagesTest extends TestCase
 
         $output = $this->renderAdminPage('password.inc.php');
 
-        $this->assertStringContainsString('admin@test.com', $output);
+        // Generische Response (BUG-009).
+        $this->assertStringContainsString('Falls ein Konto', $output);
 
-        // Restore the SuperAdmin password since it was changed
-        $this->db()->exec("UPDATE pb_admins SET password = '" . password_hash('test123', PASSWORD_DEFAULT) . "' WHERE id = 1");
+        // Token muss gesetzt sein; Passwort bleibt unveraendert (BUG-010).
+        $row = $this->db()->query("SELECT reset_token, password FROM pb_admins WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
+        $this->assertNotEmpty($row['reset_token']);
+
+        // Reset token for subsequent tests.
+        $this->db()->exec('UPDATE pb_admins SET reset_token = NULL, reset_token_expires = NULL WHERE id = 1');
     }
 
     #[Test]
@@ -1049,7 +1062,9 @@ class AdminPagesTest extends TestCase
 
         $output = $this->renderAdminPage('password.inc.php');
 
-        $this->assertStringContainsString('nicht gefunden', $output);
+        // BUG-009: Keine spezifische "nicht gefunden" mehr — gleiche Response wie bei existent.
+        $this->assertStringContainsString('Falls ein Konto', $output);
+        $this->assertStringNotContainsString('nicht gefunden', $output);
     }
 
     #[Test]
