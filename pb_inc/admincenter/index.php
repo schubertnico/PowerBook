@@ -77,6 +77,10 @@ if ($login === 'yes') {
             // Verify password with migration support
             if (verifyAndMigratePassword($password, $admin['password'], (int) $admin['id'])) {
                 // Login successful - store in session
+                // BUG-014: Session-ID regenerieren, bevor Admin-Daten persistiert werden,
+                // um Session-Fixation-Angriffe zu verhindern.
+                session_regenerate_id(true);
+
                 $_SESSION['admin_id'] = (int) $admin['id'];
                 $_SESSION['admin_name'] = $admin['name'];
                 $_SESSION['admin_logged_in'] = true;
