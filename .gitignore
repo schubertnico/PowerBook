@@ -43,3 +43,6 @@ nul
 /coverage-report/
 coverage.xml
 coverage_report.php
+
+# BUG-011: Install-Lock (wird beim Installationsabschluss erzeugt)
+.installed
