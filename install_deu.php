@@ -10,6 +10,21 @@
  */
 
 declare(strict_types=1);
+
+// BUG-011: Lock-File-Check. Nach erfolgreicher Installation wird '.installed'
+// erstellt. Beim naechsten Aufruf: HTTP 403 und kurze Info-Seite.
+$lockFile = __DIR__ . '/.installed';
+if (file_exists($lockFile)) {
+    http_response_code(403);
+    echo '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">'
+       . '<title>403 - Installation already completed</title></head><body>'
+       . '<h1>403 - Installation already completed</h1>'
+       . '<p>PowerBook wurde bereits installiert. Loeschen Sie '
+       . htmlspecialchars($lockFile, ENT_QUOTES, 'UTF-8')
+       . ' manuell, falls Sie neu installieren moechten.</p>'
+       . '</body></html>';
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -185,6 +200,9 @@ Der Admin';
             ':password' => $adminPassword,
         ]);
         echo " <span class='success'>Abgeschlossen.</span><br>";
+
+        // BUG-011: Lock-File setzen, damit install_deu.php nicht erneut aufgerufen werden kann.
+        @file_put_contents(__DIR__ . '/.installed', date('c') . "\n");
 
         echo '<br><br>';
         echo "<div style='background: #003300; padding: 15px; border: 2px solid #00FF00;'>";
