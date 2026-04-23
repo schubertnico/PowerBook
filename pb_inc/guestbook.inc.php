@@ -193,11 +193,24 @@ if ($preview === 'yes') {
     } elseif (strlen(trim($name)) === 0) {
         $error = 'Bitte einen <b>Name</b> eingeben!';
         $show_form = 'yes';
+    } elseif (mb_strlen($name) > 100) {
+        // BUG-008: serverseitige Laengenpruefung (client-maxlength umgehbar).
+        $error = 'Der <b>Name</b> darf hoechstens 100 Zeichen lang sein!';
+        $show_form = 'yes';
     } elseif (strlen(trim($text)) === 0) {
         $error = 'Bitte einen <b>Text</b> eingeben!!';
         $show_form = 'yes';
+    } elseif (mb_strlen($text) > 5000) {
+        $error = 'Der <b>Text</b> darf hoechstens 5000 Zeichen lang sein!';
+        $show_form = 'yes';
     } elseif (strlen($email2) >= 1 && !filter_var($email2, FILTER_VALIDATE_EMAIL)) {
         $error = 'Ungültige <b>eMail-Adresse</b>!';
+        $show_form = 'yes';
+    } elseif (mb_strlen($email2) > 250) {
+        $error = 'Die <b>eMail-Adresse</b> darf hoechstens 250 Zeichen lang sein!';
+        $show_form = 'yes';
+    } elseif (mb_strlen($url) > 255) {
+        $error = 'Die <b>Homepage-URL</b> darf hoechstens 255 Zeichen lang sein!';
         $show_form = 'yes';
     } else {
         $show_form = 'no';

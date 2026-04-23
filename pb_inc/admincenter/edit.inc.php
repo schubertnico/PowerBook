@@ -74,6 +74,19 @@ if ($action === 'update' && $edit_id > 0 && validateCsrfToken($_POST['csrf_token
     } elseif (!empty($edit_email) && !filter_var($edit_email, FILTER_VALIDATE_EMAIL)) {
         $message = 'E-Mail-Adresse ist ungültig!';
         $messageType = 'error';
+    } elseif (mb_strlen($edit_name) > 100) {
+        // BUG-008: serverseitige Laengenpruefung.
+        $message = 'Der Name darf hoechstens 100 Zeichen lang sein!';
+        $messageType = 'error';
+    } elseif (mb_strlen($edit_text) > 5000) {
+        $message = 'Der Text darf hoechstens 5000 Zeichen lang sein!';
+        $messageType = 'error';
+    } elseif (mb_strlen($edit_email) > 250) {
+        $message = 'Die E-Mail-Adresse darf hoechstens 250 Zeichen lang sein!';
+        $messageType = 'error';
+    } elseif (mb_strlen($edit_homepage) > 255) {
+        $message = 'Die Homepage-URL darf hoechstens 255 Zeichen lang sein!';
+        $messageType = 'error';
     } else {
         try {
             $stmt = $pdo->prepare("UPDATE {$pb_entries} SET
