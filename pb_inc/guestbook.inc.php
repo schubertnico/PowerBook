@@ -117,11 +117,13 @@ if ($show_gb !== 'no') {
     $entriesStmt->execute();
 
     $message = '';
+    $message_html = '';
     if ($count_pages === 0) {
         if ($tmp_search === '') {
             $message = 'In diesem Gästebuch gibt es keine Einträge';
         } else {
-            $message = '<a href="javascript:history.back()">Keine passenden Einträge.</a>';
+            // BUG-007: HTML-Markup separat halten, damit e() es nicht escapet.
+            $message_html = '<a href="javascript:history.back()">Keine passenden Einträge.</a>';
         }
     }
 
@@ -145,7 +147,12 @@ if ($show_gb !== 'no') {
 <!-- Entry List -->
 <?php
 
-    echo '<div align="center"><b>' . e($message) . '</b></div>';
+    if ($message !== '') {
+        echo '<div align="center"><b>' . e($message) . '</b></div>';
+    } elseif ($message_html !== '') {
+        // BUG-007: $message_html ist vertrauenswuerdiges HTML (keine User-Eingabe), daher KEIN e().
+        echo '<div align="center"><b>' . $message_html . '</b></div>';
+    }
 
     while ($entry = $entriesStmt->fetch(PDO::FETCH_ASSOC)) {
         include __DIR__ . '/entry.inc.php';
