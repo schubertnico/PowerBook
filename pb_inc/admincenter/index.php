@@ -21,10 +21,13 @@ require_once __DIR__ . '/../error-handler.inc.php';
 require_once __DIR__ . '/../validation.inc.php';
 
 // Allowed pages whitelist (LFI protection)
+// BUG-004: Die Legacy-/Helper-/Platzhalter-Seiten (Email-Notifications, Paginierungs-Helper,
+// Empty-Placeholder) sind keine eigenstaendigen Admin-Views und wurden deshalb aus der
+// Whitelist entfernt — Direktaufruf faellt auf 'home' zurueck.
 $allowedPages = [
-    'home', 'login', 'logout', 'license', 'admins', 'emails',
-    'entries', 'configuration', 'password', 'release', 'entry',
-    'pages', 'edit', 'statement', 'empty',
+    'home', 'login', 'logout', 'license', 'admins',
+    'entries', 'configuration', 'password', 'release',
+    'entry', 'edit', 'statement',
 ];
 
 // Get request parameters safely
