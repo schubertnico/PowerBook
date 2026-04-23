@@ -35,7 +35,8 @@ $showForm = true;
 $showConfirm = false;
 
 if ($edit_id === 0) {
-    $message = '<a href="javascript:history.back()">Fehler: <b>ID unbekannt!</b></a>';
+    // BUG-005: Echter Link statt history.back() — bei Direktaufruf (ohne History) sinnvoll navigierbar.
+    $message = 'Fehler: <b>ID unbekannt!</b> <a href="?page=entries">Zur Eintragsliste</a>';
     $showForm = false;
 }
 

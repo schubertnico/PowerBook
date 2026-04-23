@@ -34,7 +34,8 @@ $messageType = '';
 $showForm = true;
 
 if ($id === 0) {
-    $message = '<a href="javascript:history.back()">Es ist ein Fehler aufgetreten: <b>ID unbekannt!</b></a>';
+    // BUG-005: Echter Link statt history.back().
+    $message = 'Es ist ein Fehler aufgetreten: <b>ID unbekannt!</b> <a href="?page=entries">Zur Eintragsliste</a>';
     $showForm = false;
 }
 
