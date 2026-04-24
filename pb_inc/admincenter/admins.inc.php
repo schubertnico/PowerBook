@@ -87,7 +87,9 @@ if ($action === 'add' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
                     $stmt->execute([$add_name, $hashedPassword, $add_email, $add_config, $add_admins, $add_entries, $add_release]);
 
                     // Send email notification
-                    sendAdminEmail('added', [
+                    // IMP-008: Rueckgabewert erfassen, um bei Mail-Fail das
+                    // Temp-Passwort einmalig im UI anzuzeigen (Self-Lockout vermeiden).
+                    $mailSent = sendAdminEmail('added', [
                         'to' => $add_email,
                         'name' => $add_name,
                         'email' => $add_email,
@@ -100,8 +102,18 @@ if ($action === 'add' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
                         'by' => $admin_session['name'] ?? 'Admin',
                     ]);
 
-                    $message = 'Admin erfolgreich hinzugefügt. Er wird eine E-Mail mit seinen Daten erhalten.';
-                    $messageType = 'success';
+                    if (!$mailSent) {
+                        $message = 'Admin erfolgreich hinzugefuegt, aber die E-Mail konnte NICHT versendet werden! '
+                            . '<br><b>Notieren Sie das Initial-Passwort jetzt:</b> '
+                            . '<code style="background:#000;padding:3px 6px;font-family:monospace;">'
+                            . htmlspecialchars($tempPassword, ENT_QUOTES, 'UTF-8')
+                            . '</code><br>'
+                            . 'Das Passwort wird nicht erneut angezeigt.';
+                        $messageType = 'error';
+                    } else {
+                        $message = 'Admin erfolgreich hinzugefügt. Er wird eine E-Mail mit seinen Daten erhalten.';
+                        $messageType = 'success';
+                    }
 
                     // Reset form
                     $add_name = $add_email = '';

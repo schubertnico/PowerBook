@@ -47,13 +47,19 @@ function getEmailFooter(): string
 /**
  * Helper function to send admin notification emails.
  *
+ * IMP-008: Rueckgabewert geaendert von void auf bool, damit der Aufrufer
+ * (admins.inc.php) auf einen fehlgeschlagenen Mail-Versand reagieren kann
+ * (z. B. um das Initial-Passwort einmalig im UI anzuzeigen).
+ *
  * @param array<string, string> $data
+ *
+ * @return bool true bei erfolgreichem Versand, false bei Fehler oder ungueltigen Daten
  */
-function sendAdminEmail(string $type, array $data): void
+function sendAdminEmail(string $type, array $data): bool
 {
     $to = sanitizeEmailHeader($data['to'] ?? '');
     if (empty($to)) {
-        return;
+        return false;
     }
 
     $subject = 'PowerBook: AdminCenter';
@@ -68,11 +74,12 @@ function sendAdminEmail(string $type, array $data): void
     };
 
     if (empty($body)) {
-        return;
+        return false;
     }
 
     $body .= getEmailFooter();
-    sendEmail($to, $subject, $body, $headers, "Admin {$type}");
+
+    return sendEmail($to, $subject, $body, $headers, "Admin {$type}");
 }
 
 /**
