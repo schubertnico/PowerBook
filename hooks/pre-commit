@@ -1,0 +1,83 @@
+#!/bin/bash
+#
+# PowerBook Pre-Commit Hook
+# Runs PHPStan and PHPUnit before allowing commits
+#
+
+echo "Running pre-commit checks..."
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Check if composer dependencies are installed
+if [ ! -d "vendor" ]; then
+    echo -e "${YELLOW}Warning: vendor directory not found. Running composer install...${NC}"
+    composer install --quiet
+fi
+
+# Run PHPStan
+echo -e "${YELLOW}Running PHPStan...${NC}"
+composer phpstan --quiet
+PHPSTAN_EXIT=$?
+
+if [ $PHPSTAN_EXIT -ne 0 ]; then
+    echo -e "${RED}PHPStan found errors. Please fix them before committing.${NC}"
+    composer phpstan
+    exit 1
+fi
+echo -e "${GREEN}PHPStan: OK${NC}"
+
+# Run Psalm
+echo -e "${YELLOW}Running Psalm...${NC}"
+composer psalm --quiet 2>/dev/null
+PSALM_EXIT=$?
+
+if [ $PSALM_EXIT -ne 0 ]; then
+    echo -e "${RED}Psalm found type errors. Please fix them before committing.${NC}"
+    composer psalm
+    exit 1
+fi
+echo -e "${GREEN}Psalm: OK${NC}"
+
+# Run PHPMD
+echo -e "${YELLOW}Running PHPMD...${NC}"
+composer phpmd --quiet 2>/dev/null
+PHPMD_EXIT=$?
+
+if [ $PHPMD_EXIT -ne 0 ]; then
+    echo -e "${RED}PHPMD found issues. Please fix them before committing.${NC}"
+    composer phpmd
+    exit 1
+fi
+echo -e "${GREEN}PHPMD: OK${NC}"
+
+# Run PHP-CS-Fixer
+echo -e "${YELLOW}Running PHP-CS-Fixer...${NC}"
+composer cs-check --quiet 2>/dev/null
+CSFIXER_EXIT=$?
+
+if [ $CSFIXER_EXIT -ne 0 ]; then
+    echo -e "${RED}PHP-CS-Fixer found code style issues.${NC}"
+    echo -e "${YELLOW}Run 'composer cs-fix' to auto-fix them.${NC}"
+    composer cs-check
+    exit 1
+fi
+echo -e "${GREEN}PHP-CS-Fixer: OK${NC}"
+
+# Run PHPUnit
+echo -e "${YELLOW}Running PHPUnit...${NC}"
+composer test --quiet
+PHPUNIT_EXIT=$?
+
+if [ $PHPUNIT_EXIT -ne 0 ]; then
+    echo -e "${RED}PHPUnit tests failed. Please fix them before committing.${NC}"
+    composer test
+    exit 1
+fi
+echo -e "${GREEN}PHPUnit: OK${NC}"
+
+echo -e "${GREEN}All pre-commit checks passed!${NC}"
+exit 0
