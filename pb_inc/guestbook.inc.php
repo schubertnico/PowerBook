@@ -219,10 +219,10 @@ if ($preview === 'yes') {
 
     // BUG-003: Roh-Werte vor der Escape-Runde bewahren, damit die Preview-
     // Hidden-Fields (url2, name2, ...) NICHT doppelt escaped werden.
-    $raw_name   = $name;
+    $raw_name = $name;
     $raw_email2 = $email2;
-    $raw_url    = $url;
-    $raw_icq2   = $icq2;
+    $raw_url = $url;
+    $raw_icq2 = $icq2;
 
     // Sanitize input for display AFTER validation
     $name = e($name);

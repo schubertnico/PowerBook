@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
 class AdminHelpersTest extends TestCase
 {
     private static bool $adminsLoaded = false;
+
     private static bool $statementLoaded = false;
 
     public static function setUpBeforeClass(): void
@@ -801,7 +802,7 @@ class AdminHelpersTest extends TestCase
     #[Test]
     public function formatStatementCombinesMultipleFeatures(): void
     {
-        $result = formatStatement("[b]Bold[/b] and a link https://example.com :)");
+        $result = formatStatement('[b]Bold[/b] and a link https://example.com :)');
 
         $this->assertStringContainsString('<b>Bold</b>', $result);
         $this->assertStringContainsString('<a href="https://example.com"', $result);

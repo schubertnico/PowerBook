@@ -30,69 +30,6 @@ class TemplateRenderingTest extends TestCase
         }
     }
 
-    /**
-     * Include a template file in an isolated scope with extracted variables.
-     * Uses output buffering to capture all output.
-     *
-     * @param string               $file Path to the template file
-     * @param array<string, mixed> $vars Variables to make available in the template scope
-     *
-     * @return string The captured output
-     */
-    private function renderTemplate(string $file, array $vars): string
-    {
-        extract($vars);
-        ob_start();
-        include $file;
-
-        return ob_get_clean() ?: '';
-    }
-
-    /**
-     * Build a default entry array for frontend entry tests.
-     *
-     * @param array<string, mixed> $overrides Values to override
-     *
-     * @return array<string, mixed>
-     */
-    private function makeEntry(array $overrides = []): array
-    {
-        return array_merge([
-            'text' => 'Hello World',
-            'name' => 'Test User',
-            'email' => '',
-            'homepage' => '',
-            'icq' => '',
-            'date' => mktime(14, 30, 0, 6, 15, 2025),
-            'icon' => '',
-            'smilies' => 'N',
-            'statement' => '',
-            'statement_by' => '',
-        ], $overrides);
-    }
-
-    /**
-     * Build default config variables for frontend entry tests.
-     *
-     * @param array<string, mixed> $overrides Values to override
-     *
-     * @return array<string, mixed>
-     */
-    private function makeEntryVars(array $entryOverrides = [], array $configOverrides = []): array
-    {
-        return array_merge([
-            'entry' => $this->makeEntry($entryOverrides),
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-            'config_statements' => 'N',
-            'config_date' => 'd.m.Y',
-            'config_time' => 'H:i',
-            'config_design' => '(#ICON#) (#DATE#) (#TIME#) (#EMAIL_NAME#) (#TEXT#) (#URL#) (#ICQ#)',
-        ], $configOverrides);
-    }
-
     // ========================================
     // Frontend Entry Display (entry.inc.php)
     // ========================================
@@ -247,36 +184,6 @@ class TemplateRenderingTest extends TestCase
         $this->assertStringNotContainsString('(#TEXT#)', $output);
     }
 
-    // ========================================
-    // Form Template (form.inc.php)
-    // ========================================
-
-    /**
-     * Build default variables for form template tests.
-     *
-     * @param array<string, mixed> $overrides Values to override
-     *
-     * @return array<string, mixed>
-     */
-    private function makeFormVars(array $overrides = []): array
-    {
-        return array_merge([
-            'name' => '',
-            'email2' => '',
-            'url' => '',
-            'icq2' => '',
-            'text' => '',
-            'icon' => '',
-            'smilies2' => '',
-            'show_gb' => '',
-            'config_guestbook_name' => 'pbook.php',
-            'config_icons' => 'Y',
-            'config_smilies' => 'Y',
-            'config_icq' => 'Y',
-            'config_text_format' => 'Y',
-        ], $overrides);
-    }
-
     #[Test]
     public function testFormRendersCsrfField(): void
     {
@@ -346,32 +253,6 @@ class TemplateRenderingTest extends TestCase
 
         $this->assertStringContainsString('name="smilies2"', $output);
         $this->assertStringContainsString('Smilies aktivieren', $output);
-    }
-
-    // ========================================
-    // Pagination Template (pages.inc.php)
-    // ========================================
-
-    /**
-     * Build default variables for pagination template tests.
-     *
-     * @param array<string, mixed> $overrides Values to override
-     *
-     * @return array<string, mixed>
-     */
-    private function makePagesVars(array $overrides = []): array
-    {
-        return array_merge([
-            'tmp_where' => '',
-            'tmp_search' => '',
-            'tmp_pages' => 3,
-            'tmp_start' => 0,
-            'tmp_page' => 1,
-            'count_pages' => 30,
-            'config_pages' => 'L',
-            'config_show_entries' => 10,
-            'config_guestbook_name' => 'pbook.php',
-        ], $overrides);
     }
 
     #[Test]
@@ -488,44 +369,6 @@ class TemplateRenderingTest extends TestCase
         $this->assertStringContainsString('tmp_search=TestSearch', $output);
     }
 
-    // ========================================
-    // Admin Entry Display (admincenter/entry.inc.php)
-    // ========================================
-
-    /**
-     * Build default variables for admin entry template tests.
-     *
-     * @param array<string, mixed> $entryOverrides  Entry overrides
-     * @param array<string, mixed> $configOverrides Config overrides
-     *
-     * @return array<string, mixed>
-     */
-    private function makeAdminEntryVars(array $entryOverrides = [], array $configOverrides = []): array
-    {
-        $entry = array_merge([
-            'text' => 'Admin test text',
-            'name' => 'Admin Test User',
-            'email' => '',
-            'homepage' => '',
-            'icq' => '',
-            'date' => mktime(10, 0, 0, 3, 20, 2025),
-            'icon' => '',
-            'smilies' => 'N',
-            'ip' => '192.168.1.1',
-            'statement' => '',
-            'statement_by' => '',
-        ], $entryOverrides);
-
-        return array_merge([
-            'entry' => $entry,
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-            'db_statement' => 'N',
-        ], $configOverrides);
-    }
-
     #[Test]
     public function testAdminEntryBasic(): void
     {
@@ -610,5 +453,162 @@ class TemplateRenderingTest extends TestCase
         $this->assertStringContainsString('Admin response text', $entry['text']);
         $this->assertStringContainsString('SuperAdmin', $entry['text']);
         $this->assertStringContainsString('Statement:', $entry['text']);
+    }
+
+    /**
+     * Include a template file in an isolated scope with extracted variables.
+     * Uses output buffering to capture all output.
+     *
+     * @param string               $file Path to the template file
+     * @param array<string, mixed> $vars Variables to make available in the template scope
+     *
+     * @return string The captured output
+     */
+    private function renderTemplate(string $file, array $vars): string
+    {
+        extract($vars);
+        ob_start();
+        include $file;
+
+        return ob_get_clean() ?: '';
+    }
+
+    /**
+     * Build a default entry array for frontend entry tests.
+     *
+     * @param array<string, mixed> $overrides Values to override
+     *
+     * @return array<string, mixed>
+     */
+    private function makeEntry(array $overrides = []): array
+    {
+        return array_merge([
+            'text' => 'Hello World',
+            'name' => 'Test User',
+            'email' => '',
+            'homepage' => '',
+            'icq' => '',
+            'date' => mktime(14, 30, 0, 6, 15, 2025),
+            'icon' => '',
+            'smilies' => 'N',
+            'statement' => '',
+            'statement_by' => '',
+        ], $overrides);
+    }
+
+    /**
+     * Build default config variables for frontend entry tests.
+     *
+     * @param array<string, mixed> $overrides Values to override
+     *
+     * @return array<string, mixed>
+     */
+    private function makeEntryVars(array $entryOverrides = [], array $configOverrides = []): array
+    {
+        return array_merge([
+            'entry' => $this->makeEntry($entryOverrides),
+            'config_icons' => 'N',
+            'config_text_format' => 'N',
+            'config_smilies' => 'N',
+            'config_icq' => 'N',
+            'config_statements' => 'N',
+            'config_date' => 'd.m.Y',
+            'config_time' => 'H:i',
+            'config_design' => '(#ICON#) (#DATE#) (#TIME#) (#EMAIL_NAME#) (#TEXT#) (#URL#) (#ICQ#)',
+        ], $configOverrides);
+    }
+
+    // ========================================
+    // Form Template (form.inc.php)
+    // ========================================
+
+    /**
+     * Build default variables for form template tests.
+     *
+     * @param array<string, mixed> $overrides Values to override
+     *
+     * @return array<string, mixed>
+     */
+    private function makeFormVars(array $overrides = []): array
+    {
+        return array_merge([
+            'name' => '',
+            'email2' => '',
+            'url' => '',
+            'icq2' => '',
+            'text' => '',
+            'icon' => '',
+            'smilies2' => '',
+            'show_gb' => '',
+            'config_guestbook_name' => 'pbook.php',
+            'config_icons' => 'Y',
+            'config_smilies' => 'Y',
+            'config_icq' => 'Y',
+            'config_text_format' => 'Y',
+        ], $overrides);
+    }
+
+    // ========================================
+    // Pagination Template (pages.inc.php)
+    // ========================================
+
+    /**
+     * Build default variables for pagination template tests.
+     *
+     * @param array<string, mixed> $overrides Values to override
+     *
+     * @return array<string, mixed>
+     */
+    private function makePagesVars(array $overrides = []): array
+    {
+        return array_merge([
+            'tmp_where' => '',
+            'tmp_search' => '',
+            'tmp_pages' => 3,
+            'tmp_start' => 0,
+            'tmp_page' => 1,
+            'count_pages' => 30,
+            'config_pages' => 'L',
+            'config_show_entries' => 10,
+            'config_guestbook_name' => 'pbook.php',
+        ], $overrides);
+    }
+
+    // ========================================
+    // Admin Entry Display (admincenter/entry.inc.php)
+    // ========================================
+
+    /**
+     * Build default variables for admin entry template tests.
+     *
+     * @param array<string, mixed> $entryOverrides  Entry overrides
+     * @param array<string, mixed> $configOverrides Config overrides
+     *
+     * @return array<string, mixed>
+     */
+    private function makeAdminEntryVars(array $entryOverrides = [], array $configOverrides = []): array
+    {
+        $entry = array_merge([
+            'text' => 'Admin test text',
+            'name' => 'Admin Test User',
+            'email' => '',
+            'homepage' => '',
+            'icq' => '',
+            'date' => mktime(10, 0, 0, 3, 20, 2025),
+            'icon' => '',
+            'smilies' => 'N',
+            'ip' => '192.168.1.1',
+            'statement' => '',
+            'statement_by' => '',
+        ], $entryOverrides);
+
+        return array_merge([
+            'entry' => $entry,
+            'config_icons' => 'N',
+            'config_text_format' => 'N',
+            'config_smilies' => 'N',
+            'config_icq' => 'N',
+            'db_statement' => 'N',
+        ], $configOverrides);
     }
 }

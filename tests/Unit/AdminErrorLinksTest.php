@@ -15,7 +15,7 @@ final class AdminErrorLinksTest extends TestCase
     public static function fileProvider(): array
     {
         return [
-            'edit.inc.php'      => [POWERBOOK_ROOT . '/pb_inc/admincenter/edit.inc.php'],
+            'edit.inc.php' => [POWERBOOK_ROOT . '/pb_inc/admincenter/edit.inc.php'],
             'statement.inc.php' => [POWERBOOK_ROOT . '/pb_inc/admincenter/statement.inc.php'],
         ];
     }

@@ -108,68 +108,6 @@ class AdminPagesTest extends TestCase
         $GLOBALS['pb_entries'] = 'pb_entries';
     }
 
-    protected function setUp(): void
-    {
-        // Ensure GLOBALS are set for each test (PHPUnit may backup/restore)
-        $GLOBALS['pdo'] = self::$pdo;
-        $GLOBALS['pb_config'] = self::$pbConfig;
-        $GLOBALS['pb_admin'] = self::$pbAdmin;
-        $GLOBALS['pb_entries'] = self::$pbEntries;
-
-        // Reset superglobals before each test
-        $_POST = [];
-        $_GET = [];
-    }
-
-    protected function tearDown(): void
-    {
-        $_POST = [];
-        $_GET = [];
-    }
-
-    /**
-     * Render an admin page by including it with the given variables.
-     *
-     * @param array<string, mixed> $vars Variables to extract into scope
-     */
-    /**
-     * Render an admin page by including it with the given variables.
-     * Source files with function definitions use function_exists() guards,
-     * so they can be safely re-included.
-     *
-     * @param array<string, mixed> $vars Variables to extract into scope
-     */
-    private function renderAdminPage(string $file, array $vars = []): string
-    {
-        $pdo = self::$pdo;
-        $pb_admin = self::$pbAdmin;
-        $pb_entries = self::$pbEntries;
-        $pb_config = self::$pbConfig;
-
-        extract($vars);
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/' . $file;
-
-        return (string) ob_get_clean();
-    }
-
-    /**
-     * Generate a valid CSRF token for form submissions.
-     */
-    private function getCsrfToken(): string
-    {
-        return generateCsrfToken();
-    }
-
-    /**
-     * Get the PDO instance for direct database access in tests.
-     */
-    private function db(): PDO
-    {
-        return self::$pdo;
-    }
-
     // ========================================================================
     // 1. home.inc.php
     // ========================================================================
@@ -1020,7 +958,7 @@ class AdminPagesTest extends TestCase
         $this->assertStringContainsString('Falls ein Konto', $output);
 
         // Token wurde in DB persistiert.
-        $row = $this->db()->query("SELECT reset_token, reset_token_expires FROM pb_admins WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
+        $row = $this->db()->query('SELECT reset_token, reset_token_expires FROM pb_admins WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
         $this->assertNotEmpty($row['reset_token']);
         $this->assertGreaterThan(time(), (int) $row['reset_token_expires']);
     }
@@ -1042,7 +980,7 @@ class AdminPagesTest extends TestCase
         $this->assertStringContainsString('Falls ein Konto', $output);
 
         // Token muss gesetzt sein; Passwort bleibt unveraendert (BUG-010).
-        $row = $this->db()->query("SELECT reset_token, password FROM pb_admins WHERE id = 1")->fetch(PDO::FETCH_ASSOC);
+        $row = $this->db()->query('SELECT reset_token, password FROM pb_admins WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
         $this->assertNotEmpty($row['reset_token']);
 
         // Reset token for subsequent tests.
@@ -1630,5 +1568,67 @@ class AdminPagesTest extends TestCase
         ]);
 
         $this->assertStringContainsString('ltige E-Mail', $output);
+    }
+
+    protected function setUp(): void
+    {
+        // Ensure GLOBALS are set for each test (PHPUnit may backup/restore)
+        $GLOBALS['pdo'] = self::$pdo;
+        $GLOBALS['pb_config'] = self::$pbConfig;
+        $GLOBALS['pb_admin'] = self::$pbAdmin;
+        $GLOBALS['pb_entries'] = self::$pbEntries;
+
+        // Reset superglobals before each test
+        $_POST = [];
+        $_GET = [];
+    }
+
+    protected function tearDown(): void
+    {
+        $_POST = [];
+        $_GET = [];
+    }
+
+    /**
+     * Render an admin page by including it with the given variables.
+     *
+     * @param array<string, mixed> $vars Variables to extract into scope
+     */
+    /**
+     * Render an admin page by including it with the given variables.
+     * Source files with function definitions use function_exists() guards,
+     * so they can be safely re-included.
+     *
+     * @param array<string, mixed> $vars Variables to extract into scope
+     */
+    private function renderAdminPage(string $file, array $vars = []): string
+    {
+        $pdo = self::$pdo;
+        $pb_admin = self::$pbAdmin;
+        $pb_entries = self::$pbEntries;
+        $pb_config = self::$pbConfig;
+
+        extract($vars);
+
+        ob_start();
+        include POWERBOOK_ROOT . '/pb_inc/admincenter/' . $file;
+
+        return (string) ob_get_clean();
+    }
+
+    /**
+     * Generate a valid CSRF token for form submissions.
+     */
+    private function getCsrfToken(): string
+    {
+        return generateCsrfToken();
+    }
+
+    /**
+     * Get the PDO instance for direct database access in tests.
+     */
+    private function db(): PDO
+    {
+        return self::$pdo;
     }
 }

@@ -86,36 +86,36 @@ if ($showForm && $id > 0) {
 if (!function_exists('formatStatement')) {
     function formatStatement(string $text): string
     {
-    $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
-    $text = str_replace("\n", '<br>', $text);
+        $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        $text = str_replace("\n", '<br>', $text);
 
-    // BBCode
-    $text = (string) preg_replace('/\[b\]/i', '<b>', $text);
-    $text = (string) preg_replace('/\[\/b\]/i', '</b>', $text);
-    $text = (string) preg_replace('/\[u\]/i', '<u>', $text);
-    $text = (string) preg_replace('/\[\/u\]/i', '</u>', $text);
-    $text = (string) preg_replace('/\[i\]/i', '<i>', $text);
-    $text = (string) preg_replace('/\[\/i\]/i', '</i>', $text);
-    $text = (string) preg_replace('/\[small\]/i', '<small>', $text);
-    $text = (string) preg_replace('/\[\/small\]/i', '</small>', $text);
-    $text = (string) preg_replace('/(https?:\/\/[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="$1" target="_blank" rel="noopener">$1</a>$2', $text);
-    $text = (string) preg_replace('/(www\.[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="http://$1" target="_blank" rel="noopener">$1</a>$2', $text);
+        // BBCode
+        $text = (string) preg_replace('/\[b\]/i', '<b>', $text);
+        $text = (string) preg_replace('/\[\/b\]/i', '</b>', $text);
+        $text = (string) preg_replace('/\[u\]/i', '<u>', $text);
+        $text = (string) preg_replace('/\[\/u\]/i', '</u>', $text);
+        $text = (string) preg_replace('/\[i\]/i', '<i>', $text);
+        $text = (string) preg_replace('/\[\/i\]/i', '</i>', $text);
+        $text = (string) preg_replace('/\[small\]/i', '<small>', $text);
+        $text = (string) preg_replace('/\[\/small\]/i', '</small>', $text);
+        $text = (string) preg_replace('/(https?:\/\/[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="$1" target="_blank" rel="noopener">$1</a>$2', $text);
+        $text = (string) preg_replace('/(www\.[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="http://$1" target="_blank" rel="noopener">$1</a>$2', $text);
 
-    // Smilies
-    $smilies = [
-        '?:)' => '<img src="../smilies/confused.gif" alt=":confused:">',
-        '!:)' => '<img src="../smilies/shock.gif" alt=":shock:">',
-        ';(' => '<img src="../smilies/sad1.gif" alt=":sad:">',
-        ':(' => '<img src="../smilies/sad2.gif" alt=":sad:">',
-        ':X' => '<img src="../smilies/sad3.gif" alt=":sad:">',
-        ':)' => '<img src="../smilies/happy1.gif" alt=":happy:">',
-        ':P' => '<img src="../smilies/happy2.gif" alt=":tongue:">',
-        ';)' => '<img src="../smilies/happy3.gif" alt=":wink:">',
-        ':D' => '<img src="../smilies/happy4.gif" alt=":grin:">',
-        ';o)' => '<img src="../smilies/happy5.gif" alt=":happy:">',
-    ];
+        // Smilies
+        $smilies = [
+            '?:)' => '<img src="../smilies/confused.gif" alt=":confused:">',
+            '!:)' => '<img src="../smilies/shock.gif" alt=":shock:">',
+            ';(' => '<img src="../smilies/sad1.gif" alt=":sad:">',
+            ':(' => '<img src="../smilies/sad2.gif" alt=":sad:">',
+            ':X' => '<img src="../smilies/sad3.gif" alt=":sad:">',
+            ':)' => '<img src="../smilies/happy1.gif" alt=":happy:">',
+            ':P' => '<img src="../smilies/happy2.gif" alt=":tongue:">',
+            ';)' => '<img src="../smilies/happy3.gif" alt=":wink:">',
+            ':D' => '<img src="../smilies/happy4.gif" alt=":grin:">',
+            ';o)' => '<img src="../smilies/happy5.gif" alt=":happy:">',
+        ];
 
-    return str_replace(array_keys($smilies), array_values($smilies), $text);
+        return str_replace(array_keys($smilies), array_values($smilies), $text);
     }
 }
 ?>

@@ -96,159 +96,6 @@ class GuestbookPagesTest extends TestCase
         $GLOBALS['pb_entries'] = 'pb_entries';
     }
 
-    protected function setUp(): void
-    {
-        // Ensure globals point to our PDO instance
-        $GLOBALS['pdo'] = self::$pdo;
-        $GLOBALS['pb_config'] = 'pb_config';
-        $GLOBALS['pb_admin'] = 'pb_admins';
-        $GLOBALS['pb_entries'] = 'pb_entries';
-
-        // Clean entries table before each test
-        self::$pdo->exec('DELETE FROM pb_entries');
-
-        // Reset auto-increment sequence
-        self::$pdo->exec("DELETE FROM sqlite_sequence WHERE name='pb_entries'");
-    }
-
-    protected function tearDown(): void
-    {
-        $_GET = [];
-        $_POST = [];
-    }
-
-    /**
-     * Include a file in an isolated scope with extracted variables and output buffering.
-     *
-     * @param string               $file Path to the file to include
-     * @param array<string, mixed> $vars Variables to make available in the file scope
-     *
-     * @return string The captured output
-     */
-    private function renderFile(string $file, array $vars = []): string
-    {
-        // Set up core variables
-        $pdo = self::$pdo;
-        $pb_config = 'pb_config';
-        $pb_admin = 'pb_admins';
-        $pb_entries = 'pb_entries';
-
-        // Apply overrides
-        extract($vars);
-
-        ob_start();
-        include $file;
-
-        return ob_get_clean() ?: '';
-    }
-
-    /**
-     * Render guestbook.inc.php with given GET/POST params and variable overrides.
-     *
-     * @param array<string, string> $get  $_GET parameters
-     * @param array<string, string> $post $_POST parameters
-     * @param array<string, mixed>  $vars Additional variable overrides
-     *
-     * @return string The captured output
-     */
-    private function renderGuestbook(array $get = [], array $post = [], array $vars = []): string
-    {
-        $savedGet = $_GET;
-        $savedPost = $_POST;
-        $_GET = $get;
-        $_POST = $post;
-
-        // Set up core variables
-        $pdo = self::$pdo;
-        $pb_config = 'pb_config';
-        $pb_admin = 'pb_admins';
-        $pb_entries = 'pb_entries';
-
-        // Set default config variables (as config.inc.php would set them)
-        $config_release = 'R';
-        $config_send_email = 'N';
-        $config_email = 'admin@test.com';
-        $config_date = 'd.m.Y';
-        $config_time = 'H:i';
-        $config_spam_check = 60;
-        $config_color = '#FF0000';
-        $config_show_entries = 10;
-        $config_guestbook_name = 'pbook.php';
-        $config_admin_url = '';
-        $config_text_format = 'Y';
-        $config_icons = 'Y';
-        $config_smilies = 'Y';
-        $config_icq = 'N';
-        $config_pages = 'D';
-        $config_use_thanks = 'N';
-        $config_language = 'D';
-        $config_design = '(#ICON#)(#DATE#)(#TIME#)(#EMAIL_NAME#)(#TEXT#)(#URL#)(#ICQ#)';
-        $config_thanks_title = '';
-        $config_thanks = '';
-        $config_statements = 'Y';
-
-        // Apply overrides
-        extract($vars);
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/guestbook.inc.php';
-        $output = ob_get_clean() ?: '';
-
-        $_GET = $savedGet;
-        $_POST = $savedPost;
-
-        return $output;
-    }
-
-    /**
-     * Insert a test guestbook entry.
-     *
-     * @param array<string, mixed> $data Entry data overrides
-     *
-     * @return int The inserted entry ID
-     */
-    private function insertEntry(array $data = []): int
-    {
-        $defaults = [
-            'name' => 'TestUser',
-            'email' => 'test@example.com',
-            'text' => 'This is a test entry.',
-            'date' => time(),
-            'homepage' => 'www.example.com',
-            'icq' => '',
-            'ip' => '127.0.0.1',
-            'status' => 'R',
-            'icon' => '',
-            'smilies' => 'N',
-            'statement' => '',
-            'statement_by' => '',
-        ];
-
-        $entry = array_merge($defaults, $data);
-
-        $stmt = self::$pdo->prepare("
-            INSERT INTO pb_entries (name, email, text, date, homepage, icq, ip, status, icon, smilies, statement, statement_by)
-            VALUES (:name, :email, :text, :date, :homepage, :icq, :ip, :status, :icon, :smilies, :statement, :statement_by)
-        ");
-
-        $stmt->execute([
-            ':name' => $entry['name'],
-            ':email' => $entry['email'],
-            ':text' => $entry['text'],
-            ':date' => $entry['date'],
-            ':homepage' => $entry['homepage'],
-            ':icq' => $entry['icq'],
-            ':ip' => $entry['ip'],
-            ':status' => $entry['status'],
-            ':icon' => $entry['icon'],
-            ':smilies' => $entry['smilies'],
-            ':statement' => $entry['statement'],
-            ':statement_by' => $entry['statement_by'],
-        ]);
-
-        return (int) self::$pdo->lastInsertId();
-    }
-
     // =========================================================================
     // config.inc.php Tests
     // =========================================================================
@@ -549,5 +396,158 @@ class GuestbookPagesTest extends TestCase
 
         // No output expected - the if-check skips sending when email is invalid
         $this->assertEmpty(trim($output));
+    }
+
+    protected function setUp(): void
+    {
+        // Ensure globals point to our PDO instance
+        $GLOBALS['pdo'] = self::$pdo;
+        $GLOBALS['pb_config'] = 'pb_config';
+        $GLOBALS['pb_admin'] = 'pb_admins';
+        $GLOBALS['pb_entries'] = 'pb_entries';
+
+        // Clean entries table before each test
+        self::$pdo->exec('DELETE FROM pb_entries');
+
+        // Reset auto-increment sequence
+        self::$pdo->exec("DELETE FROM sqlite_sequence WHERE name='pb_entries'");
+    }
+
+    protected function tearDown(): void
+    {
+        $_GET = [];
+        $_POST = [];
+    }
+
+    /**
+     * Include a file in an isolated scope with extracted variables and output buffering.
+     *
+     * @param string               $file Path to the file to include
+     * @param array<string, mixed> $vars Variables to make available in the file scope
+     *
+     * @return string The captured output
+     */
+    private function renderFile(string $file, array $vars = []): string
+    {
+        // Set up core variables
+        $pdo = self::$pdo;
+        $pb_config = 'pb_config';
+        $pb_admin = 'pb_admins';
+        $pb_entries = 'pb_entries';
+
+        // Apply overrides
+        extract($vars);
+
+        ob_start();
+        include $file;
+
+        return ob_get_clean() ?: '';
+    }
+
+    /**
+     * Render guestbook.inc.php with given GET/POST params and variable overrides.
+     *
+     * @param array<string, string> $get  $_GET parameters
+     * @param array<string, string> $post $_POST parameters
+     * @param array<string, mixed>  $vars Additional variable overrides
+     *
+     * @return string The captured output
+     */
+    private function renderGuestbook(array $get = [], array $post = [], array $vars = []): string
+    {
+        $savedGet = $_GET;
+        $savedPost = $_POST;
+        $_GET = $get;
+        $_POST = $post;
+
+        // Set up core variables
+        $pdo = self::$pdo;
+        $pb_config = 'pb_config';
+        $pb_admin = 'pb_admins';
+        $pb_entries = 'pb_entries';
+
+        // Set default config variables (as config.inc.php would set them)
+        $config_release = 'R';
+        $config_send_email = 'N';
+        $config_email = 'admin@test.com';
+        $config_date = 'd.m.Y';
+        $config_time = 'H:i';
+        $config_spam_check = 60;
+        $config_color = '#FF0000';
+        $config_show_entries = 10;
+        $config_guestbook_name = 'pbook.php';
+        $config_admin_url = '';
+        $config_text_format = 'Y';
+        $config_icons = 'Y';
+        $config_smilies = 'Y';
+        $config_icq = 'N';
+        $config_pages = 'D';
+        $config_use_thanks = 'N';
+        $config_language = 'D';
+        $config_design = '(#ICON#)(#DATE#)(#TIME#)(#EMAIL_NAME#)(#TEXT#)(#URL#)(#ICQ#)';
+        $config_thanks_title = '';
+        $config_thanks = '';
+        $config_statements = 'Y';
+
+        // Apply overrides
+        extract($vars);
+
+        ob_start();
+        include POWERBOOK_ROOT . '/pb_inc/guestbook.inc.php';
+        $output = ob_get_clean() ?: '';
+
+        $_GET = $savedGet;
+        $_POST = $savedPost;
+
+        return $output;
+    }
+
+    /**
+     * Insert a test guestbook entry.
+     *
+     * @param array<string, mixed> $data Entry data overrides
+     *
+     * @return int The inserted entry ID
+     */
+    private function insertEntry(array $data = []): int
+    {
+        $defaults = [
+            'name' => 'TestUser',
+            'email' => 'test@example.com',
+            'text' => 'This is a test entry.',
+            'date' => time(),
+            'homepage' => 'www.example.com',
+            'icq' => '',
+            'ip' => '127.0.0.1',
+            'status' => 'R',
+            'icon' => '',
+            'smilies' => 'N',
+            'statement' => '',
+            'statement_by' => '',
+        ];
+
+        $entry = array_merge($defaults, $data);
+
+        $stmt = self::$pdo->prepare('
+            INSERT INTO pb_entries (name, email, text, date, homepage, icq, ip, status, icon, smilies, statement, statement_by)
+            VALUES (:name, :email, :text, :date, :homepage, :icq, :ip, :status, :icon, :smilies, :statement, :statement_by)
+        ');
+
+        $stmt->execute([
+            ':name' => $entry['name'],
+            ':email' => $entry['email'],
+            ':text' => $entry['text'],
+            ':date' => $entry['date'],
+            ':homepage' => $entry['homepage'],
+            ':icq' => $entry['icq'],
+            ':ip' => $entry['ip'],
+            ':status' => $entry['status'],
+            ':icon' => $entry['icon'],
+            ':smilies' => $entry['smilies'],
+            ':statement' => $entry['statement'],
+            ':statement_by' => $entry['statement_by'],
+        ]);
+
+        return (int) self::$pdo->lastInsertId();
     }
 }

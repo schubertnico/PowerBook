@@ -12,7 +12,6 @@ declare(strict_types=1);
 
 /** @var PDO $pdo */
 /** @var string $pb_admin */
-
 if (!isset($pdo) || !isset($pb_admin)) {
     return;
 }

@@ -33,7 +33,7 @@ final class AdminAllowedPagesTest extends TestCase
         self::assertNotFalse($source);
 
         $required = ['home', 'login', 'logout', 'license', 'admins', 'entries',
-                     'configuration', 'password', 'release', 'entry', 'edit', 'statement'];
+            'configuration', 'password', 'release', 'entry', 'edit', 'statement'];
         foreach ($required as $page) {
             self::assertMatchesRegularExpression(
                 "/'{$page}'/",
