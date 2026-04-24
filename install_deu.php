@@ -190,9 +190,10 @@ Der Admin';
         $stmt->execute([':design' => $defaultDesign, ':thanks' => $defaultThanks]);
         echo " <span class='success'>Abgeschlossen.</span><br>";
 
-        // Create standard admin with password_hash
+        // IMP-006: Zufaelliges Initial-Passwort statt hardcoded 'powerbook'.
         echo 'Erstelle Standard-Admin...';
-        $adminPassword = password_hash('powerbook', PASSWORD_DEFAULT);
+        $initialAdminPassword = bin2hex(random_bytes(8)); // 16 hex chars
+        $adminPassword = password_hash($initialAdminPassword, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("INSERT INTO {$pb_admin} (name, email, password, config, `release`, entries, admins) VALUES (:name, :email, :password, 'Y', 'Y', 'Y', 'Y')");
         $stmt->execute([
             ':name' => 'PowerBook',
@@ -211,8 +212,8 @@ Der Admin';
         echo 'Bearbeiten Sie die Konfiguration und Ihre Admin-Daten im <a href="pb_inc/admincenter/">AdminCenter</a>.<br><br>';
         echo 'Login-Daten:<br>';
         echo '- <b>Name:</b> PowerBook<br>';
-        echo '- <b>Passwort:</b> powerbook<br><br>';
-        echo '<b>Wichtig:</b> Ändern Sie das Passwort nach dem ersten Login!';
+        echo '- <b>Passwort:</b> <code style="background:#000;padding:3px 6px;font-family:monospace;">' . htmlspecialchars($initialAdminPassword, ENT_QUOTES, 'UTF-8') . '</code><br><br>';
+        echo '<b>Wichtig:</b> Notieren Sie dieses Passwort JETZT &mdash; es wird nicht erneut angezeigt! &Auml;ndern Sie es nach dem ersten Login.';
         echo '</div>';
 
     } catch (PDOException $e) {
