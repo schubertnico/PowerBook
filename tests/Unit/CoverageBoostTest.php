@@ -43,302 +43,6 @@ class CoverageBoostTest extends TestCase
         $GLOBALS['pb_entries'] = 'pb_entries';
     }
 
-    private static function createTables(): void
-    {
-        self::$pdo->exec('CREATE TABLE IF NOT EXISTS pb_config (
-            id INTEGER PRIMARY KEY,
-            "release" TEXT DEFAULT "R",
-            send_email TEXT DEFAULT "N",
-            email TEXT DEFAULT "admin@test.com",
-            date TEXT DEFAULT "d.m.Y",
-            time TEXT DEFAULT "H:i",
-            spam_check INTEGER DEFAULT 60,
-            color TEXT DEFAULT "#FF0000",
-            show_entries INTEGER DEFAULT 10,
-            guestbook_name TEXT DEFAULT "pbook.php",
-            admin_url TEXT DEFAULT "",
-            text_format TEXT DEFAULT "Y",
-            icons TEXT DEFAULT "Y",
-            smilies TEXT DEFAULT "Y",
-            icq TEXT DEFAULT "N",
-            pages TEXT DEFAULT "D",
-            use_thanks TEXT DEFAULT "N",
-            language TEXT DEFAULT "D",
-            design TEXT DEFAULT "(#ICON#)(#DATE#)(#TIME#)(#EMAIL_NAME#)(#TEXT#)(#URL#)(#ICQ#)",
-            thanks_title TEXT DEFAULT "",
-            thanks TEXT DEFAULT "",
-            statements TEXT DEFAULT "Y"
-        )');
-
-        self::$pdo->exec('CREATE TABLE IF NOT EXISTS pb_admins (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL,
-            password TEXT NOT NULL,
-            config TEXT DEFAULT "N",
-            admins TEXT DEFAULT "N",
-            entries TEXT DEFAULT "N",
-            "release" TEXT DEFAULT "N"
-        )');
-
-        self::$pdo->exec('CREATE TABLE IF NOT EXISTS pb_entries (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT DEFAULT "",
-            text TEXT NOT NULL,
-            date INTEGER DEFAULT 0,
-            homepage TEXT DEFAULT "",
-            icq TEXT DEFAULT "",
-            ip TEXT DEFAULT "",
-            status TEXT DEFAULT "R",
-            icon TEXT DEFAULT "",
-            smilies TEXT DEFAULT "N",
-            statement TEXT DEFAULT "",
-            statement_by TEXT DEFAULT ""
-        )');
-    }
-
-    private static function seedData(): void
-    {
-        // Clear and re-seed
-        self::$pdo->exec('DELETE FROM pb_config');
-        self::$pdo->exec('DELETE FROM pb_admins');
-        self::$pdo->exec('DELETE FROM pb_entries');
-
-        self::$pdo->exec('INSERT INTO pb_config (id) VALUES (1)');
-
-        $hash = password_hash('test123', PASSWORD_DEFAULT);
-        self::$pdo->exec("INSERT INTO pb_admins (id, name, email, password, config, admins, entries, \"release\")
-            VALUES (1, 'SuperAdmin', 'admin@test.com', '{$hash}', 'Y', 'Y', 'Y', 'Y')");
-    }
-
-    protected function setUp(): void
-    {
-        $GLOBALS['pdo'] = self::$pdo;
-        $GLOBALS['pb_config'] = 'pb_config';
-        $GLOBALS['pb_admin'] = 'pb_admins';
-        $GLOBALS['pb_entries'] = 'pb_entries';
-
-        // Clean entries before each test
-        self::$pdo->exec('DELETE FROM pb_entries');
-
-        // Reset admins to just SuperAdmin
-        self::$pdo->exec('DELETE FROM pb_admins WHERE id > 1');
-
-        // Ensure config row exists
-        $count = (int) self::$pdo->query('SELECT COUNT(*) FROM pb_config')->fetchColumn();
-        if ($count === 0) {
-            self::$pdo->exec('INSERT INTO pb_config (id) VALUES (1)');
-        }
-
-        // Reset config to defaults
-        self::$pdo->exec("UPDATE pb_config SET
-            \"release\" = 'R', send_email = 'N', email = 'admin@test.com',
-            date = 'd.m.Y', time = 'H:i', spam_check = 60, color = '#FF0000',
-            show_entries = 10, guestbook_name = 'pbook.php', admin_url = '',
-            text_format = 'Y', icons = 'Y', smilies = 'Y', icq = 'N',
-            pages = 'D', use_thanks = 'N', language = 'D',
-            design = '(#ICON#)(#DATE#)(#TIME#)(#EMAIL_NAME#)(#TEXT#)(#URL#)(#ICQ#)',
-            thanks_title = '', thanks = '', statements = 'Y'
-            WHERE id = 1");
-    }
-
-    protected function tearDown(): void
-    {
-        $_GET = [];
-        $_POST = [];
-        unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_logged_in']);
-    }
-
-    // =========================================================================
-    // Helper: Render guestbook.inc.php with controlled scope
-    // =========================================================================
-
-    private function renderGuestbook(array $get = [], array $post = []): string
-    {
-        $savedGet = $_GET;
-        $savedPost = $_POST;
-        $_GET = $get;
-        $_POST = $post;
-
-        $pdo = $GLOBALS['pdo'];
-        $pb_entries = $GLOBALS['pb_entries'] ?? 'pb_entries';
-        $pb_config = $GLOBALS['pb_config'] ?? 'pb_config';
-        $pb_admin = $GLOBALS['pb_admin'] ?? 'pb_admins';
-
-        $config_show_entries = 10;
-        $config_guestbook_name = 'pbook.php';
-        $config_release = 'R';
-        $config_send_email = 'N';
-        $config_email = '';
-        $config_date = 'd.m.Y';
-        $config_time = 'H:i';
-        $config_spam_check = 60;
-        $config_color = '#FF0000';
-        $config_admin_url = '';
-        $config_text_format = 'Y';
-        $config_icons = 'Y';
-        $config_smilies = 'Y';
-        $config_icq = 'N';
-        $config_pages = 'D';
-        $config_use_thanks = 'N';
-        $config_design = '(#ICON#)(#DATE#)(#TIME#)(#EMAIL_NAME#)(#TEXT#)(#URL#)(#ICQ#)';
-        $config_statements = 'Y';
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/guestbook.inc.php';
-        $output = ob_get_clean();
-
-        $_GET = $savedGet;
-        $_POST = $savedPost;
-
-        return $output ?: '';
-    }
-
-    // =========================================================================
-    // Helper: Render admin index.php with controlled scope
-    // =========================================================================
-
-    private function renderAdminIndex(array $get = [], array $post = []): string
-    {
-        $savedGet = $_GET;
-        $savedPost = $_POST;
-        $_GET = $get;
-        $_POST = $post;
-
-        // Bring globals into local scope so index.php can access them
-        $pdo = $GLOBALS['pdo'];
-        $pb_config = $GLOBALS['pb_config'] ?? 'pb_config';
-        $pb_admin = $GLOBALS['pb_admin'] ?? 'pb_admins';
-        $pb_entries = $GLOBALS['pb_entries'] ?? 'pb_entries';
-        $config_guestbook_name = 'pbook.php';
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/index.php';
-        $output = ob_get_clean();
-
-        $_GET = $savedGet;
-        $_POST = $savedPost;
-
-        return $output ?: '';
-    }
-
-    // =========================================================================
-    // Helper: Render admins.inc.php with controlled scope
-    // =========================================================================
-
-    private function renderAdminsPage(array $post = [], array $sessionOverrides = []): string
-    {
-        $savedPost = $_POST;
-        $_POST = $post;
-
-        $pdo = $GLOBALS['pdo'];
-        $pb_admin = $GLOBALS['pb_admin'] ?? 'pb_admins';
-        $pb_entries = $GLOBALS['pb_entries'] ?? 'pb_entries';
-        $config_admin_url = '';
-
-        $admin_session = array_merge([
-            'id' => 1,
-            'name' => 'SuperAdmin',
-            'email' => 'admin@test.com',
-            'config' => 'Y',
-            'release' => 'Y',
-            'entries' => 'Y',
-            'admins' => 'Y',
-        ], $sessionOverrides);
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/admins.inc.php';
-        $output = ob_get_clean();
-
-        $_POST = $savedPost;
-
-        return $output ?: '';
-    }
-
-    // =========================================================================
-    // Helper: Render release.inc.php with controlled scope
-    // =========================================================================
-
-    private function renderReleasePage(array $post = [], array $sessionOverrides = []): string
-    {
-        $savedPost = $_POST;
-        $_POST = $post;
-
-        $pdo = $GLOBALS['pdo'];
-        $pb_entries = $GLOBALS['pb_entries'] ?? 'pb_entries';
-        $config_icons = 'Y';
-        $config_text_format = 'Y';
-        $config_smilies = 'Y';
-        $config_icq = 'N';
-        $config_date = 'd.m.Y';
-        $config_time = 'H:i';
-        $config_statements = 'Y';
-        $db_statement = 'N';
-
-        $admin_session = array_merge([
-            'id' => 1,
-            'name' => 'SuperAdmin',
-            'email' => 'admin@test.com',
-            'config' => 'Y',
-            'release' => 'Y',
-            'entries' => 'Y',
-            'admins' => 'Y',
-        ], $sessionOverrides);
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/release.inc.php';
-        $output = ob_get_clean();
-
-        $_POST = $savedPost;
-
-        return $output ?: '';
-    }
-
-    // =========================================================================
-    // Helper: Insert test entry
-    // =========================================================================
-
-    private function insertEntry(array $data = []): int
-    {
-        $defaults = [
-            'name' => 'TestUser',
-            'email' => 'test@example.com',
-            'text' => 'Test entry text.',
-            'date' => time(),
-            'homepage' => '',
-            'icq' => '',
-            'ip' => '127.0.0.1',
-            'status' => 'R',
-            'icon' => '',
-            'smilies' => 'N',
-            'statement' => '',
-            'statement_by' => '',
-        ];
-        $entry = array_merge($defaults, $data);
-
-        $stmt = self::$pdo->prepare("
-            INSERT INTO pb_entries (name, email, text, date, homepage, icq, ip, status, icon, smilies, statement, statement_by)
-            VALUES (:name, :email, :text, :date, :homepage, :icq, :ip, :status, :icon, :smilies, :statement, :statement_by)
-        ");
-        $stmt->execute([
-            ':name' => $entry['name'],
-            ':email' => $entry['email'],
-            ':text' => $entry['text'],
-            ':date' => $entry['date'],
-            ':homepage' => $entry['homepage'],
-            ':icq' => $entry['icq'],
-            ':ip' => $entry['ip'],
-            ':status' => $entry['status'],
-            ':icon' => $entry['icon'],
-            ':smilies' => $entry['smilies'],
-            ':statement' => $entry['statement'],
-            ':statement_by' => $entry['statement_by'],
-        ]);
-
-        return (int) self::$pdo->lastInsertId();
-    }
-
     // =========================================================================
     // database.inc.php: verifyAndMigratePassword
     // =========================================================================
@@ -472,6 +176,7 @@ class CoverageBoostTest extends TestCase
     {
         // Test the catch path by querying a non-existent table
         $caughtException = false;
+
         try {
             self::$pdo->query('SELECT * FROM nonexistent_table LIMIT 1');
         } catch (\PDOException $e) {
@@ -679,7 +384,7 @@ class CoverageBoostTest extends TestCase
         $this->assertStringContainsString('CSRF', $output);
 
         // Should NOT have inserted entry
-        $count = (int) self::$pdo->query("SELECT COUNT(*) FROM pb_entries")->fetchColumn();
+        $count = (int) self::$pdo->query('SELECT COUNT(*) FROM pb_entries')->fetchColumn();
         $this->assertSame(0, $count);
     }
 
@@ -1906,5 +1611,301 @@ class CoverageBoostTest extends TestCase
         $this->assertStringContainsString('Eintragen!', $output);
         // Hidden fields
         $this->assertStringContainsString('name="smilies2"', $output);
+    }
+
+    protected function setUp(): void
+    {
+        $GLOBALS['pdo'] = self::$pdo;
+        $GLOBALS['pb_config'] = 'pb_config';
+        $GLOBALS['pb_admin'] = 'pb_admins';
+        $GLOBALS['pb_entries'] = 'pb_entries';
+
+        // Clean entries before each test
+        self::$pdo->exec('DELETE FROM pb_entries');
+
+        // Reset admins to just SuperAdmin
+        self::$pdo->exec('DELETE FROM pb_admins WHERE id > 1');
+
+        // Ensure config row exists
+        $count = (int) self::$pdo->query('SELECT COUNT(*) FROM pb_config')->fetchColumn();
+        if ($count === 0) {
+            self::$pdo->exec('INSERT INTO pb_config (id) VALUES (1)');
+        }
+
+        // Reset config to defaults
+        self::$pdo->exec("UPDATE pb_config SET
+            \"release\" = 'R', send_email = 'N', email = 'admin@test.com',
+            date = 'd.m.Y', time = 'H:i', spam_check = 60, color = '#FF0000',
+            show_entries = 10, guestbook_name = 'pbook.php', admin_url = '',
+            text_format = 'Y', icons = 'Y', smilies = 'Y', icq = 'N',
+            pages = 'D', use_thanks = 'N', language = 'D',
+            design = '(#ICON#)(#DATE#)(#TIME#)(#EMAIL_NAME#)(#TEXT#)(#URL#)(#ICQ#)',
+            thanks_title = '', thanks = '', statements = 'Y'
+            WHERE id = 1");
+    }
+
+    protected function tearDown(): void
+    {
+        $_GET = [];
+        $_POST = [];
+        unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_logged_in']);
+    }
+
+    private static function createTables(): void
+    {
+        self::$pdo->exec('CREATE TABLE IF NOT EXISTS pb_config (
+            id INTEGER PRIMARY KEY,
+            "release" TEXT DEFAULT "R",
+            send_email TEXT DEFAULT "N",
+            email TEXT DEFAULT "admin@test.com",
+            date TEXT DEFAULT "d.m.Y",
+            time TEXT DEFAULT "H:i",
+            spam_check INTEGER DEFAULT 60,
+            color TEXT DEFAULT "#FF0000",
+            show_entries INTEGER DEFAULT 10,
+            guestbook_name TEXT DEFAULT "pbook.php",
+            admin_url TEXT DEFAULT "",
+            text_format TEXT DEFAULT "Y",
+            icons TEXT DEFAULT "Y",
+            smilies TEXT DEFAULT "Y",
+            icq TEXT DEFAULT "N",
+            pages TEXT DEFAULT "D",
+            use_thanks TEXT DEFAULT "N",
+            language TEXT DEFAULT "D",
+            design TEXT DEFAULT "(#ICON#)(#DATE#)(#TIME#)(#EMAIL_NAME#)(#TEXT#)(#URL#)(#ICQ#)",
+            thanks_title TEXT DEFAULT "",
+            thanks TEXT DEFAULT "",
+            statements TEXT DEFAULT "Y"
+        )');
+
+        self::$pdo->exec('CREATE TABLE IF NOT EXISTS pb_admins (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            password TEXT NOT NULL,
+            config TEXT DEFAULT "N",
+            admins TEXT DEFAULT "N",
+            entries TEXT DEFAULT "N",
+            "release" TEXT DEFAULT "N"
+        )');
+
+        self::$pdo->exec('CREATE TABLE IF NOT EXISTS pb_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT DEFAULT "",
+            text TEXT NOT NULL,
+            date INTEGER DEFAULT 0,
+            homepage TEXT DEFAULT "",
+            icq TEXT DEFAULT "",
+            ip TEXT DEFAULT "",
+            status TEXT DEFAULT "R",
+            icon TEXT DEFAULT "",
+            smilies TEXT DEFAULT "N",
+            statement TEXT DEFAULT "",
+            statement_by TEXT DEFAULT ""
+        )');
+    }
+
+    private static function seedData(): void
+    {
+        // Clear and re-seed
+        self::$pdo->exec('DELETE FROM pb_config');
+        self::$pdo->exec('DELETE FROM pb_admins');
+        self::$pdo->exec('DELETE FROM pb_entries');
+
+        self::$pdo->exec('INSERT INTO pb_config (id) VALUES (1)');
+
+        $hash = password_hash('test123', PASSWORD_DEFAULT);
+        self::$pdo->exec("INSERT INTO pb_admins (id, name, email, password, config, admins, entries, \"release\")
+            VALUES (1, 'SuperAdmin', 'admin@test.com', '{$hash}', 'Y', 'Y', 'Y', 'Y')");
+    }
+
+    // =========================================================================
+    // Helper: Render guestbook.inc.php with controlled scope
+    // =========================================================================
+
+    private function renderGuestbook(array $get = [], array $post = []): string
+    {
+        $savedGet = $_GET;
+        $savedPost = $_POST;
+        $_GET = $get;
+        $_POST = $post;
+
+        $pdo = $GLOBALS['pdo'];
+        $pb_entries = $GLOBALS['pb_entries'] ?? 'pb_entries';
+        $pb_config = $GLOBALS['pb_config'] ?? 'pb_config';
+        $pb_admin = $GLOBALS['pb_admin'] ?? 'pb_admins';
+
+        $config_show_entries = 10;
+        $config_guestbook_name = 'pbook.php';
+        $config_release = 'R';
+        $config_send_email = 'N';
+        $config_email = '';
+        $config_date = 'd.m.Y';
+        $config_time = 'H:i';
+        $config_spam_check = 60;
+        $config_color = '#FF0000';
+        $config_admin_url = '';
+        $config_text_format = 'Y';
+        $config_icons = 'Y';
+        $config_smilies = 'Y';
+        $config_icq = 'N';
+        $config_pages = 'D';
+        $config_use_thanks = 'N';
+        $config_design = '(#ICON#)(#DATE#)(#TIME#)(#EMAIL_NAME#)(#TEXT#)(#URL#)(#ICQ#)';
+        $config_statements = 'Y';
+
+        ob_start();
+        include POWERBOOK_ROOT . '/pb_inc/guestbook.inc.php';
+        $output = ob_get_clean();
+
+        $_GET = $savedGet;
+        $_POST = $savedPost;
+
+        return $output ?: '';
+    }
+
+    // =========================================================================
+    // Helper: Render admin index.php with controlled scope
+    // =========================================================================
+
+    private function renderAdminIndex(array $get = [], array $post = []): string
+    {
+        $savedGet = $_GET;
+        $savedPost = $_POST;
+        $_GET = $get;
+        $_POST = $post;
+
+        // Bring globals into local scope so index.php can access them
+        $pdo = $GLOBALS['pdo'];
+        $pb_config = $GLOBALS['pb_config'] ?? 'pb_config';
+        $pb_admin = $GLOBALS['pb_admin'] ?? 'pb_admins';
+        $pb_entries = $GLOBALS['pb_entries'] ?? 'pb_entries';
+        $config_guestbook_name = 'pbook.php';
+
+        ob_start();
+        include POWERBOOK_ROOT . '/pb_inc/admincenter/index.php';
+        $output = ob_get_clean();
+
+        $_GET = $savedGet;
+        $_POST = $savedPost;
+
+        return $output ?: '';
+    }
+
+    // =========================================================================
+    // Helper: Render admins.inc.php with controlled scope
+    // =========================================================================
+
+    private function renderAdminsPage(array $post = [], array $sessionOverrides = []): string
+    {
+        $savedPost = $_POST;
+        $_POST = $post;
+
+        $pdo = $GLOBALS['pdo'];
+        $pb_admin = $GLOBALS['pb_admin'] ?? 'pb_admins';
+        $pb_entries = $GLOBALS['pb_entries'] ?? 'pb_entries';
+        $config_admin_url = '';
+
+        $admin_session = array_merge([
+            'id' => 1,
+            'name' => 'SuperAdmin',
+            'email' => 'admin@test.com',
+            'config' => 'Y',
+            'release' => 'Y',
+            'entries' => 'Y',
+            'admins' => 'Y',
+        ], $sessionOverrides);
+
+        ob_start();
+        include POWERBOOK_ROOT . '/pb_inc/admincenter/admins.inc.php';
+        $output = ob_get_clean();
+
+        $_POST = $savedPost;
+
+        return $output ?: '';
+    }
+
+    // =========================================================================
+    // Helper: Render release.inc.php with controlled scope
+    // =========================================================================
+
+    private function renderReleasePage(array $post = [], array $sessionOverrides = []): string
+    {
+        $savedPost = $_POST;
+        $_POST = $post;
+
+        $pdo = $GLOBALS['pdo'];
+        $pb_entries = $GLOBALS['pb_entries'] ?? 'pb_entries';
+        $config_icons = 'Y';
+        $config_text_format = 'Y';
+        $config_smilies = 'Y';
+        $config_icq = 'N';
+        $config_date = 'd.m.Y';
+        $config_time = 'H:i';
+        $config_statements = 'Y';
+        $db_statement = 'N';
+
+        $admin_session = array_merge([
+            'id' => 1,
+            'name' => 'SuperAdmin',
+            'email' => 'admin@test.com',
+            'config' => 'Y',
+            'release' => 'Y',
+            'entries' => 'Y',
+            'admins' => 'Y',
+        ], $sessionOverrides);
+
+        ob_start();
+        include POWERBOOK_ROOT . '/pb_inc/admincenter/release.inc.php';
+        $output = ob_get_clean();
+
+        $_POST = $savedPost;
+
+        return $output ?: '';
+    }
+
+    // =========================================================================
+    // Helper: Insert test entry
+    // =========================================================================
+
+    private function insertEntry(array $data = []): int
+    {
+        $defaults = [
+            'name' => 'TestUser',
+            'email' => 'test@example.com',
+            'text' => 'Test entry text.',
+            'date' => time(),
+            'homepage' => '',
+            'icq' => '',
+            'ip' => '127.0.0.1',
+            'status' => 'R',
+            'icon' => '',
+            'smilies' => 'N',
+            'statement' => '',
+            'statement_by' => '',
+        ];
+        $entry = array_merge($defaults, $data);
+
+        $stmt = self::$pdo->prepare('
+            INSERT INTO pb_entries (name, email, text, date, homepage, icq, ip, status, icon, smilies, statement, statement_by)
+            VALUES (:name, :email, :text, :date, :homepage, :icq, :ip, :status, :icon, :smilies, :statement, :statement_by)
+        ');
+        $stmt->execute([
+            ':name' => $entry['name'],
+            ':email' => $entry['email'],
+            ':text' => $entry['text'],
+            ':date' => $entry['date'],
+            ':homepage' => $entry['homepage'],
+            ':icq' => $entry['icq'],
+            ':ip' => $entry['ip'],
+            ':status' => $entry['status'],
+            ':icon' => $entry['icon'],
+            ':smilies' => $entry['smilies'],
+            ':statement' => $entry['statement'],
+            ':statement_by' => $entry['statement_by'],
+        ]);
+
+        return (int) self::$pdo->lastInsertId();
     }
 }

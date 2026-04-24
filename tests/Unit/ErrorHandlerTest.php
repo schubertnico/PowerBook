@@ -38,36 +38,6 @@ class ErrorHandlerTest extends TestCase
     /** @var array<string, string|null> */
     private array $originalServer = [];
 
-    protected function setUp(): void
-    {
-        require_once POWERBOOK_ROOT . '/pb_inc/database.inc.php';
-        require_once POWERBOOK_ROOT . '/pb_inc/error-handler.inc.php';
-
-        // Save original $_SERVER values
-        $this->originalServer = [
-            'REMOTE_ADDR' => $_SERVER['REMOTE_ADDR'] ?? null,
-            'HTTP_USER_AGENT' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-            'HTTP_REFERER' => $_SERVER['HTTP_REFERER'] ?? null,
-        ];
-
-        // Set default test values
-        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
-        $_SERVER['HTTP_USER_AGENT'] = 'PHPUnit Test Agent';
-        $_SERVER['HTTP_REFERER'] = 'http://localhost/test';
-    }
-
-    protected function tearDown(): void
-    {
-        // Restore original $_SERVER values
-        foreach ($this->originalServer as $key => $value) {
-            if ($value === null) {
-                unset($_SERVER[$key]);
-            } else {
-                $_SERVER[$key] = $value;
-            }
-        }
-    }
-
     // ========================================
     // Tests for safeDbOperation()
     // ========================================
@@ -85,9 +55,7 @@ class ErrorHandlerTest extends TestCase
     #[Test]
     public function safeDbOperationReturnsNullFromCallable(): void
     {
-        $result = safeDbOperation(function () {
-            return null;
-        });
+        $result = safeDbOperation(function () {});
 
         $this->assertNull($result);
     }
@@ -999,6 +967,36 @@ class ErrorHandlerTest extends TestCase
         if (file_exists(POWERBOOK_ROOT . '/logs/error.log')) {
             $this->assertIsInt($stats['error.log']['last_modified']);
             $this->assertGreaterThan(0, $stats['error.log']['last_modified']);
+        }
+    }
+
+    protected function setUp(): void
+    {
+        require_once POWERBOOK_ROOT . '/pb_inc/database.inc.php';
+        require_once POWERBOOK_ROOT . '/pb_inc/error-handler.inc.php';
+
+        // Save original $_SERVER values
+        $this->originalServer = [
+            'REMOTE_ADDR' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'HTTP_USER_AGENT' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            'HTTP_REFERER' => $_SERVER['HTTP_REFERER'] ?? null,
+        ];
+
+        // Set default test values
+        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+        $_SERVER['HTTP_USER_AGENT'] = 'PHPUnit Test Agent';
+        $_SERVER['HTTP_REFERER'] = 'http://localhost/test';
+    }
+
+    protected function tearDown(): void
+    {
+        // Restore original $_SERVER values
+        foreach ($this->originalServer as $key => $value) {
+            if ($value === null) {
+                unset($_SERVER[$key]);
+            } else {
+                $_SERVER[$key] = $value;
+            }
         }
     }
 }

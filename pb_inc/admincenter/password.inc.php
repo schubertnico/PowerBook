@@ -20,7 +20,6 @@ declare(strict_types=1);
 /** @var PDO $pdo */
 /** @var string $pb_admin */
 /** @var string|null $config_admin_url */
-
 $message = '';
 $messageType = '';
 $showForm = true;
@@ -85,6 +84,7 @@ if ($action === 'set_password' && validateCsrfToken($_POST['csrf_token'] ?? ''))
         $showForm = false;
     } else {
         $hashed = password_hash($newPw1, PASSWORD_DEFAULT);
+
         try {
             $stmt = $pdo->prepare(
                 "UPDATE {$pb_admin} SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?"
@@ -150,7 +150,7 @@ if ($action === 'recover' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
                     $body .= "Falls Sie kein Passwort zuruecksetzen wollten, ignorieren Sie diese Mail.\n\n";
                     $body .= "--------------------------------------------------------\n";
                     $body .= "PowerBook - PHP Guestbook System\n";
-                    $body .= "DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!";
+                    $body .= 'DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!';
 
                     sendEmail($to, $subject, $body, $headers, 'Password Reset Token');
                 }
