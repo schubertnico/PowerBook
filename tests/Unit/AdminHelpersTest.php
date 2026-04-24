@@ -87,17 +87,23 @@ class AdminHelpersTest extends TestCase
             self::$adminsLoaded = true;
         }
 
-        // Load statement.inc.php with proper global state
+        // Load statement.inc.php with proper global state.
+        // NOTE: statement.inc.php macht einen frueheren `return;` wenn der
+        // Permission-Check auf $admin_session['entries'] fehlschlaegt. PHPs
+        // `return` aus einem include beendet die gesamte Datei - die
+        // conditional Definition von formatStatement() am Ende wird dann
+        // uebersprungen. Darum setzen wir $admin_session/$pb_entries/$config_*
+        // als LOKALE Variablen (sichtbar fuer das eingebundene File).
         if (!function_exists('formatStatement')) {
-            $GLOBALS['admin_session'] = [
+            $admin_session = [
                 'entries' => 'Y',
                 'name' => 'TestAdmin',
             ];
-            $GLOBALS['pb_entries'] = 'pb_entries';
-            $GLOBALS['config_icons'] = 'N';
-            $GLOBALS['config_text_format'] = 'Y';
-            $GLOBALS['config_smilies'] = 'Y';
-            $GLOBALS['config_icq'] = 'N';
+            $pb_entries = 'pb_entries';
+            $config_icons = 'N';
+            $config_text_format = 'Y';
+            $config_smilies = 'Y';
+            $config_icq = 'N';
 
             // Set $_GET and $_POST so $id = 0, triggering $showForm = false early
             $_GET = [];
