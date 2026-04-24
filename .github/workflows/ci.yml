@@ -25,12 +25,17 @@ jobs:
           --health-retries=3
 
     strategy:
+      fail-fast: false
       matrix:
-        php-version: ['8.2', '8.3', '8.4']
+        # PowerBook benötigt PHP 8.4 (siehe composer.json: "php": "^8.4").
+        # Aeltere Versionen werden bewusst NICHT getestet, weil Features wie
+        # property-hooks / asymmetrische Visibility / declare(strict_types=1)
+        # mit 8.4-spezifischen Annotationen genutzt werden.
+        php-version: ['8.4']
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
@@ -44,7 +49,7 @@ jobs:
 
       - name: Cache Composer packages
         id: composer-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor
           key: ${{ runner.os }}-php-${{ matrix.php-version }}-${{ hashFiles('**/composer.json') }}
@@ -76,7 +81,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: matrix.php-version == '8.4'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./coverage.xml
           fail_ci_if_error: false
@@ -87,7 +92,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
