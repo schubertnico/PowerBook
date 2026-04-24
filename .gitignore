@@ -1,47 +1,219 @@
-# Composer
-/vendor/
-composer.lock
+# =============================================================
+# PowerBook .gitignore
+# =============================================================
+# Was hier gelistet ist, gehoert nicht ins Repo (und damit auch
+# nicht auf den Live-Server). Patterns sind so weit gefasst, dass
+# auch zukuenftige Frontend-/Tooling-Erweiterungen abgedeckt sind.
+# =============================================================
 
-# IDE
+
+# -------------------------------------------------------------
+# Dependencies / Build-Artefakte
+# -------------------------------------------------------------
+/vendor/
+/node_modules/
+/bower_components/
+/dist/
+/build/
+/out/
+composer.lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+
+# -------------------------------------------------------------
+# Claude Code / AI Tools — lokale Session-/Memory-Daten
+# -------------------------------------------------------------
+/.claude/
+/.aider*
+.aider.tags.cache.v3/
+.aider.chat.history.md
+.aider.input.history
+/.cursor/
+/.continue/
+
+
+# -------------------------------------------------------------
+# IDE / Editor
+# -------------------------------------------------------------
 /.idea/
 /.vscode/
+/.fleet/
+/.zed/
 *.swp
 *.swo
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
 *~
+.#*
+\#*\#
+*.bak
+*.backup
+*.old
+*.orig
 
-# OS
+
+# -------------------------------------------------------------
+# OS / Filesystem-Junk
+# -------------------------------------------------------------
 .DS_Store
+.AppleDouble
+.LSOverride
+__MACOSX
+.Spotlight-V100
+.fseventsd
+.Trashes
+.VolumeIcon.icns
+Icon?
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+nul
 
-# Logs
+
+# -------------------------------------------------------------
+# Logs / Runtime-Output
+# -------------------------------------------------------------
 /logs/*.log
+/logs/*.log.*
 !/logs/.gitkeep
+*.log
+error_log
+*.pid
 
-# Environment
+
+# -------------------------------------------------------------
+# Environment / Secrets / Credentials / Schluessel
+# -------------------------------------------------------------
 .env
 .env.local
 .env.*.local
+.env.production
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+.htpasswd
+.htdigest
+auth.json
 
-# PHP
+
+# -------------------------------------------------------------
+# Lokale Konfiguration-Overrides
+# Production-Hosts sollen hier ihre echten Credentials ablegen,
+# ohne dass sie versehentlich gepusht werden.
+# -------------------------------------------------------------
+pb_inc/mysql.local.inc.php
+pb_inc/*.local.inc.php
+pb_inc/local.inc.php
+*.local.php
+*.local.json
+local.config.php
+config.local.php
+
+
+# -------------------------------------------------------------
+# PHP Tooling-Caches
+# -------------------------------------------------------------
 *.cache
 *.phpunit.result.cache
-
-# Rector
-/rector-output/
-
-# Docker volumes (data is persistent in named volumes)
-
-# Windows artifacts
-nul
-
-# PHPUnit cache
 .phpunit.cache/
+.phpunit.coverage.cache
+.phpcs.cache
+.php-cs-fixer.cache
+.psalm/
+.phpactor.json
+.phpstan.cache/
 
-# Coverage reports
+
+# -------------------------------------------------------------
+# Rector / Code-Migration-Output
+# -------------------------------------------------------------
+/rector-output/
+/rector-cache/
+
+
+# -------------------------------------------------------------
+# Coverage Reports
+# -------------------------------------------------------------
 /coverage/
 /coverage-html/
 /coverage-report/
 coverage.xml
+clover.xml
+.coverage
 
-# BUG-011: Install-Lock (wird beim Installationsabschluss erzeugt)
+
+# -------------------------------------------------------------
+# Datenbank-Dumps / Backups
+# -------------------------------------------------------------
+*.sql
+*.sql.gz
+*.sql.bz2
+*.sql.tar
+*.dump
+*.dmp
+*.mdb
+dump.rdb
+
+
+# -------------------------------------------------------------
+# Archive (nicht im Source-Repo)
+# -------------------------------------------------------------
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+
+# -------------------------------------------------------------
+# Temporaere Dateien
+# -------------------------------------------------------------
+*.tmp
+*.temp
+/tmp/
+/temp/
+
+
+# -------------------------------------------------------------
+# User-Uploads (sollten nicht ins Repo, sondern auf Volumes)
+# -------------------------------------------------------------
+/uploads/
+/public/uploads/
+/var/cache/
+/var/log/
+
+
+# -------------------------------------------------------------
+# Frontend-Tool-Caches (falls spaeter eingefuehrt)
+# -------------------------------------------------------------
+.sass-cache/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+.cache/
+
+
+# -------------------------------------------------------------
+# Installation-Lock (BUG-011) — wird beim Installationsabschluss
+# in install_deu.php geschrieben und darf je Host unterschiedlich
+# sein.
+# -------------------------------------------------------------
 .installed
+
+
+# -------------------------------------------------------------
+# Lokale interne Notizen / Scratchpads
+# -------------------------------------------------------------
+/notes-private/
+/scratch/
+NOTES.local.md
+TODO.local.md
