@@ -3,330 +3,338 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PowerBook - PHP Gästebuch-System - README</title>
+    <title>PowerBook - PHP-Gästebuch-System - README</title>
     <style>
+        :root {
+            --pb-dark: #002040;
+            --pb-mid: #003366;
+            --pb-light: #004080;
+            --pb-accent: #6090FF;
+            --pb-bg: #f7f8fa;
+            --pb-card: #ffffff;
+            --pb-text: #222;
+            --pb-muted: #666;
+        }
+        * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             line-height: 1.6;
-            max-width: 900px;
+            max-width: 980px;
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-            color: #333;
+            padding: 24px;
+            background-color: var(--pb-bg);
+            color: var(--pb-text);
         }
-        h1 { color: #002040; border-bottom: 2px solid #002040; padding-bottom: 10px; }
-        h2 { color: #003366; margin-top: 30px; }
-        h3 { color: #004080; }
+        h1 {
+            color: var(--pb-dark);
+            border-bottom: 3px solid var(--pb-dark);
+            padding-bottom: 12px;
+            margin-top: 0;
+        }
+        h2 {
+            color: var(--pb-mid);
+            margin-top: 40px;
+            border-bottom: 1px solid #d0d0d0;
+            padding-bottom: 6px;
+        }
+        h3 { color: var(--pb-light); margin-top: 28px; }
+        a { color: var(--pb-mid); }
+        a:hover { color: var(--pb-accent); }
         code {
-            background-color: #e8e8e8;
+            background-color: #ececec;
             padding: 2px 6px;
             border-radius: 3px;
-            font-family: 'Consolas', 'Monaco', monospace;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.92em;
         }
         pre {
             background-color: #1e1e1e;
             color: #d4d4d4;
-            padding: 15px;
-            border-radius: 5px;
+            padding: 16px;
+            border-radius: 6px;
             overflow-x: auto;
+            font-size: 0.9em;
         }
-        pre code {
-            background-color: transparent;
-            padding: 0;
-        }
+        pre code { background-color: transparent; padding: 0; color: inherit; }
         table {
             border-collapse: collapse;
             width: 100%;
-            margin: 15px 0;
+            margin: 18px 0;
+            background: var(--pb-card);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         }
         th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
+            border: 1px solid #d0d0d0;
+            padding: 10px 12px;
             text-align: left;
+            vertical-align: top;
         }
-        th { background-color: #002040; color: white; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
-        .warning {
-            background-color: #fff3cd;
-            border: 1px solid #ffc107;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 15px 0;
+        th { background-color: var(--pb-dark); color: #fff; }
+        tr:nth-child(even) { background-color: #f5f5f5; }
+        .quickstart {
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            color: #fff;
+            padding: 22px 26px;
+            border-radius: 8px;
+            margin: 24px 0;
         }
+        .quickstart h2 { color: #fff; border-bottom: 2px solid #6090FF; margin-top: 0; }
+        .quickstart pre { background: #001329; }
+        .quickstart code { background-color: rgba(255,255,255,0.15); color: #fff; }
+        .badge {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 3px;
+            font-size: 0.75em;
+            margin-right: 4px;
+            color: #fff;
+            background-color: #007ec6;
+            font-weight: bold;
+        }
+        .badge.green { background-color: #4c1; }
+        .badge.blue { background-color: #007ec6; }
+        .badge.gray { background-color: #555; }
         .info {
-            background-color: #d1ecf1;
-            border: 1px solid #17a2b8;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 15px 0;
+            background-color: #e8f4fd;
+            border-left: 4px solid var(--pb-accent);
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 0 4px 4px 0;
         }
-        a { color: #0066cc; }
-        ul, ol { margin: 10px 0; }
-        li { margin: 5px 0; }
+        .warn {
+            background-color: #fff3cd;
+            border-left: 4px solid #f0ad4e;
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .contact {
+            background: var(--pb-card);
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            padding: 20px 24px;
+            margin: 24px 0;
+        }
+        .contact h3 { margin-top: 0; color: var(--pb-dark); }
+        footer {
+            margin-top: 48px;
+            padding-top: 16px;
+            border-top: 1px solid #d0d0d0;
+            color: var(--pb-muted);
+            font-size: 0.9em;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
 
-<h1>PowerBook - PHP Gästebuch-System</h1>
+<h1>PowerBook — PHP-Gästebuch-System</h1>
 
-<p>Ein klassisches PHP-Gästebuch-System, ursprünglich entwickelt von Axel "Expandable" Habermaier im Jahr 2002, modernisiert für PHP 8.4.</p>
+<p>
+    <span class="badge blue">PHP 8.4</span>
+    <span class="badge green">515 Tests passing</span>
+    <span class="badge green">Coverage 87 %</span>
+    <span class="badge gray">MIT License</span>
+</p>
 
-<p><strong>Repository:</strong> <a href="https://github.com/schubertnico/PowerBook.git" target="_blank">https://github.com/schubertnico/PowerBook.git</a></p>
+<p>Klassisches PHP-Gästebuch — ursprünglich 2002 von <strong>Axel "Expandable" Habermaier</strong> entwickelt, modernisiert für <strong>PHP 8.4</strong> und im April 2026 sicherheitsgehärtet.</p>
 
-<h2>Projektbeschreibung</h2>
+<table>
+    <tr><td><strong>Projekt-Webseite</strong></td><td><a href="https://www.powerscripts.org">https://www.powerscripts.org</a></td></tr>
+    <tr><td><strong>Projektbereich</strong></td><td><a href="https://www.powerscripts.org/projects-5.html">https://www.powerscripts.org/projects-5.html</a></td></tr>
+    <tr><td><strong>Repository</strong></td><td><a href="https://github.com/schubertnico/PowerBook">https://github.com/schubertnico/PowerBook</a></td></tr>
+</table>
 
-<p>PowerBook ist ein einfaches, aber funktionales Gästebuch-System mit folgenden Features:</p>
+<div class="quickstart">
+    <h2>⚡ Schnellstart (Docker, 60 Sekunden)</h2>
+<pre><code># 1. Repository klonen
+git clone https://github.com/schubertnico/PowerBook.git
+cd PowerBook/.docker
 
+# 2. Container starten
+docker compose up -d --build
+
+# 3. Installation im Browser ausführen
+# → http://localhost:8080/install_deu.php
+#   Auf "Installation starten" klicken.
+#   Das angezeigte Initial-Passwort SOFORT notieren!
+
+# 4. Loslegen
+# Frontend (Gästebuch):  http://localhost:8080/pbook.php
+# Admin-Center:          http://localhost:8080/pb_inc/admincenter/
+# Mailpit (Test-Mails):  http://localhost:8031</code></pre>
+</div>
+
+<div class="info">
+    <strong>Hinweis zum Initial-Passwort:</strong> Seit IMP-006 (April 2026) wird bei der Installation ein zufälliges 16-stelliges Hex-Passwort generiert (kein hardcoded <code>powerbook</code> mehr). Das Passwort erscheint <strong>einmalig</strong> auf der Erfolgsseite — bitte sofort notieren oder direkt im AdminCenter ändern.
+</div>
+
+<h2>Features</h2>
 <ul>
-    <li>Gästebuch-Einträge mit Name, E-Mail, Homepage und Text</li>
-    <li>Admin-Center zur Verwaltung von Einträgen und Benutzern</li>
-    <li>Spam-Schutz durch IP-basierte Zeitsperre</li>
-    <li>BBCode-ähnliche Textformatierung</li>
-    <li>Smilies/Emoticons</li>
-    <li>E-Mail-Benachrichtigungen bei neuen Einträgen</li>
-    <li>Mehrseitige Darstellung (Pagination)</li>
+    <li><strong>Gästebuch-Frontend</strong> für Besucher: Eintrag schreiben, lesen, suchen, paginieren</li>
+    <li><strong>AdminCenter</strong> mit Rollen-/Rechtemanagement (Konfig, Einträge, Freischaltung, Admin-Verwaltung)</li>
+    <li><strong>BBCode-Textformatierung</strong> (<code>[b]</code>, <code>[i]</code>, <code>[u]</code>, <code>[small]</code>) + Auto-Linking von URLs</li>
+    <li><strong>Smilies/Emoticons</strong> (umschaltbar pro Eintrag) und Icons (Frage, Smileys etc.)</li>
+    <li><strong>Anti-Spam</strong> über IP-basierte Zeitsperre (konfigurierbar)</li>
+    <li><strong>Token-basierter Passwort-Reset</strong> mit 30-Min-TTL (kein Sofort-Wechsel)</li>
+    <li><strong>CSRF-Schutz</strong> mit Token-Rotation, <strong>Session-Fixation-Schutz</strong> via <code>session_regenerate_id</code></li>
+    <li><strong>SMTP-Versand</strong> für Benachrichtigungen (Mailpit für Dev-Setup)</li>
+    <li><strong>PHP 8.4</strong> mit <code>declare(strict_types=1)</code> durchgängig</li>
 </ul>
 
 <h2>Voraussetzungen</h2>
+<table>
+    <tr><th>Komponente</th><th>Mindestversion</th></tr>
+    <tr><td>PHP</td><td><strong>8.4</strong></td></tr>
+    <tr><td>Datenbank</td><td>MySQL 8.0 / MariaDB 10.6</td></tr>
+    <tr><td>Webserver</td><td>Apache 2.4 (mod_php) oder NGINX + PHP-FPM</td></tr>
+    <tr><td>Composer</td><td>2.x (nur für Tests/Tools)</td></tr>
+</table>
+<p>Für die Docker-Variante reicht <strong>Docker Desktop</strong> (Windows/macOS) oder <strong>Docker Engine + Compose v2</strong> (Linux).</p>
 
-<ul>
-    <li>PHP 8.4 oder höher</li>
-    <li>MySQL 8.0 oder höher</li>
-    <li>Apache mit mod_rewrite (oder Docker)</li>
-</ul>
+<h2>Installation</h2>
 
-<h2>Setup</h2>
-
-<h3>Mit Docker (empfohlen)</h3>
-
-<ol>
-    <li>Repository klonen:
-        <pre><code>git clone https://github.com/schubertnico/PowerBook.git
-cd PowerBook</code></pre>
-    </li>
-    <li>Docker-Container starten:
-        <pre><code>cd .docker
-docker compose build
-docker compose up -d</code></pre>
-    </li>
-    <li>Installation aufrufen:
-        <ul>
-            <li>Öffnen Sie <a href="http://localhost:8080/install_deu.php">http://localhost:8080/install_deu.php</a></li>
-            <li>Klicken Sie auf "Installation starten"</li>
-        </ul>
-        <div class="warning"><strong>Wichtig:</strong> Löschen Sie <code>install_deu.php</code> nach der Installation!</div>
-    </li>
-    <li>Gästebuch nutzen:
-        <ul>
-            <li>Gästebuch: <a href="http://localhost:8080/pbook.php">http://localhost:8080/pbook.php</a></li>
-            <li>Admin-Center: <a href="http://localhost:8080/pb_inc/admincenter/">http://localhost:8080/pb_inc/admincenter/</a></li>
-        </ul>
-    </li>
-</ol>
-
-<h3>Ohne Docker</h3>
-
-<ol>
-    <li>Dateien auf den Webserver kopieren</li>
-    <li><code>pb_inc/mysql.inc.php</code> anpassen:
-        <pre><code>$config_sql_server   = 'localhost';
-$config_sql_user     = 'ihr_benutzer';
-$config_sql_password = 'ihr_passwort';
-$config_sql_database = 'ihre_datenbank';</code></pre>
-    </li>
-    <li>Installation über <code>install_deu.php</code> ausführen</li>
-</ol>
-
-<h2>Start</h2>
-
-<h3>Docker-Befehle</h3>
-
-<pre><code># Container starten
-cd .docker
-docker compose up -d
-
-# Container stoppen
-docker compose down
-
-# Logs anzeigen
-docker compose logs -f
-
-# Status prüfen
-docker compose ps</code></pre>
-
-<h3>Ports</h3>
+<h3>Docker (empfohlen)</h3>
 
 <table>
-    <tr>
-        <th>Service</th>
-        <th>Port</th>
-        <th>Beschreibung</th>
-    </tr>
-    <tr>
-        <td>Web (PHP/Apache)</td>
-        <td>8080</td>
-        <td>Gästebuch-Anwendung</td>
-    </tr>
-    <tr>
-        <td>MySQL</td>
-        <td>3314</td>
-        <td>Datenbank</td>
-    </tr>
-    <tr>
-        <td>Mailpit SMTP</td>
-        <td>1031</td>
-        <td>Test-Mailserver (SMTP)</td>
-    </tr>
-    <tr>
-        <td>Mailpit Web</td>
-        <td>8031</td>
-        <td>Test-Mailserver (Web-UI)</td>
-    </tr>
+    <tr><th>Service</th><th>Image</th><th>Port (Host)</th></tr>
+    <tr><td><code>web</code></td><td>Apache 2.4 + PHP 8.4</td><td><strong>8080</strong></td></tr>
+    <tr><td><code>db</code></td><td>MySQL 8.0</td><td>3314</td></tr>
+    <tr><td><code>mail</code></td><td>Axllent Mailpit</td><td>SMTP <strong>1031</strong>, Web-UI <strong>8031</strong></td></tr>
 </table>
 
-<h2>Nutzung</h2>
+<pre><code>git clone https://github.com/schubertnico/PowerBook.git
+cd PowerBook/.docker
+docker compose up -d --build</code></pre>
 
-<h3>Standard-Login</h3>
+<p>Anschließend <code>http://localhost:8080/install_deu.php</code> aufrufen und auf <strong>Installation starten</strong> klicken. Die Installation:</p>
+<ol>
+    <li>legt die MySQL-Tabellen <code>pb_admins</code>, <code>pb_config</code>, <code>pb_entries</code> an (mit Spalten <code>reset_token</code> + <code>reset_token_expires</code> für den sicheren Recovery-Flow),</li>
+    <li>erzeugt einen Standard-Admin <strong>PowerBook</strong> mit zufälligem 16-Hex-Passwort,</li>
+    <li>zeigt dieses Passwort <strong>einmalig</strong> in einer Hervorhebungs-Box,</li>
+    <li>erstellt das Lock-File <code>.installed</code>, sodass <code>install_deu.php</code> nicht versehentlich erneut ausgeführt werden kann (HTTP 403).</li>
+</ol>
 
-<p>Nach der Installation:</p>
+<div class="warn">
+    <strong>Wichtig:</strong> Notieren Sie das Initial-Passwort sofort. Es kann jederzeit im AdminCenter geändert werden — aber es wird nicht erneut angezeigt.
+</div>
+
+<h3>Klassisches Hosting (LAMP)</h3>
+<ol>
+    <li>Dateien per FTP/SCP auf den Webserver übertragen.</li>
+    <li><code>pb_inc/mysql.inc.php</code> anpassen:
+<pre><code>$config_sql_server   = 'localhost';
+$config_sql_user     = 'powerbook';
+$config_sql_password = 'IhrSicheresPasswort';
+$config_sql_database = 'powerbook';</code></pre></li>
+    <li><code>https://ihre-domain.tld/install_deu.php</code> im Browser öffnen.</li>
+    <li>Initial-Passwort notieren.</li>
+    <li><strong>Empfehlung:</strong> <code>install_deu.php</code> nach Installation per <code>.htaccess</code> sperren oder löschen — das <code>.installed</code>-Lock greift bereits automatisch.</li>
+</ol>
+
+<h2>AdminCenter</h2>
+<p>URL: <code>http://&lt;host&gt;/pb_inc/admincenter/</code></p>
+<table>
+    <tr><th>Bereich</th><th>Zweck</th></tr>
+    <tr><td><strong>Home</strong></td><td>Dashboard mit System-Info und Schnellnavigation</td></tr>
+    <tr><td><strong>Einträge verwalten</strong></td><td>Liste, Bearbeiten, Löschen, Statement schreiben</td></tr>
+    <tr><td><strong>Einträge freischalten</strong></td><td>Sichtbarkeit (R/U) — abhängig von Konfiguration</td></tr>
+    <tr><td><strong>Admins verwalten</strong></td><td>Hinzufügen, Bearbeiten, Löschen, Rechte (Konfig/Admins/Einträge/Release)</td></tr>
+    <tr><td><strong>Konfiguration</strong></td><td>Spam-Check, Anzeige, Smilies/BBCode/ICQ, E-Mail, Eintrags-Design (Template)</td></tr>
+    <tr><td><strong>Lizenz</strong></td><td>MIT-Lizenztext</td></tr>
+    <tr><td><strong>Logout</strong></td><td>Beendet die Session</td></tr>
+</table>
+<p><strong>Passwort vergessen?</strong> <code>?page=password</code> aufrufen, Name oder E-Mail eingeben → Reset-Link kommt per Mail (30 Minuten gültig). Erst durch Klick + Setzen des neuen Passworts wird das alte ungültig.</p>
+
+<h2>Sicherheit</h2>
+<p>PowerBook wurde im April 2026 einem vollständigen Sicherheits-Audit unterzogen. Alle 14 dokumentierten Bugs sind behoben, drei priorisierte Workflow-Verbesserungen sind umgesetzt:</p>
+<table>
+    <tr><th>Kategorie</th><th>Maßnahme</th></tr>
+    <tr><td>SQL-Injection</td><td>PDO Prepared Statements für alle Queries</td></tr>
+    <tr><td>XSS</td><td>Konsequentes Output-Escaping (<code>htmlspecialchars</code>), keine doppelten Escapes mehr im Preview-Pfad</td></tr>
+    <tr><td>CSRF</td><td>Token in jedem Formular, Rotation nach erfolgreichen Aktionen</td></tr>
+    <tr><td>Session-Fixation</td><td><code>session_regenerate_id(true)</code> nach jedem Login</td></tr>
+    <tr><td>Passwort-Speicherung</td><td><code>password_hash(PASSWORD_DEFAULT)</code>, Auto-Migration alter Hashes</td></tr>
+    <tr><td>Passwort-Reset</td><td>Token-Flow mit 30-Min-TTL (kein Sofort-Reset, kein Account-DoS)</td></tr>
+    <tr><td>User-Enumeration</td><td>Generische Recovery-Response („Falls ein Konto existiert …")</td></tr>
+    <tr><td>LFI / Path-Traversal</td><td>Whitelist <code>$allowedPages</code> für AdminCenter-Routing</td></tr>
+    <tr><td>Direktaufruf-Schutz</td><td><code>PB_ENTRY</code>-Konstanten-Guard für <code>pb_inc/guestbook.inc.php</code></td></tr>
+    <tr><td>Installation-Schutz</td><td><code>.installed</code> Lock-File verhindert Re-Install (HTTP 403)</td></tr>
+    <tr><td>Standard-Passwort</td><td>Zufällig generiert (<code>bin2hex(random_bytes(8))</code>) — kein hardcoded Wert</td></tr>
+    <tr><td>Admin-Add-Fallback</td><td>Bei SMTP-Fehler wird das Initial-Passwort einmalig im UI angezeigt → kein Self-Lockout</td></tr>
+    <tr><td>Längen-Validierung</td><td>Server-seitige Längenprüfung für Name (100), Text (5000), E-Mail (250), URL (255)</td></tr>
+    <tr><td>Cookie-Flags</td><td>Session-Cookie mit <code>HttpOnly</code> und <code>SameSite=Strict</code></td></tr>
+    <tr><td>E-Mail-Header</td><td>Sanitisierung aller Recipient-Header (Anti Header-Injection)</td></tr>
+</table>
+
+<p><strong>Audit-Dokumentation:</strong></p>
 <ul>
-    <li><strong>Benutzername:</strong> PowerBook</li>
-    <li><strong>Passwort:</strong> powerbook</li>
+    <li><code>docs/2026-04-23-Userbereichs-bugs.md</code></li>
+    <li><code>docs/2026-04-23-Userbereichs-improvements.md</code></li>
+    <li><code>docs/2026-04-23-Userbereichs-test-coverage.md</code></li>
 </ul>
 
-<div class="warning"><strong>Wichtig:</strong> Ändern Sie das Passwort nach dem ersten Login!</div>
-
-<h3>Test-E-Mails prüfen</h3>
-
-<p>Alle vom System gesendeten E-Mails werden von Mailpit abgefangen:</p>
-<ul>
-    <li>Öffnen Sie <a href="http://localhost:8031">http://localhost:8031</a></li>
-    <li>Hier sehen Sie alle gesendeten Test-E-Mails</li>
-</ul>
-
-<h3>Development Tools</h3>
-
+<h2>Tests</h2>
 <pre><code># Composer-Abhängigkeiten installieren
 composer install
 
-# PHPStan (Statische Analyse) ausführen
-composer run phpstan
+# Volle Test-Suite (Unit + Integration)
+vendor/bin/phpunit
 
-# Rector (Code-Migration) - Dry Run
-composer run rector-dry
+# Nur Unit-Tests
+vendor/bin/phpunit --testsuite Unit
 
-# Rector ausführen
-composer run rector</code></pre>
+# Nur Integration-Tests (benötigen laufenden Apache-Container)
+vendor/bin/phpunit --testsuite Integration
+
+# Im Docker-Container
+docker exec powerbook_web vendor/bin/phpunit</code></pre>
+<p><strong>Aktueller Stand:</strong> 515 Tests / 950 Assertions / Coverage <strong>87 %</strong>.</p>
+
+<p><strong>Statische Analyse &amp; Code-Qualität:</strong></p>
+<pre><code>composer run phpstan        # PHPStan Level max
+vendor/bin/phpmd pb_inc text phpmd.xml
+vendor/bin/php-cs-fixer fix --dry-run --diff</code></pre>
+
+<h2>Troubleshooting</h2>
+<table>
+    <tr><th>Symptom</th><th>Ursache / Lösung</th></tr>
+    <tr><td><code>install_deu.php</code> zeigt HTTP 403</td><td>Lock-File <code>.installed</code> existiert. Bei gewünschter Re-Installation manuell löschen.</td></tr>
+    <tr><td>Login schlägt fehl</td><td>Initial-Passwort vergessen? <code>?page=password</code> für Reset-Link nutzen.</td></tr>
+    <tr><td>Reset-Link kommt nicht an</td><td>Mailpit-UI prüfen (<a href="http://localhost:8031">localhost:8031</a>) bzw. SMTP-Konfiguration in <code>pb_inc/mysql.inc.php</code>.</td></tr>
+    <tr><td>"E-Mail konnte NICHT versendet werden" + Passwort wird angezeigt</td><td>SMTP nicht erreichbar — Passwort sofort sichern, dann SMTP konfigurieren.</td></tr>
+    <tr><td>Direktaufruf von <code>pb_inc/guestbook.inc.php</code> → 403</td><td>Erwünscht: Direktaufruf von Includes ist seit BUG-013 blockiert (<code>PB_ENTRY</code>-Guard).</td></tr>
+    <tr><td><code>Cannot redeclare function …</code> beim Test</td><td>Container neu starten: <code>docker compose restart web</code>.</td></tr>
+</table>
 
 <h2>Lizenz</h2>
-
 <p><strong>MIT License</strong></p>
+<pre><code>Copyright (c) 2002 Axel "Expandable" Habermaier (Original PowerBook 1.21)
+Copyright (c) 2025-2026 Nico Schubert (PHP 8.4 Migration &amp; Security Updates)</code></pre>
+<p>Voller Lizenztext: <a href="LICENSE">LICENSE</a>.</p>
 
-<p>
-    Copyright (c) 2002 Axel "Expandable" Habermaier (Original PowerBook 1.21)<br>
-    Copyright (c) 2025 Nico Schubert (PHP 8.4 Migration &amp; Security Updates)
-</p>
+<h2>Kontakt &amp; Support</h2>
 
-<p>Siehe <a href="LICENSE">LICENSE</a> für Details.</p>
+<div class="contact">
+    <h3>SchubertMedia</h3>
+    <p><strong>Inhaber:</strong> Nico Schubert<br>
+    Stauffenbergallee 57<br>
+    99085 Erfurt — Deutschland</p>
 
-<h2>Änderungen / Migration auf PHP 8.4</h2>
+    <table>
+        <tr><td><strong>Telefon</strong></td><td><a href="tel:+4936123002247">+49 (0) 3612 3002247</a> &nbsp;<small>(Mo.–Fr. 9–12 + 13–18 Uhr)</small></td></tr>
+        <tr><td><strong>Telefax</strong></td><td>+49 (0) 3612 3004636</td></tr>
+        <tr><td><strong>E-Mail</strong></td><td><a href="mailto:info@schubertmedia.de">info@schubertmedia.de</a></td></tr>
+        <tr><td><strong>Webseite</strong></td><td><a href="https://www.powerscripts.org">https://www.powerscripts.org</a></td></tr>
+        <tr><td><strong>Projektbereich</strong></td><td><a href="https://www.powerscripts.org/projects-5.html">https://www.powerscripts.org/projects-5.html</a></td></tr>
+        <tr><td><strong>Bug-Tracker</strong></td><td><a href="https://github.com/schubertnico/PowerBook/issues">github.com/schubertnico/PowerBook/issues</a></td></tr>
+    </table>
+</div>
 
-<h3>PHP 8.4 Anpassungen</h3>
-
-<ul>
-    <li><code>declare(strict_types=1)</code> in allen PHP-Dateien</li>
-    <li>Ersetzung aller <code>mysql_*</code> Funktionen durch PDO mit Prepared Statements</li>
-    <li>Ersetzung von <code>ereg()</code>, <code>eregi()</code>, <code>ereg_replace()</code>, <code>eregi_replace()</code> durch <code>preg_match()</code> und <code>preg_replace()</code></li>
-    <li>Entfernung der <code>register_globals</code> Emulation (<code>extract($HTTP_*_VARS)</code>)</li>
-    <li>Verwendung von <code>$_GET</code>, <code>$_POST</code>, <code>$_COOKIE</code>, <code>$_SESSION</code> statt magischer Variablen</li>
-    <li>Null-Coalescing Operator (<code>??</code>) für sichere Defaults</li>
-    <li>Type Hints und return types wo möglich</li>
-</ul>
-
-<h3>Sicherheitsfixes</h3>
-
-<ul>
-    <li><strong>SQL Injection:</strong> Alle Queries verwenden jetzt PDO Prepared Statements</li>
-    <li><strong>XSS (Cross-Site Scripting):</strong> Konsequentes Output-Escaping mit <code>htmlspecialchars()</code></li>
-    <li><strong>CSRF:</strong> Token-basierter Schutz für alle Formulare</li>
-    <li><strong>Passwort-Sicherheit:</strong>
-        <ul>
-            <li>Base64-Kodierung durch <code>password_hash()</code> / <code>password_verify()</code> ersetzt</li>
-            <li>Automatische Migration alter Passwörter beim Login</li>
-        </ul>
-    </li>
-    <li><strong>Local File Inclusion (LFI):</strong> Whitelist für Admin-Seiten</li>
-    <li><strong>Session-Sicherheit:</strong> Keine Passwörter mehr in Cookies, PHP-Sessions stattdessen</li>
-    <li><strong>E-Mail Header Injection:</strong> Sanitisierung aller E-Mail-Header</li>
-</ul>
-
-<h3>Strukturelle Änderungen</h3>
-
-<ul>
-    <li>Neue Datei: <code>pb_inc/csrf.inc.php</code> - CSRF-Token-Funktionen</li>
-    <li>Neue Datei: <code>pb_inc/database.inc.php</code> - PDO-Datenbankverbindung</li>
-    <li>Aktualisierte Datei: <code>pb_inc/functions.inc.php</code> - Hilfsfunktionen mit Type Hints</li>
-    <li>Docker-Konfiguration in <code>.docker/</code></li>
-    <li>Composer, PHPStan und Rector Konfiguration</li>
-</ul>
-
-<h3>Geänderte Dateien</h3>
-
-<ul>
-    <li><code>pbook.php</code> - MIT-Header, strict_types, HTML5</li>
-    <li><code>install_deu.php</code> - PDO, password_hash, HTML5</li>
-    <li><code>pb_inc/mysql.inc.php</code> - Docker-kompatible Defaults</li>
-    <li><code>pb_inc/mysql-connect.inc.php</code> - PDO statt mysql_*</li>
-    <li><code>pb_inc/config.inc.php</code> - PDO, keine extract()</li>
-    <li><code>pb_inc/guestbook.inc.php</code> - PDO, Prepared Statements, XSS-Fix, CSRF</li>
-    <li><code>pb_inc/entry.inc.php</code> - preg_replace statt ereg, XSS-Fix</li>
-    <li><code>pb_inc/form.inc.php</code> - CSRF-Token, XSS-Escaping</li>
-    <li><code>pb_inc/pages.inc.php</code> - preg_replace, sichere URL-Generierung</li>
-    <li><code>pb_inc/send-email.php</code> - Header Injection Fix</li>
-    <li><code>pb_inc/thank-email.php</code> - Header Injection Fix, preg_replace</li>
-    <li><code>pb_inc/admincenter/index.php</code> - PDO, LFI-Fix, Session-Auth, CSRF</li>
-    <li><code>pb_inc/admincenter/config.inc.php</code> - Vereinfacht, verwendet Haupt-Config</li>
-    <li><code>pb_inc/admincenter/login.inc.php</code> - CSRF, sichere Passwort-Prüfung</li>
-    <li><code>pb_inc/admincenter/home.inc.php</code> - Aktualisierte Info-Seite</li>
-</ul>
-
-<h2>So prüfen Sie, ob es läuft</h2>
-
-<ol>
-    <li>Docker-Status prüfen:
-        <pre><code>cd .docker
-docker compose ps</code></pre>
-        <p>Alle Container sollten "Up" sein.</p>
-    </li>
-    <li>Logs prüfen:
-        <pre><code>docker compose logs web</code></pre>
-    </li>
-    <li>PHP Error Log prüfen:
-        <pre><code>cat ../logs/php-error.log</code></pre>
-        <p>(oder <code>type ..\logs\php-error.log</code> unter Windows)</p>
-    </li>
-    <li>Web-Zugriff testen:
-        <ul>
-            <li><a href="http://localhost:8080/pbook.php">http://localhost:8080/pbook.php</a> - Gästebuch</li>
-            <li><a href="http://localhost:8080/pb_inc/admincenter/">http://localhost:8080/pb_inc/admincenter/</a> - Admin-Center</li>
-            <li><a href="http://localhost:8031">http://localhost:8031</a> - Mailpit (Test-E-Mails)</li>
-        </ul>
-    </li>
-</ol>
-
-<h2>Support</h2>
-
-<p>Bei Fragen oder Problemen:</p>
-<ul>
-    <li>GitHub Issues: <a href="https://github.com/schubertnico/PowerBook.git" target="_blank">https://github.com/schubertnico/PowerBook.git</a></li>
-</ul>
-
-<hr>
-
-<p>
-    <strong>Original:</strong> PowerBook 1.21 © 2002 by Axel Habermaier<br>
-    <strong>PHP 8.4 Update:</strong> © 2025 by Nico Schubert
-</p>
+<footer>
+    <p><strong>Original:</strong> PowerBook 1.21 © 2002 by Axel "Expandable" Habermaier<br>
+    <strong>PHP 8.4 Update:</strong> © 2025–2026 by Nico Schubert / SchubertMedia</p>
+</footer>
 
 </body>
 </html>

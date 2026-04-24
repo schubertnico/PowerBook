@@ -1,224 +1,415 @@
-<html>
+<!DOCTYPE html>
+<html lang="de">
 <head>
-   <title>PowerBook 1.21 -- Deutsche Readme</title>
-
-<style type="text/css">
-BODY
-    {
-        scrollbar-arrow-color: #001329;
-        scrollbar-base-color: #3F5070;
-    }
-TD
-    {
-        font-size:13px;
-        font-family:Arial,sans-serif;
-    }
-B
-    {
-        font-size:12px;
-    }
-B.SCRIPT
-    {
-        font-size:12px;
-        font-weight: normal;
-        color: #B0B0B0;
-    }
-DIV.HEADLINE
-    {
-        font-size: 40px;
-        font-family: Arial;
-        font-weight: bold;
-    }
-INPUT, TEXTAREA, SELECT
-    {
-        color: #FFFFFF;
-        border-width: 1;
-        border-color: #6078A0;
-        border-style: solid;
-        background: #001329;
-    }
-SMALL
-    {
-        font-size: 11px;
-    }
-HR
-    {
-         color: #001329;
-    }
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PowerBook - Deutsche Readme</title>
+    <style type="text/css">
+        body {
+            scrollbar-arrow-color: #001329;
+            scrollbar-base-color: #3F5070;
+        }
+        td {
+            font-size: 13px;
+            font-family: Arial, sans-serif;
+        }
+        b {
+            font-size: 12px;
+        }
+        b.script {
+            font-size: 12px;
+            font-weight: normal;
+            color: #B0B0B0;
+        }
+        div.headline {
+            font-size: 40px;
+            font-family: Arial;
+            font-weight: bold;
+        }
+        div.subhead {
+            font-size: 22px;
+            font-family: Arial;
+            color: #6090FF;
+            font-weight: bold;
+            margin-top: 14px;
+        }
+        input, textarea, select {
+            color: #FFFFFF;
+            border-width: 1px;
+            border-color: #6078A0;
+            border-style: solid;
+            background: #001329;
+        }
+        small {
+            font-size: 11px;
+        }
+        hr {
+            color: #001329;
+        }
+        code {
+            color: #6090FF;
+            background: #001329;
+            padding: 1px 5px;
+            font-family: Consolas, 'Courier New', monospace;
+        }
+        pre {
+            background: #001329;
+            color: #d4d4d4;
+            padding: 12px 14px;
+            border: 1px solid #3F5070;
+            overflow-x: auto;
+            font-size: 11px;
+            font-family: Consolas, 'Courier New', monospace;
+        }
+        ul.nav {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        ul.nav li {
+            margin: 4px 0;
+        }
+        .box {
+            background: #001329;
+            border: 1px solid #3F5070;
+            padding: 10px 14px;
+            margin: 10px 0;
+        }
+        .warn {
+            background: #2a1a00;
+            border: 1px solid #c08000;
+            padding: 10px 14px;
+            margin: 10px 0;
+            color: #FFC060;
+        }
+        .ok {
+            background: #002800;
+            border: 1px solid #00A000;
+            padding: 10px 14px;
+            margin: 10px 0;
+            color: #80FF80;
+        }
+    </style>
 </head>
 <body bgcolor="#002040" topmargin="10" bottommargin="10" leftmargin="10" rightmargin="10" text="#ffffff" link="#B5C3D9" vlink="#B5C3D9" alink="#B5C3D9" marginwidth="0" marginheight="0">
-<a name="#top"></a>
+<a name="top"></a>
 <div align="center">
 <table border="0" cellpadding="5" cellspacing="1" width="90%" bgcolor="#6078A0">
 <tr bgcolor="#001329"><td align="center">
-<div class="headline">PowerBook 1.21</div>
-<span style="font-size: 11px;">Deutsche Readme</span>
-</td></tr><tr bgcolor="#001930"><td>
+    <div class="headline">PowerBook</div>
+    <span style="font-size: 11px;">Deutsche Readme &mdash; PHP 8.4 Edition (Stand: April 2026)</span>
+</td></tr>
+
+<tr bgcolor="#001930"><td>
 <b>INHALTS&Uuml;BERSICHT</b><br><br>
-<ul type="I">
-<li><a href="#1">&Uuml;ber PowerBook 1.21</a></li>
-<li><a href="#2">Version-History</a></li>
-<li><a href="#3">Systemvoraussetzungen</a></li>
-<li><a href="#4">Neu-Installation</a></li>
-<li><a href="#5">Upgrade-Installation</a></li>
-<li><a href="#6">FAQ - Oft gestellte Fragen</a></li>
-<li><a href="#7">Support & Disclaimer & Copyright</a></li>
-<li><a href="#8">GNU License</a></li>
+<ul class="nav">
+    <li>I. <a href="#1">&Uuml;ber PowerBook</a></li>
+    <li>II. <a href="#2">Schnellstartanleitung</a></li>
+    <li>III. <a href="#3">Systemvoraussetzungen</a></li>
+    <li>IV. <a href="#4">Installation (ausf&uuml;hrlich)</a></li>
+    <li>V. <a href="#5">AdminCenter</a></li>
+    <li>VI. <a href="#6">Sicherheit &amp; Audit 2026</a></li>
+    <li>VII. <a href="#7">Tests</a></li>
+    <li>VIII. <a href="#8">Version-History</a></li>
+    <li>IX. <a href="#9">Kontakt &amp; Support</a></li>
+    <li>X. <a href="#10">Copyright &amp; Lizenz</a></li>
 </ul>
+</td></tr>
+
+<tr bgcolor="#001930"><td>
+<a name="1"></a>
+<div class="subhead">I. &Uuml;ber PowerBook</div>
+[ <a href="#top">Top</a> ]<br><br>
+
+<b class="script">PowerBook</b> ist ein klassisches G&auml;stebuch-System auf PHP- und MySQL-Basis, urspr&uuml;nglich im Jahr 2002 von <b>Axel "Expandable" Habermaier</b> entwickelt. 2025 wurde das Script von <b>Nico Schubert / SchubertMedia</b> vollst&auml;ndig auf <b>PHP 8.4</b> portiert und im April 2026 einem ausf&uuml;hrlichen Sicherheits-Audit unterzogen (alle 14 gefundenen Bugs wurden behoben, dazu drei priorisierte Workflow-Verbesserungen umgesetzt).
 <br><br>
 
-<ul type="I">
-<li><a name="#1"></a><b>&Uuml;BER POWERBOOK 1.21</b> [ <a href="#top">Top</a> ]<br>
-Danke f&uuml;r Ihr Interesse an <b class="script">PowerBook 1.21</b>, ein G&auml;stebuch-System, welches auf PHP3/4 und MySQL basiert. Mein Name ist Axel "Expandable" Habermaier und ich habe das gesamte Script geschrieben. Es hat mir Spa&szlig; gemacht und ich hoffe, dass Sie es m&ouml;gen werden. Sollten Sie auf Bugs sto&szlig;en oder sollten Sie Vorschl&auml;ge haben, sagen Sie mir Ihre Meinung doch bitte in einer <a href="mailto:expandable@powerscripts.org">eMail</a>! Ich will <b class="script">PowerBook</b> verbessern und erweitern, aber ich kann dies nur mit <i>Ihrer</i> Hilfe tun!
-<br><br>
-
-Bitte denken Sie daran, dass PHP mein Hobby ist und ich <i>kein</i> Profi bin. Es ist sehr wahrscheinlich, dass sich Bugs im Script eingeschlichen haben, obwohl es ausf&uuml;hrlich getestet wurde. Was ich damit sagen will ist, dass ich froh dar&uuml;ber bin, &uuml;ber Bugs informiert zu werden, aber wenn Sie beginnen, mich zu beleidigen, kann ich auch ziemlich &auml;rgerlich werden. Ich werde f&uuml;r meine Arbeit nicht bezahlt, das Bugfixing und das Verbessern des Scripts geschieht also auf einer <i>freiwilligen</i> Basis!
-<br><br>
-
-<b class="script">PowerBook</b> ist ein Mitglied einer gro&szlig;artigen Familie von freien und leistungsstarken PHP-Scripten. Sie als Webmaster k&ouml;nnen sie einfach installieren und benutzen, ohne dass Sie Stunden, Tage, Wochen und Monate damit verbringen m&uuml;ssen, PHP zu lernen und Ihre eigenen guten Scripte zu entwickeln. Es gibt, zum Beispiel, <b class="script">PowerNews</b> (ein News-Script mit Kategorien und Kommentaren), <b class="script">PowerDownload</b> (ein Download-Manager), <b class="script">PowerClan</b> (ein Script, welches Clans dabei hilft Ihre Wars zu administrieren) und viele weitere (<b class="script">PowerAccess</b>, <b class="script">PowerCounter</b>). Des Weiteren entwickeln wir unser eigenes Messageboard (<b class="script">PowerPHPBoard</b>).
-<br><br><br>
-</li>
-<li><a name="#2"></a><b>VERSION-HISTORY</b> [ <a href="#top">Top</a> ]<br>
-Diese Version-History zeigt die &Auml;nderungen an <b class="script">PowerBook</b> in den letzten Monaten. Bitte beachten Sie, dass Version 1.10 <i>nie</i> ver&ouml;ffentlicht wurde!
-<br><br>
-
-<div align="center">~~~~~~~~~~~~~~~~~ VERSION 1.21 ~~~~~~~~~~~~~~~~~</div><br>
-<ul type="square">
-<li>Kompatibilit&auml;t mit den neuen PHP-Versionen sichergestellt</li>
-<li>Englische und Deutsche Sprachdateien mitgeliefert</li>
-<li>AdminCenter nun auch in Deutsch verf&uuml;gbar</li>
-<li>Mehrere kleinere Probleme behoben</li>
+Das Projekt ist in aktiver Pflege:
+<ul>
+    <li>Projekt-Webseite: <a href="https://www.powerscripts.org">https://www.powerscripts.org</a></li>
+    <li>Projektbereich: <a href="https://www.powerscripts.org/projects-5.html">https://www.powerscripts.org/projects-5.html</a></li>
+    <li>Repository: <a href="https://github.com/schubertnico/PowerBook">github.com/schubertnico/PowerBook</a></li>
 </ul>
+
+<b>Features im &Uuml;berblick</b>
+<ul>
+    <li>G&auml;stebuch-Frontend f&uuml;r Besucher: Eintrag schreiben, lesen, suchen, paginieren</li>
+    <li>AdminCenter mit Rollen- &amp; Rechtemanagement</li>
+    <li>BBCode-Textformatierung (<code>[b]</code>, <code>[i]</code>, <code>[u]</code>, <code>[small]</code>) + Auto-Linking</li>
+    <li>Smilies/Emoticons, umschaltbar pro Eintrag</li>
+    <li>Icons f&uuml;r Eintr&auml;ge (Frage, Ausruf, Smileys)</li>
+    <li>Anti-Spam mit IP-Zeitsperre (konfigurierbar)</li>
+    <li>Token-basierter Passwort-Reset mit 30-Min-TTL</li>
+    <li>CSRF-Schutz + Session-Fixation-Schutz</li>
+    <li>SMTP-Versand f&uuml;r Benachrichtigungen (Mailpit im Dev-Setup)</li>
+</ul>
+</td></tr>
+
+<tr bgcolor="#001930"><td>
+<a name="2"></a>
+<div class="subhead">II. Schnellstartanleitung</div>
+[ <a href="#top">Top</a> ]<br><br>
+
+<b class="script">Docker &mdash; in 60 Sekunden lauff&auml;hig:</b>
+<pre># 1. Repository klonen
+git clone https://github.com/schubertnico/PowerBook.git
+cd PowerBook/.docker
+
+# 2. Container starten (Apache+PHP, MySQL, Mailpit)
+docker compose up -d --build
+
+# 3. Installation im Browser ausf&uuml;hren
+#    -> http://localhost:8080/install_deu.php
+#    Auf "Installation starten" klicken.
+#    Das angezeigte Initial-Passwort SOFORT notieren!
+
+# 4. Loslegen
+# Frontend (G&auml;stebuch):  http://localhost:8080/pbook.php
+# Admin-Center:           http://localhost:8080/pb_inc/admincenter/
+# Mailpit (Test-Mails):   http://localhost:8031</pre>
+
+<div class="warn">
+<b>Hinweis zum Initial-Passwort (Stand April 2026):</b> Bei der Installation wird ein zuf&auml;lliges 16-stelliges Hex-Passwort erzeugt (kein hardcoded <code>powerbook</code> mehr). Das Passwort erscheint <b>einmalig</b> auf der Erfolgsseite. Bitte sofort notieren oder direkt im AdminCenter &auml;ndern.
+</div>
+</td></tr>
+
+<tr bgcolor="#001930"><td>
+<a name="3"></a>
+<div class="subhead">III. Systemvoraussetzungen</div>
+[ <a href="#top">Top</a> ]<br><br>
+
+<table border="0" cellpadding="6" width="100%">
+    <tr bgcolor="#001329"><td width="180"><b>Komponente</b></td><td><b>Mindestversion</b></td></tr>
+    <tr><td>PHP</td><td><b>8.4</b> oder neuer (Type-Hints, <code>match</code>, <code>random_bytes</code>)</td></tr>
+    <tr><td>Datenbank</td><td>MySQL 8.0 oder MariaDB 10.6</td></tr>
+    <tr><td>Webserver</td><td>Apache 2.4 (mod_php) oder NGINX + PHP-FPM</td></tr>
+    <tr><td>Composer</td><td>2.x &mdash; nur f&uuml;r Tests und Dev-Tools erforderlich</td></tr>
+    <tr><td>Docker</td><td>Docker Desktop oder Docker Engine + Compose v2 (optional, f&uuml;r den Dev-Setup empfohlen)</td></tr>
+</table>
+</td></tr>
+
+<tr bgcolor="#001930"><td>
+<a name="4"></a>
+<div class="subhead">IV. Installation (ausf&uuml;hrlich)</div>
+[ <a href="#top">Top</a> ]<br><br>
+
+<b>A) Mit Docker (empfohlen f&uuml;r Entwicklung)</b>
 <br><br>
 
-<div align="center">~~~~~~~~~~~~~~~~~ VERSION 1.20 ~~~~~~~~~~~~~~~~~</div><br>
-<ul type="square">
-<li>Code fast komplett neu geschrieben
-<li>Hinzugef&uuml;gt:<br>
-- Danksagungs-eMail (kann deaktiviert werden, Titel und Nachricht k&ouml;nnen online frei konfiguriert werden)<br>
-- Suchfunktion f&uuml;r Eintr&auml;ge<br>
-- Optionale Anzeige der Statements der Admins<br>
-- Zwei unterschiedliche M&ouml;glichkeiten zur Seitendarstellung (Bl&auml;ttern und direkte Auswahl)<br>
+Das Repository enth&auml;lt unter <code>.docker/</code> ein vollst&auml;ndiges Compose-Setup:
 
-<li>Freie Anpassung des Datum- und Uhrzeit-Formats
-<li>AdminCenter stark erweitert:<br>
-- Design ist nun fest vorgeschreiben<br>
-- Kein Cookie-Login mehr n&ouml;tig, aber immer noch m&ouml;glich<br>
-- Authorisationslevel wurden auf 4 reduziert<br>
-- "Eintrag bearbeitet von..."-Nachricht entfernt<br>
-- Admins k&ouml;nnen nun f&uuml;r jeden Eintrag ein Statement schreiben<br>
-- Script-Konfiguration erfolgt nun komplett online<br>
-- Online-Hilfe hinzugef&uuml;gt<br>
-- Passw&ouml;rter werden verschl&uuml;sselt gespeichert<br>
-<li>PowerBook unterliegt nun den Bestimmungen der GNU General Public License
-<li>Verbesserte Kontrolle beim Eintragen von Eintr&auml;gen in die Datenbank (&Uuml;berpr&uuml;fung der eMail-Adresse auf <li>G&uuml;ltigkeit, HTML-Code wird in allen Feldern neutralisiert)
-<li>Installation erfolgt nun nach dem Vorbild von PowerNews 2.51
-</ul>
+<table border="0" cellpadding="6" width="100%">
+    <tr bgcolor="#001329"><td width="140"><b>Service</b></td><td><b>Image</b></td><td><b>Host-Port</b></td></tr>
+    <tr><td><code>web</code></td><td>Apache 2.4 + PHP 8.4</td><td><b>8080</b></td></tr>
+    <tr><td><code>db</code></td><td>MySQL 8.0</td><td>3314</td></tr>
+    <tr><td><code>mail</code></td><td>Axllent Mailpit</td><td>SMTP <b>1031</b>, Web-UI <b>8031</b></td></tr>
+</table>
+
+<pre>git clone https://github.com/schubertnico/PowerBook.git
+cd PowerBook/.docker
+docker compose up -d --build</pre>
+
+Anschlie&szlig;end <code>http://localhost:8080/install_deu.php</code> aufrufen und auf <b>"Installation starten"</b> klicken. Die Installation:
+<ol>
+    <li>legt die MySQL-Tabellen <code>pb_admins</code>, <code>pb_config</code>, <code>pb_entries</code> an (mit Spalten <code>reset_token</code> + <code>reset_token_expires</code> f&uuml;r den sicheren Recovery-Flow),</li>
+    <li>erzeugt einen Standard-Admin <b>PowerBook</b> mit zuf&auml;lligem 16-Hex-Passwort,</li>
+    <li>zeigt dieses Passwort <b>einmalig</b> in einer Hervorhebungs-Box,</li>
+    <li>erstellt das Lock-File <code>.installed</code>, sodass <code>install_deu.php</code> nicht versehentlich erneut ausgef&uuml;hrt werden kann (HTTP 403).</li>
+</ol>
+
+<br>
+<b>B) Klassisches Hosting (LAMP)</b>
 <br><br>
 
-<div align="center">~~~~~~~~~~~~~~~~~ VERSION 1.10 ~~~~~~~~~~~~~~~~~</div><br>
-<ul type="square">
-<li>Problem mit Eintrag-Vorschau behoben (zurvor wurde nur ein Standard-Design verwendet)
-<li>AdminCenter neu geschrieben
-<li>Passw&ouml;rter wurden nicht mehr verschl&uuml;sselt
-<li>Multilanguage-Support eingef&uuml;hrt (Ger1 = Du-Form, Ger2 = Sie-Form, Eng = Englisch)
-<li>Eine unbegrenzte Anzahl des Scripts konnte nun in einer Datenbank installiert werden
-<li>Eintrags-Design verwendete Templates
-<li>Einige geringf&uuml;gige Bugfixes und Verbesserungen
+<ol>
+    <li>Dateien per FTP/SCP auf den Webserver &uuml;bertragen.</li>
+    <li><code>pb_inc/mysql.inc.php</code> anpassen:
+<pre>$config_sql_server   = 'localhost';
+$config_sql_user     = 'powerbook';
+$config_sql_password = 'IhrSicheresPasswort';
+$config_sql_database = 'powerbook';</pre></li>
+    <li><code>https://ihre-domain.tld/install_deu.php</code> im Browser aufrufen.</li>
+    <li>Initial-Passwort notieren.</li>
+    <li>Empfehlung: <code>install_deu.php</code> zus&auml;tzlich per <code>.htaccess</code> sch&uuml;tzen. Das <code>.installed</code>-Lock greift automatisch bei Re-Install-Versuchen.</li>
+</ol>
+</td></tr>
+
+<tr bgcolor="#001930"><td>
+<a name="5"></a>
+<div class="subhead">V. AdminCenter</div>
+[ <a href="#top">Top</a> ]<br><br>
+
+URL: <code>http://&lt;host&gt;/pb_inc/admincenter/</code>
+
+<table border="0" cellpadding="6" width="100%">
+    <tr bgcolor="#001329"><td width="200"><b>Bereich</b></td><td><b>Zweck</b></td></tr>
+    <tr><td>Home</td><td>Dashboard mit System-Info und Schnellnavigation</td></tr>
+    <tr><td>Eintr&auml;ge verwalten</td><td>Liste, Bearbeiten, L&ouml;schen, Statement schreiben</td></tr>
+    <tr><td>Eintr&auml;ge freischalten</td><td>Sichtbarkeit (R/U) &mdash; abh&auml;ngig von Konfiguration</td></tr>
+    <tr><td>Admins verwalten</td><td>Hinzuf&uuml;gen, Bearbeiten, L&ouml;schen, Rechte (Konfig/Admins/Eintr&auml;ge/Release)</td></tr>
+    <tr><td>Konfiguration</td><td>Spam-Check, Anzeige, Smilies/BBCode/ICQ, E-Mail, Eintrags-Design</td></tr>
+    <tr><td>Lizenz</td><td>MIT-Lizenztext</td></tr>
+    <tr><td>Logout</td><td>Beendet die Session</td></tr>
+</table>
+
+<br>
+<b>Passwort vergessen?</b>
+<ul>
+    <li>Im AdminCenter <code>?page=password</code> aufrufen.</li>
+    <li>Admin-Name oder E-Mail eingeben &rarr; Reset-Link per Mail (30 Min g&uuml;ltig).</li>
+    <li>Erst durch Klick auf den Link und Setzen des neuen Passworts wird das alte ung&uuml;ltig.</li>
 </ul>
+</td></tr>
+
+<tr bgcolor="#001930"><td>
+<a name="6"></a>
+<div class="subhead">VI. Sicherheit &amp; Audit 2026</div>
+[ <a href="#top">Top</a> ]<br><br>
+
+Im April 2026 wurde ein vollst&auml;ndiges Sicherheits-Audit des Userbereichs durchgef&uuml;hrt. Alle 14 dokumentierten Bugs sind behoben und drei priorisierte Workflow-Verbesserungen umgesetzt.
+
+<br><br>
+<table border="0" cellpadding="6" width="100%">
+    <tr bgcolor="#001329"><td width="230"><b>Kategorie</b></td><td><b>Ma&szlig;nahme</b></td></tr>
+    <tr><td>SQL-Injection</td><td>PDO Prepared Statements f&uuml;r alle Queries</td></tr>
+    <tr><td>XSS</td><td>Konsequentes Output-Escaping; keine doppelten Escapes mehr im Preview</td></tr>
+    <tr><td>CSRF</td><td>Token in jedem Formular, Rotation nach erfolgreichen Aktionen</td></tr>
+    <tr><td>Session-Fixation</td><td><code>session_regenerate_id(true)</code> nach jedem Login</td></tr>
+    <tr><td>Passwort-Speicherung</td><td><code>password_hash(PASSWORD_DEFAULT)</code>, Auto-Migration</td></tr>
+    <tr><td>Passwort-Reset</td><td>Token-Flow mit 30-Min-TTL, kein Sofort-Reset</td></tr>
+    <tr><td>User-Enumeration</td><td>Generische Recovery-Response</td></tr>
+    <tr><td>LFI / Path-Traversal</td><td>Whitelist <code>$allowedPages</code> im AdminCenter</td></tr>
+    <tr><td>Direktaufruf-Schutz</td><td><code>PB_ENTRY</code>-Konstanten-Guard</td></tr>
+    <tr><td>Installation-Schutz</td><td><code>.installed</code>-Lock verhindert Re-Install (HTTP 403)</td></tr>
+    <tr><td>Standard-Passwort</td><td>Zuf&auml;llig, <code>bin2hex(random_bytes(8))</code></td></tr>
+    <tr><td>Admin-Add-Fallback</td><td>Bei SMTP-Fehler wird Initial-Passwort im UI gezeigt</td></tr>
+    <tr><td>L&auml;ngen-Validierung</td><td>Serverseitig f&uuml;r Name (100), Text (5000), E-Mail (250), URL (255)</td></tr>
+    <tr><td>Cookie-Flags</td><td><code>HttpOnly</code> + <code>SameSite=Strict</code></td></tr>
+    <tr><td>E-Mail-Header</td><td>Sanitisierung aller Recipient-Header</td></tr>
+</table>
+
+<br>
+<b>Audit-Dokumentation:</b>
+<ul>
+    <li><code>docs/2026-04-23-Userbereichs-bugs.md</code></li>
+    <li><code>docs/2026-04-23-Userbereichs-improvements.md</code></li>
+    <li><code>docs/2026-04-23-Userbereichs-test-coverage.md</code></li>
+</ul>
+</td></tr>
+
+<tr bgcolor="#001930"><td>
+<a name="7"></a>
+<div class="subhead">VII. Tests</div>
+[ <a href="#top">Top</a> ]<br><br>
+
+<pre># Composer-Abh&auml;ngigkeiten installieren
+composer install
+
+# Volle Test-Suite
+vendor/bin/phpunit
+
+# Nur Unit-Tests
+vendor/bin/phpunit --testsuite Unit
+
+# Nur Integration-Tests (ben&ouml;tigen laufenden Apache-Container)
+vendor/bin/phpunit --testsuite Integration
+
+# Im Docker-Container
+docker exec powerbook_web vendor/bin/phpunit</pre>
+
+<div class="ok">
+<b>Aktueller Stand:</b> 515 Tests / 950 Assertions / Coverage <b>87 %</b>.
+</div>
+
+<b>Statische Analyse &amp; Code-Qualit&auml;t:</b>
+<pre>composer run phpstan        # PHPStan Level max
+vendor/bin/phpmd pb_inc text phpmd.xml
+vendor/bin/php-cs-fixer fix --dry-run --diff</pre>
+</td></tr>
+
+<tr bgcolor="#001930"><td>
+<a name="8"></a>
+<div class="subhead">VIII. Version-History</div>
+[ <a href="#top">Top</a> ]<br><br>
+
+<b>April 2026 &mdash; PHP 8.4 Security Update (Nico Schubert)</b><br>
+<ul>
+    <li>Vollst&auml;ndiger Userbereichs-Audit: 78 Testf&auml;lle, 14 Bugs gefunden &amp; behoben</li>
+    <li>Token-basierter Passwort-Reset (IMP-005/BUG-010)</li>
+    <li>Zuf&auml;lliges Installations-Initial-Passwort (IMP-006)</li>
+    <li>Install-Lock-File gegen Re-Install (BUG-011)</li>
+    <li>Session-Fixation-Schutz (BUG-014)</li>
+    <li>Admin-Add Mail-Fail-Fallback (IMP-008)</li>
+    <li>Testabdeckung: 515 Tests, 87 %</li>
+</ul>
+
+<br>
+<b>2025 &mdash; PHP 8.4 Migration (Nico Schubert)</b><br>
+<ul>
+    <li>Komplette Migration von PHP 3/4 auf PHP 8.4 mit <code>declare(strict_types=1)</code></li>
+    <li>mysql_* &rarr; PDO mit Prepared Statements</li>
+    <li>ereg_* &rarr; preg_*</li>
+    <li>base64-Passw&ouml;rter &rarr; <code>password_hash</code></li>
+    <li>CSRF-Schutz, Session-basierte Auth</li>
+    <li>Docker-Setup mit Apache, MySQL, Mailpit</li>
+    <li>Composer, PHPStan, Rector, PHPUnit</li>
+</ul>
+
+<br>
+<b>2002 &mdash; PowerBook 1.21 (Axel "Expandable" Habermaier)</b><br>
+<ul>
+    <li>Ursprungsversion auf PHP 3/4 + MySQL</li>
+    <li>G&auml;stebuch mit BBCode, Smilies, Icons</li>
+    <li>AdminCenter, Spam-Schutz, Paginierung</li>
+    <li>GNU/GPL-Lizenz (siehe Original <code>gnu.txt</code>)</li>
+</ul>
+</td></tr>
+
+<tr bgcolor="#001930"><td>
+<a name="9"></a>
+<div class="subhead">IX. Kontakt &amp; Support</div>
+[ <a href="#top">Top</a> ]<br><br>
+
+<div class="box">
+<b>SchubertMedia</b><br>
+Inhaber: <b>Nico Schubert</b><br>
+Stauffenbergallee 57<br>
+99085 Erfurt &mdash; Deutschland<br><br>
+
+<table border="0" cellpadding="4">
+    <tr><td width="120"><b>Telefon</b></td><td><a href="tel:+4936123002247">+49 (0) 3612 3002247</a> &nbsp;<small>(Mo.&ndash;Fr. 9&ndash;12 + 13&ndash;18 Uhr)</small></td></tr>
+    <tr><td><b>Telefax</b></td><td>+49 (0) 3612 3004636</td></tr>
+    <tr><td><b>E-Mail</b></td><td><a href="mailto:info@schubertmedia.de">info@schubertmedia.de</a></td></tr>
+    <tr><td><b>Webseite</b></td><td><a href="https://www.powerscripts.org">https://www.powerscripts.org</a></td></tr>
+    <tr><td><b>Projektbereich</b></td><td><a href="https://www.powerscripts.org/projects-5.html">powerscripts.org/projects-5.html</a></td></tr>
+    <tr><td><b>Bug-Tracker</b></td><td><a href="https://github.com/schubertnico/PowerBook/issues">github.com/schubertnico/PowerBook/issues</a></td></tr>
+</table>
+</div>
+</td></tr>
+
+<tr bgcolor="#001930"><td>
+<a name="10"></a>
+<div class="subhead">X. Copyright &amp; Lizenz</div>
+[ <a href="#top">Top</a> ]<br><br>
+
+<b>MIT License</b>
+<pre>Copyright (c) 2002 Axel "Expandable" Habermaier (Original PowerBook 1.21)
+Copyright (c) 2025-2026 Nico Schubert (PHP 8.4 Migration &amp; Security Updates)</pre>
+
+Voller Lizenztext: <a href="LICENSE">LICENSE</a>.
 <br><br>
 
-<div align="center">~~~~~~~~~~~~~~~~~ VERSION 1.05 ~~~~~~~~~~~~~~~~~</div><br>
-<ul type="square">
-<li>Neue Sicherheitsbestimmungen im Adminbereich:<br>
-- Der w&auml;hrend der Installation erstelle Admin ist nicht l&ouml;schbar<br>
-- Passw&ouml;rter werden verschl&uuml;sselt gespeichert<br>
-- F&uuml;nf Authorisations-Stufen ersetzen "Administratoren" und "Moderatoren"<br>
-</li>
-<li>"Eintrag editiert von..."-Nachricht beim Bearbeiten eines Eintrags hinzugef&uuml;gt</li>
-<li>Installation erfolgte &uuml;ber eine Datei, nicht &uuml;ber phpMyAdmin</li>
-<li>Online-Konfiguration</li>
-<li>eMail nicht l&auml;nger ben&ouml;tigt, um Eintrag hinzuzuf&uuml;gen</li>
-<li>Hinzugef&uuml;gt:<br>
-- Support f&uuml;r ICQ#<br>
-- Support f&uuml;r Smilies<br>
-- Support f&uuml;r Icons<br>
-- [small] zu Text Formatierungs Funktionen<br>
-- M&ouml;glichkeit, Smilies, ICQ#, Icons und die Text Formatierungs Funktionen zu (de)aktivieren
-</li>
-<li>Zeigt nur eine bestimmte Anzahl an Eintr&auml;gen an, dann werden Links zum Durchbl&auml;ttern angezeigt</li>
-<li>Einige Bugfixes</li>
-</ul>
-<br><br>
+<small>
+Die Urspr&uuml;ngliche PowerBook 1.21 (2002) stand unter GNU/GPL. Mit freundlicher Genehmigung des Originalautors Axel "Expandable" Habermaier wurde die PHP 8.4 Edition (2025+) unter der MIT-Lizenz fortgef&uuml;hrt. Die Historische GNU/GPL-Datei <code>gnu.txt</code> liegt dem Paket bei.
+</small>
+</td></tr>
 
-<div align="center">~~~~~~~~~~~~~~~~~ VERSION 1.00 ~~~~~~~~~~~~~~~~~</div><br>
-Erste Ver&ouml;ffentlichung!<br><br><br>
-</li>
-
-<li><a name="#3"></a><b>Systemvoraussetzungen</b> [ <a href="#top">Top</a> ]<br>
-Um <b class="script">PowerBook 1.21</b> problemlos ausf&uuml;hren zu k&ouml;nnen, muss Ihr Server PHP 3/4 und MySQL unterst&uuml;tzten.<br><br><br></li>
-
-<li><a name="#4"></a><b>Neu-Installation</b> [ <a href="#top">Top</a> ]<br>
-Die Installation des Scripts ist ziemlich einfach. Laden Sie alle Dateien und Unterordner des pb_inc Verzeichnisses dieser .zip-Datei auf Ihren Server. Laden Sie au&szlig;erdem die install_deu.php auf Ihren Server, die auf der gleichen Ebene wie das pb_inc Verzeichnis sein <b>muss</b> (wie in dieser .zip-Datei).<br><br>
-
-Nun bearbeiten Sie die mysql-inc.php in Ihrem pb_inc Verzeichnis. Ihr Host sollte Ihnen Ihre MySQL-Daten geben k&ouml;nnen. <b class="script">PowerBook 1.21</b> l&auml;sst Ihnen die M&ouml;glichkeit, die Namen der Datenbank-Tabellen frei zu konfigurieren, d.h. es ist m&ouml;glich mehr als eine Version des Scriptes in nur einer Datenbank zu benutzen.<br><br>
-
-Laden Sie die bearbeitete Datei hoch und f&uuml;hren Sie die install_deu.php aus, welche alle ben&ouml;tigten Tabellen erstellt. Wenn das Script sagt, dass keine Verbindung zur MySQL-Datenbank hergestellt werden kann, &uuml;berpr&uuml;fen Sie bitte Ihre Eingaben in der mysql.inc.php.<br><br>
-
-Wenn alles glatt l&auml;uft, l&ouml;schen Sie die install_deu.php und gehen Sie in das AdminCenter und bearbeiten Sie Ihr Admin-Profil; standardm&auml;&szlig;ig ist Ihr Name <b>PowerBook</b> und Ihr Passwort <b>powerbook</b>. Bitte beachten Sie, dass Sie der SuperAdmin sind, was bedeutet dass Sie weder gel&ouml;scht, noch Ihnen die Authorisationen genommen werden k&ouml;nnen. Au&szlig;erdem sollten Sie die Script-Konfiguration &uuml;berpr&uuml;fen, da dort einige Daten fehlen.<br><br>
-
-Nehmen Sie nun eine leere Seite mit Ihrem Design. F&uuml;gen Sie den folgenden Code an dem Punkt ein, an welchem normalerweise der unterschiedliche Inhalt Ihrer Seiten beginnt:<br><br>
-
-<b class="script"><div align="center">&lt;?PHP include("pb_inc/guestbook.inc.php"); ?&gt;</div><br></b>
-
-Speichern Sie diese Datei und laden Sie sie hoch. Denken Sie daran, <b class="script">PowerBook</b> in der Konfigurations-Site im AdminCenter den Namen dieser Datei mitzuteilen.
-<br><br><br></li>
-
-<li><a name="#5"></a><b>Upgrade Installation</b> [ <a href="#top">Top</a> ]<br>
-<u>Hinweis</u>: Wenn Sie <b class="script">PowerBook 1.05</b> oder fr&uuml;her verwenden, k&ouml;nnen Sie <b>nicht</b> auf 1.21 aktualisieren!<br><br>
-
-Um <b class="script">PowerBook 1.20</b> auf Version 1.21 zu updaten, laden Sie bitte einfach alle Dateien und Sub-Ordner im pb_inc/-Verzeichnis auf Ihren Webserver hoch. Sie k&ouml;nnen entweder die deutschen oder die englischen Dateien verweden, abgesehen von der Sprache gibt es dabei keinen Unterschied. Eine Aktualisierung Ihrer Datenbank ist nicht n&ouml;tig!
-<br><br><br></li>
-
-<li><a name="#6"></a><b>FAQ - Oft gestellte Fragen</b> [ <a href="#top">Top</a> ]<br>
-<b class="script">Q: Es wird nur eine wei&szlig;e Site mit dem Text "MySQL-Verbindung fehlgeschlagen" oder "Datenbank-Verbindung fehlgeschlagen" angezeigt. Was ist los?</b><br><br>
-
-A: Das Script kann nicht mit Ihrer Datenbank kommunizieren. Im ersten Fall ist entweder die eingegebene Server-Adresse, der Username und/oder das Passwort falsch. Im letzteren Fall kann die Datenbank nicht gefunden werden, d.h. der von Ihnen eingegebene Datenbank-Name ist ung&uuml;ltig.<br><br>
-
-<b class="script">Q: Ich verstehe dieses PHP Include-Zeugs nicht. K&ouml;nnten Sie mir bitte helfen?</b><br><br>
-
-A: Lesen Sie die Beschreibung oben noch einmal und sehen Sie sich die mitgelieferte Beispiel-Datei (pbook.php) an. Versuchen Sie au&szlig;erdem, etwas zu experimentieren!<br><br>
-
-<b class="script">Q: Kann ich von 1.05 auf 1.21 updaten?</b><br><br>
-
-A: Nein, das k&ouml;nnen Sie nicht. Sie m&uuml;ssen zuerst Version 1.20 installieren und dann das Update zu 1.21 dr&uuml;berkopieren. Sie k&ouml;nnen <b class="script">PowerBook 1.20</b> auf <a href="http://www.powerscripts.org" target="_blank">PowerScripts.org</a> herunterladen!<br><br>
-
-<b class="script">Q: Gibt es das Script auch in anderen Sprachen?</b><br><br>
-
-A: Zur Zeit unterst&uuml;tzt dieses Script nur Englisch und Deutsch. Bitte laden Sie die englischen Sprach-Dateien hoch, die in der von Ihnen vor kurzem heruntergeladenen .zip-Datei enthalten sind, um PowerBook in Englisch angezeigt zu bekommen.<br><br>
-
-<b class="script">Q: Ich habe einen Bug gefunden! Was tun?</b><br><br>
-
-A: Bitte senden Sie eine detaillierte Beschreibung Ihres Problems an <a href="mailto:expandable@powerscripts.org">Expandable</a>. Er wird versuchen Ihnen zu helfen und den Bug in zuk&uuml;nftigen Versionen auszumerzen.
-<br><br><br></li>
-
-<li><a name="#7"></a><b>Support & Disclaimer & Copyright</b> [ <a href="#top">Top</a> ]<br>
-Dieses Script wird  offiziell durch <a href="http://www.powerscripts.org" target="_blank">PowerScripts</a> unterst&uuml;tzt. Sollten Sie Bugs finden oder Probleme haben, erhalten Sie &uuml;ber das Support-Formular oder in den Foren Hilfe. Sie k&ouml;nnen auch eine eMail an <a href="mailto:expandable@powerscripts.org">Expandable</a> schreiben. Bitte beschreiben Sie Ihr Problem so detailliert wie m&ouml;glich, sodass es schnell behoben werden kann. Au&szlig;erdem sollten Sie das <a href="#6">FAQ</a> lesen und die Foren durchsuchen, bevor Sie einen neuen Thread erstellen oder eine eMail senden. Es ist m&ouml;glich, dass ein anderer User das gleiche Problem hat, sodass wir nicht zweimal auf die gleiche Frage antworten m&uuml;ssen. Danke!<br><br>
-
-<b><i>Weder <a href="http://www.powerscripts.org" target="_blank">PowerScripts</a> noch der Autor dieses Scripts sind f&uuml;r Sch&auml;den, die durch die Installation und/oder Benutzung des Scripts verursacht werden k&ouml;nnten, verantwortlich. Der Autor eines Eintrags und Statements ist selbst f&uuml;r alle Links und Inhalte, die er/sie schreibt, verantwortlich.</i></b><br><br>
-
-Das Design und der Code aller Seiten dieser .zip-File sind copyright 2002 by <a href="mailto:expandable@powerscripts.org">Axel Habermaier</a>. Innerhalb der Limitationen der <a href="gnu.txt">GNU General Public License</a> d&uuml;rfen Sie das Script modifizieren, aber Sie d&uuml;rfen niemals die Copyright-Hinweise am Ende der Seiten l&ouml;schen. Au&szlig;erdem d&uuml;rfen Sie keine modifizierte Version des Scripts ver&ouml;ffentlichten.
-<br><br><br></li>
-
-<li><a name="#8"></a><b>GNU License</b> [ <a href="#top">Top</a> ]<br>
-Sie <b>m&uuml;ssen</b> der <a href="gnu.txt">beigef&uuml;gten GNU License</a> zustimmen, wenn Sie <b class="script">PowerBook 1.21</b> benutzen m&ouml;chten.
-</li>
-</ul>
-</td></tr><tr bgcolor="#001329"><td align="center">
-<a href="http://www.powerscripts.org" target="_blank">PowerBook 1.21</a> &copy; 2002 by <a href="mailto:expandable@powerscripts.org">Axel Habermaier</a>
-</td></tr></table></div>
-
+<tr bgcolor="#001329"><td align="center">
+<small>
+<b>Original:</b> PowerBook 1.21 &copy; 2002 by Axel "Expandable" Habermaier<br>
+<b>PHP 8.4 Update:</b> &copy; 2025&ndash;2026 by Nico Schubert / SchubertMedia
+</small>
+</td></tr>
+</table>
+</div>
 </body>
 </html>
