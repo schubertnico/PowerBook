@@ -1,0 +1,185 @@
+# =============================================================
+# PowerBook - Root .htaccess
+# =============================================================
+# Schuetzt das oeffentliche Web-Root vor unerwuenschten Zugriffen.
+# Greift nur, wenn AllowOverride im Apache-VirtualHost auf
+# "All" bzw. "FileInfo Indexes Limit AuthConfig" steht.
+# Im PowerBook-Docker-Setup ist das automatisch der Fall.
+# Auf Shared-Hosting (PlusServer, Strato, Hetzner Webhosting,
+# IONOS etc.) ist .htaccess standardmaessig aktiv.
+# =============================================================
+
+
+# -------------------------------------------------------------
+# Default-Verhalten
+# -------------------------------------------------------------
+
+# Verzeichnis-Listings deaktivieren (verhindert Information-Leak)
+Options -Indexes -MultiViews +FollowSymLinks
+
+# Apache-Signatur in Fehlerseiten unterdruecken
+ServerSignature Off
+
+# UTF-8 als Default-Charset
+AddDefaultCharset UTF-8
+
+
+# -------------------------------------------------------------
+# Security Headers
+# -------------------------------------------------------------
+<IfModule mod_headers.c>
+    # Verhindere MIME-Sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # Clickjacking-Schutz (nur eigene Domain darf einbetten)
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # Referer nur an gleiche Origin senden
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Browser-Features deaktivieren, die wir nicht brauchen
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=()"
+
+    # Cross-Origin-Isolation
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+    Header always set Cross-Origin-Resource-Policy "same-origin"
+
+    # Server-Header bereinigen
+    Header unset X-Powered-By
+    Header always unset X-Powered-By
+    Header unset Server
+
+    # HSTS — nur aktivieren, wenn das Projekt durchgaengig per HTTPS
+    # ausgeliefert wird. Default auskommentiert.
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+</IfModule>
+
+
+# -------------------------------------------------------------
+# HTTP-Methoden einschraenken
+# Nur GET, POST, HEAD sind sinnvoll — alle anderen blocken.
+# -------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} !^(GET|POST|HEAD)$
+    RewriteRule .* - [F,L]
+</IfModule>
+
+
+# -------------------------------------------------------------
+# Versteckte Dateien (.git, .env, .htaccess, .DS_Store, ...) blocken
+# -------------------------------------------------------------
+RedirectMatch 403 (?i)/\.(?!well-known/)
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+
+# -------------------------------------------------------------
+# Verzeichnisse, die nicht oeffentlich erreichbar sein sollen
+# (auch falls sie versehentlich auf den Live-Server kommen)
+# -------------------------------------------------------------
+RedirectMatch 403 (?i)^/vendor(/.*)?$
+RedirectMatch 403 (?i)^/tests(/.*)?$
+RedirectMatch 403 (?i)^/docs(/.*)?$
+RedirectMatch 403 (?i)^/coverage(-html|-report)?(/.*)?$
+RedirectMatch 403 (?i)^/hooks(/.*)?$
+RedirectMatch 403 (?i)^/todos(/.*)?$
+RedirectMatch 403 (?i)^/logs(/.*)?$
+RedirectMatch 403 (?i)^/node_modules(/.*)?$
+RedirectMatch 403 (?i)^/rector-output(/.*)?$
+RedirectMatch 403 (?i)^/uploads(/.*)?$
+RedirectMatch 403 (?i)^/var/(cache|log)(/.*)?$
+
+
+# -------------------------------------------------------------
+# Sensitive Dateiendungen / Dateien blocken
+# -------------------------------------------------------------
+<FilesMatch "(?i)\.(md|markdown|lock|cache|sql|log|dist|example|sample|ini|yml|yaml|neon|json|toml|bak|backup|old|orig|swp|swo|tmp|temp|inc|sublime-(workspace|project)|code-workspace|psd|ai|sketch|fig)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Spezifische Tool-Configs / Build-Files blocken
+<FilesMatch "(?i)^(composer\.(json|lock)|package(-lock)?\.json|yarn\.lock|pnpm-lock\.yaml|bower\.json|gulpfile\.js|gruntfile\.js|webpack\.config\.js|vite\.config\.(js|ts)|rollup\.config\.(js|ts)|tsconfig\.json|phpunit\.xml(\.dist)?|phpstan\.neon(\.dist)?|phpmd\.xml|psalm\.xml(\.dist)?|rector\.php|\.php-cs-fixer(\.dist)?\.php|coverage\.xml|coverage_report\.php|Dockerfile|docker-compose\.ya?ml|Makefile|Procfile|\.editorconfig|\.babelrc|\.eslintrc.*|\.prettierrc.*|\.stylelintrc.*|\.npmrc|\.nvmrc)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+
+# -------------------------------------------------------------
+# pb_inc/admincenter/.htaccess uebernimmt die Feinabstimmung fuer
+# die include-Dateien dort. Hier auf Root-Level NUR sicherstellen,
+# dass *.inc.php (z.B. pb_inc/*.inc.php) nicht direkt aufrufbar ist.
+# -------------------------------------------------------------
+<FilesMatch "(?i)\.inc\.php$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+
+# -------------------------------------------------------------
+# Caching fuer statische Assets (Performance)
+# -------------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType text/javascript "access plus 1 week"
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE application/javascript application/json
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+
+# -------------------------------------------------------------
+# Custom Error-Pages (optional)
+# -------------------------------------------------------------
+# ErrorDocument 403 /pbook.php
+# ErrorDocument 404 /pbook.php
+
+
+# -------------------------------------------------------------
+# PHP-Hardening (greift nur, wenn mod_php geladen)
+# -------------------------------------------------------------
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_flag display_startup_errors Off
+    php_flag log_errors On
+    php_flag expose_php Off
+    php_flag session.cookie_httponly On
+    php_flag session.cookie_secure Off
+    php_value session.cookie_samesite "Strict"
+    php_flag session.use_only_cookies On
+    php_value upload_max_filesize "2M"
+    php_value post_max_size "4M"
+</IfModule>

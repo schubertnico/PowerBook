@@ -1,0 +1,57 @@
+# =============================================================
+# PowerBook - pb_inc/admincenter/.htaccess
+# =============================================================
+# Das AdminCenter MUSS oeffentlich erreichbar sein, weil es
+# der Eingangspunkt fuer authentifizierte Admins ist.
+# Die parent .htaccess in pb_inc/ blockt aber alles per Default —
+# hier wieder explizit erlauben.
+# Include-Files (.inc.php) und interne Helper duerfen weiterhin
+# NICHT direkt aufrufbar sein.
+# =============================================================
+
+# Generell wieder erlauben (ueberschreibt parent Deny)
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>
+
+
+# -------------------------------------------------------------
+# Direkter Aufruf interner Includes/Helper blockieren
+# -------------------------------------------------------------
+# .inc.php-Dateien sind reine Includes (Variable aus Parent-Scope).
+# password_migrate.php ist Auto-Migration-Helper.
+<FilesMatch "(?i)(\.inc\.php|^password_migrate\.php|^admin_email_helpers\.inc\.php)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+
+# -------------------------------------------------------------
+# Direkt aufrufbar (Whitelist)
+# -------------------------------------------------------------
+# - index.php          → Routing-Einstieg
+# - date-help.php      → Popup-Hilfe (vom configuration.inc.php verlinkt)
+# - powerbook.css      → AdminCenter-Stylesheet
+# - powerbook.gif      → AdminCenter-Logo
+#
+# Alle anderen .php sind via Routing (?page=xxx) erreichbar,
+# nicht direkt — das blockt die obige FilesMatch-Regel.
+
+
+# -------------------------------------------------------------
+# Hidden Files in diesem Verzeichnis blocken
+# -------------------------------------------------------------
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>

@@ -1,0 +1,26 @@
+# =============================================================
+# PowerBook - pb_inc/smilies/.htaccess
+# =============================================================
+# Smiley-GIFs werden vom Gaestebuch-Frontend (pbook.php)
+# geladen. Parent pb_inc/.htaccess blockt alles per Default —
+# hier wieder erlauben, aber NUR Bilddateien.
+# =============================================================
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
+
+# Nur Bild-Dateien erlauben
+<FilesMatch "(?i)\.(gif|png|jpe?g|webp|svg)$">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+</FilesMatch>

@@ -1,0 +1,30 @@
+# =============================================================
+# PowerBook - pb_inc/.htaccess
+# =============================================================
+# Default: Alles in pb_inc/ ist Include-Code und darf nicht
+# direkt per HTTP geladen werden.
+# Subdirectories (admincenter/, smilies/) ueberschreiben diese
+# Regel ueber ihre eigene .htaccess.
+# Spezifische oeffentliche Hilfsseiten (smilies-help.html,
+# text-help.html) werden hier explizit erlaubt.
+# =============================================================
+
+# Default: alles blockieren
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
+
+# Hilfe-Popups (vom Gaestebuch-Frontend per window.open() aufgerufen)
+<FilesMatch "^(smilies-help|text-help)\.html$">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+</FilesMatch>
