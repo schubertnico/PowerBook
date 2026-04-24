@@ -17,8 +17,17 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     pdo \
     pdo_mysql
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+# Enable Apache modules required by PowerBook .htaccess
+RUN a2enmod rewrite headers expires
+
+# AllowOverride All fuer /var/www/html, damit .htaccess greift.
+# Apache-Default ist "None" - das wuerde alle Schutz-Regeln deaktivieren.
+RUN sed -ri 's!<Directory /var/www/>\n\s+Options Indexes FollowSymLinks\n\s+AllowOverride None\n\s+Require all granted\n</Directory>!<Directory /var/www/>\n\tOptions FollowSymLinks\n\tAllowOverride All\n\tRequire all granted\n</Directory>!' /etc/apache2/apache2.conf || true \
+    && sed -ri 's!AllowOverride None!AllowOverride All!g' /etc/apache2/apache2.conf
+
+# ServerSignature/ServerTokens sicher konfigurieren
+RUN echo "ServerSignature Off\nServerTokens Prod" > /etc/apache2/conf-available/security-hardening.conf \
+    && a2enconf security-hardening
 
 # Create log directory
 RUN mkdir -p /var/log/php && chown www-data:www-data /var/log/php
