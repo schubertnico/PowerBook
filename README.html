@@ -131,13 +131,14 @@
 <h1>PowerBook — PHP-Gästebuch-System</h1>
 
 <p>
+    <span class="badge blue">v3.0.0</span>
     <span class="badge blue">PHP 8.4</span>
-    <span class="badge green">515 Tests passing</span>
+    <span class="badge green">514 Tests passing</span>
     <span class="badge green">Coverage 87 %</span>
     <span class="badge gray">MIT License</span>
 </p>
 
-<p>Klassisches PHP-Gästebuch — ursprünglich 2002 von <strong>Axel "Expandable" Habermaier</strong> entwickelt, modernisiert für <strong>PHP 8.4</strong> und im April 2026 sicherheitsgehärtet.</p>
+<p>Klassisches PHP-Gästebuch — ursprünglich 2002 von <strong>Axel "Expandable" Habermaier</strong> entwickelt, auf <strong>PHP 8.4</strong> modernisiert, sicherheitsgehärtet und mit <strong>Bootstrap 5</strong> komplett neu gestaltet (Stand: 2026-05-10, <strong>v3.0.0</strong>).</p>
 
 <table>
     <tr><td><strong>Projekt-Webseite</strong></td><td><a href="https://www.powerscripts.org">https://www.powerscripts.org</a></td></tr>
@@ -289,7 +290,7 @@ vendor/bin/phpunit --testsuite Integration
 
 # Im Docker-Container
 docker exec powerbook_web vendor/bin/phpunit</code></pre>
-<p><strong>Aktueller Stand:</strong> 515 Tests / 950 Assertions / Coverage <strong>87 %</strong>.</p>
+<p><strong>Aktueller Stand:</strong> 514 Tests / 953 Assertions / Coverage <strong>87 %</strong>.</p>
 
 <p><strong>Statische Analyse &amp; Code-Qualität:</strong></p>
 <pre><code>composer run phpstan        # PHPStan Level max
@@ -312,6 +313,49 @@ vendor/bin/php-cs-fixer fix --dry-run --diff</code></pre>
 <pre><code>Copyright (c) 2002 Axel "Expandable" Habermaier (Original PowerBook 1.21)
 Copyright (c) 2025-2026 Nico Schubert (PHP 8.4 Migration &amp; Security Updates)</code></pre>
 <p>Voller Lizenztext: <a href="LICENSE">LICENSE</a>.</p>
+
+<h2>Changelog</h2>
+
+<h3>v3.0.0 — 2026-05-10</h3>
+<p><strong>Bootstrap-5-Migration &amp; Anonymisierung &amp; ICQ-Removal.</strong></p>
+
+<h4>Frontend</h4>
+<ul>
+    <li>Komplettes Frontend (öffentlich + Admin) auf <strong>Bootstrap 5.3</strong> umgestellt (CDN).</li>
+    <li>Neue Layout-Helper: <code>pb_layout_header/footer</code>, <code>pb_admin_card_open/close</code>, <code>pb_admin_alert</code>.</li>
+    <li>Eigenes minimales CSS unter <code>assets/powerbook.css</code> mit <code>filemtime()</code>-Cache-Bust.</li>
+    <li>Default-Entry-Design im Installer als Bootstrap-Card; Legacy-Designs mit <code>bgcolor=</code> werden automatisch durch ein Card-Default ersetzt (kein Eingriff für Bestandskunden).</li>
+    <li>Einheitliche Schriftgrößen (<code>legend.form-label</code> von 24 px auf 16 px), konsistente Card-Header (<code>h2.h5</code>), Form-Labels (<code>.form-label</code>), Bootstrap-Spacing-Utilities.</li>
+    <li>Mobile-fähig dank Navbar-Collapse + Grid.</li>
+    <li>E-Mail-Label durchgängig zu <strong>„E-Mail-Adresse"</strong> ausgeschrieben.</li>
+</ul>
+
+<h4>Sicherheit</h4>
+<ul>
+    <li><strong>Information-Disclosure-Schutz:</strong> keine PHP-Versionsnummer mehr im Footer oder auf der Home-Seite.</li>
+    <li>Footer/Home/License-Page/E-Mail-Templates anonymisiert: Verweise nur noch auf <code>https://www.powerscripts.org</code>. Keine internen Repo-Links, keine Personennamen oder Mail-Adressen mehr im User-Output.</li>
+    <li>LICENSE und License-Anzeigeseite behalten den MIT-Original-Vermerk (rechtlich notwendig für MIT-Distribution).</li>
+    <li>Reset-Link in der Passwort-Mail nutzt jetzt einen Fallback auf <code>$_SERVER['HTTP_HOST']</code>, wenn <code>config_admin_url</code> leer ist — der Link ist damit immer vollständig klickbar.</li>
+</ul>
+
+<h4>Cleanup</h4>
+<ul>
+    <li><strong>ICQ komplett entfernt</strong> (Service eingestellt) aus Forms, Anzeige, Konfig, Edit, Default-Designs und SQL-Statements.</li>
+    <li>Bestehende DB-Spalten (<code>icq</code>) bleiben unangetastet — kein Datenverlust, keine zwingende Schema-Migration.</li>
+    <li>Alte <code>pb_inc/admincenter/powerbook.css</code> (Legacy-Theme) entfernt.</li>
+</ul>
+
+<h4>Tests</h4>
+<ul>
+    <li>514 Tests, 953 Assertions, <strong>0 Failures</strong> (2 vorbestehend skipped).</li>
+    <li>PHPStan: 0 errors.</li>
+</ul>
+
+<h3>Frühere Versionen</h3>
+<ul>
+    <li><strong>PowerBook PHP 8.4 Update (2025–2026):</strong> Migration auf PHP 8.4, Security-Audit, CSRF, prepared statements, password_hash, Session-Hardening, neue Test-Suite.</li>
+    <li><strong>PowerBook 1.21 (2002):</strong> Original-Release von Axel „Expandable" Habermaier.</li>
+</ul>
 
 <h2>Kontakt &amp; Support</h2>
 

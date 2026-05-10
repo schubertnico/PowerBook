@@ -1,11 +1,12 @@
 # PowerBook — PHP-Gästebuch-System
 
+[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/schubertnico/PowerBook/releases/tag/v3.0.0)
 [![PHP](https://img.shields.io/badge/PHP-8.4-blue.svg)](https://www.php.net/)
-[![Tests](https://img.shields.io/badge/tests-515%20passing-brightgreen.svg)](#tests)
+[![Tests](https://img.shields.io/badge/tests-514%20passing-brightgreen.svg)](#tests)
 [![Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen.svg)](#tests)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-> Klassisches PHP-Gästebuch — ursprünglich 2002 von **Axel "Expandable" Habermaier** entwickelt, modernisiert für **PHP 8.4** und sicherheitsgehärtet (Stand: 2026-04-24).
+> Klassisches PHP-Gästebuch — ursprünglich 2002 von **Axel "Expandable" Habermaier** entwickelt, auf **PHP 8.4** modernisiert, sicherheitsgehärtet und mit **Bootstrap 5** komplett neu gestaltet (Stand: 2026-05-10, **v3.0.0**).
 
 **Projekt-Webseite:** https://www.powerscripts.org
 **Projektbereich:** https://www.powerscripts.org/projects-5.html
@@ -191,7 +192,7 @@ vendor/bin/phpunit --testsuite Integration
 docker exec powerbook_web vendor/bin/phpunit
 ```
 
-**Aktueller Stand:** 515 Tests / 950 Assertions / **Coverage 87 %**.
+**Aktueller Stand:** 514 Tests / 953 Assertions / **Coverage 87 %**.
 
 | Suite | Tests | Bemerkung |
 |-------|-------|-----------|
@@ -283,6 +284,54 @@ Copyright (c) 2025-2026 Nico Schubert (PHP 8.4 Migration & Security Updates)
 ```
 
 Voller Lizenztext: [`LICENSE`](LICENSE).
+
+---
+
+## Changelog
+
+### v3.0.0 — 2026-05-10
+
+**Bootstrap-5-Migration & Anonymisierung & ICQ-Removal.**
+
+#### Frontend
+- Komplettes Frontend (öffentlich + Admin) auf **Bootstrap 5.3** umgestellt (CDN).
+- Neue Layout-Helper: `pb_layout_header/footer`, `pb_admin_card_open/close`, `pb_admin_alert`.
+- Eigenes minimales CSS unter `assets/powerbook.css` mit `filemtime()`-Cache-Bust.
+- Default-Entry-Design im Installer als Bootstrap-Card; Legacy-Designs mit `bgcolor=`
+  werden automatisch durch ein Card-Default ersetzt (kein Eingriff für Bestandskunden).
+- Einheitliche Schriftgrößen (`legend.form-label` von 24 px auf 16 px), konsistente
+  Card-Header (`h2.h5`), Form-Labels (`.form-label`), Bootstrap-Spacing-Utilities.
+- Mobile-fähig dank Navbar-Collapse + Grid.
+- E-Mail-Label durchgängig zu **„E-Mail-Adresse"** ausgeschrieben.
+
+#### Sicherheit
+- **Information-Disclosure-Schutz:** keine PHP-Versionsnummer mehr im Footer
+  oder auf der Home-Seite.
+- Footer/Home/License-Page/E-Mail-Templates anonymisiert: Verweise nur noch auf
+  `https://www.powerscripts.org`. Keine internen Repo-Links, keine Personennamen
+  oder Mail-Adressen mehr im User-Output.
+- LICENSE und License-Anzeigeseite behalten den MIT-Original-Vermerk
+  (rechtlich notwendig für MIT-Distribution).
+- Reset-Link in der Passwort-Mail nutzt jetzt einen Fallback auf
+  `$_SERVER['HTTP_HOST']`, wenn `config_admin_url` leer ist — der Link ist
+  damit immer vollständig klickbar.
+
+#### Cleanup
+- **ICQ komplett entfernt** (Service eingestellt) aus Forms, Anzeige, Konfig,
+  Edit, Default-Designs und SQL-Statements.
+- Bestehende DB-Spalten (`icq`) bleiben unangetastet — kein Datenverlust,
+  keine zwingende Schema-Migration.
+- Alte `pb_inc/admincenter/powerbook.css` (Legacy-Theme) entfernt.
+
+#### Tests
+- 514 Tests, 953 Assertions, **0 Failures** (2 vorbestehend skipped).
+- PHPStan: 0 errors.
+
+### Frühere Versionen
+
+- **PowerBook PHP 8.4 Update (2025–2026):** Migration auf PHP 8.4, Security-Audit,
+  CSRF, prepared statements, password_hash, Session-Hardening, neue Test-Suite.
+- **PowerBook 1.21 (2002):** Original-Release von Axel „Expandable" Habermaier.
 
 ---
 
