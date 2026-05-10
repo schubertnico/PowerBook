@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PowerBook - PHP Guestbook System
  * Empty Page Placeholder

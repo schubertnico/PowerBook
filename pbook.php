@@ -21,9 +21,9 @@ require_once __DIR__ . '/pb_inc/config.inc.php';
 require_once __DIR__ . '/pb_inc/layout.inc.php';
 
 pb_layout_header('PowerBook Gästebuch', [
-    'showNav'   => true,
+    'showNav' => true,
     'adminLink' => 'pb_inc/admincenter/',
-    'siteName'  => 'PowerBook Gästebuch',
+    'siteName' => 'PowerBook Gästebuch',
 ]);
 ?>
 
