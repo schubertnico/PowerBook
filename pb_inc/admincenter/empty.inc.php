@@ -4,18 +4,15 @@
  * Empty Page Placeholder
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
-?>
 
-<tr><td bgcolor="#3F5070" align="center">
-    <b class="headline">&nbsp;</b>
-</td></tr>
+require_once __DIR__ . '/layout.inc.php';
 
-<tr><td bgcolor="#001F3F" valign="top">
-&nbsp;
-</td></tr>
+pb_admin_card_open(' ');
+echo '&nbsp;';
+pb_admin_card_close();

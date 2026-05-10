@@ -155,14 +155,14 @@ cd PowerBook/.docker
 docker compose up -d --build
 
 # 3. Installation im Browser ausführen
-# → http://localhost:8080/install_deu.php
+# → http://localhost:8081/install_deu.php
 #   Auf "Installation starten" klicken.
 #   Das angezeigte Initial-Passwort SOFORT notieren!
 
 # 4. Loslegen
-# Frontend (Gästebuch):  http://localhost:8080/pbook.php
-# Admin-Center:          http://localhost:8080/pb_inc/admincenter/
-# Mailpit (Test-Mails):  http://localhost:8031</code></pre>
+# Frontend (Gästebuch):  http://localhost:8081/pbook.php
+# Admin-Center:          http://localhost:8081/pb_inc/admincenter/
+# Mailpit (Test-Mails):  http://localhost:8035</code></pre>
 </div>
 
 <div class="info">
@@ -198,16 +198,16 @@ docker compose up -d --build
 
 <table>
     <tr><th>Service</th><th>Image</th><th>Port (Host)</th></tr>
-    <tr><td><code>web</code></td><td>Apache 2.4 + PHP 8.4</td><td><strong>8080</strong></td></tr>
+    <tr><td><code>web</code></td><td>Apache 2.4 + PHP 8.4</td><td><strong>8081</strong></td></tr>
     <tr><td><code>db</code></td><td>MySQL 8.0</td><td>3314</td></tr>
-    <tr><td><code>mail</code></td><td>Axllent Mailpit</td><td>SMTP <strong>1031</strong>, Web-UI <strong>8031</strong></td></tr>
+    <tr><td><code>mail</code></td><td>Axllent Mailpit</td><td>SMTP <strong>1035</strong>, Web-UI <strong>8035</strong></td></tr>
 </table>
 
 <pre><code>git clone https://github.com/schubertnico/PowerBook.git
 cd PowerBook/.docker
 docker compose up -d --build</code></pre>
 
-<p>Anschließend <code>http://localhost:8080/install_deu.php</code> aufrufen und auf <strong>Installation starten</strong> klicken. Die Installation:</p>
+<p>Anschließend <code>http://localhost:8081/install_deu.php</code> aufrufen und auf <strong>Installation starten</strong> klicken. Die Installation:</p>
 <ol>
     <li>legt die MySQL-Tabellen <code>pb_admins</code>, <code>pb_config</code>, <code>pb_entries</code> an (mit Spalten <code>reset_token</code> + <code>reset_token_expires</code> für den sicheren Recovery-Flow),</li>
     <li>erzeugt einen Standard-Admin <strong>PowerBook</strong> mit zufälligem 16-Hex-Passwort,</li>
@@ -301,7 +301,7 @@ vendor/bin/php-cs-fixer fix --dry-run --diff</code></pre>
     <tr><th>Symptom</th><th>Ursache / Lösung</th></tr>
     <tr><td><code>install_deu.php</code> zeigt HTTP 403</td><td>Lock-File <code>.installed</code> existiert. Bei gewünschter Re-Installation manuell löschen.</td></tr>
     <tr><td>Login schlägt fehl</td><td>Initial-Passwort vergessen? <code>?page=password</code> für Reset-Link nutzen.</td></tr>
-    <tr><td>Reset-Link kommt nicht an</td><td>Mailpit-UI prüfen (<a href="http://localhost:8031">localhost:8031</a>) bzw. SMTP-Konfiguration in <code>pb_inc/mysql.inc.php</code>.</td></tr>
+    <tr><td>Reset-Link kommt nicht an</td><td>Mailpit-UI prüfen (<a href="http://localhost:8035">localhost:8035</a>) bzw. SMTP-Konfiguration in <code>pb_inc/mysql.inc.php</code>.</td></tr>
     <tr><td>"E-Mail konnte NICHT versendet werden" + Passwort wird angezeigt</td><td>SMTP nicht erreichbar — Passwort sofort sichern, dann SMTP konfigurieren.</td></tr>
     <tr><td>Direktaufruf von <code>pb_inc/guestbook.inc.php</code> → 403</td><td>Erwünscht: Direktaufruf von Includes ist seit BUG-013 blockiert (<code>PB_ENTRY</code>-Guard).</td></tr>
     <tr><td><code>Cannot redeclare function …</code> beim Test</td><td>Container neu starten: <code>docker compose restart web</code>.</td></tr>

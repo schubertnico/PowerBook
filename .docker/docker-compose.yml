@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: powerbook_web
     ports:
-      - "8080:80"
+      - "8081:80"
     volumes:
       - ../:/var/www/html
       - ../logs:/var/log/php
@@ -41,8 +41,8 @@ services:
     image: axllent/mailpit
     container_name: powerbook_mail
     ports:
-      - "1031:1025"
-      - "8031:8025"
+      - "1035:1025"
+      - "8035:8025"
     networks:
       - powerbook_network
     restart: unless-stopped

@@ -4,12 +4,14 @@
  * Entry Release/Approval
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
+
+require_once __DIR__ . '/layout.inc.php';
 
 // Variables from parent scope (index.php)
 /** @var PDO $pdo */
@@ -18,12 +20,13 @@ declare(strict_types=1);
 /** @var string $config_icons */
 /** @var string $config_text_format */
 /** @var string $config_smilies */
-/** @var string $config_icq */
 /** @var string $db_statement */
 
 // Check permission
 if (($admin_session['release'] ?? 'N') !== 'Y') {
-    echo '<div style="color: #FF6666; padding: 20px;">Sie haben keine Berechtigung für die Eintrags-Freischaltung.</div>';
+    pb_admin_card_open('Einträge freischalten');
+    echo pb_admin_alert('Sie haben keine Berechtigung für die Eintrags-Freischaltung.', 'danger');
+    pb_admin_card_close();
 
     return;
 }
@@ -84,24 +87,15 @@ try {
         $messageType = 'error';
     }
 }
-?>
 
-<tr><td bgcolor="#3F5070" align="center">
-    <b class="headline">E I N T R Ä G E &nbsp; &nbsp; F R E I S C H A L T E N</b>
-</td></tr>
+pb_admin_card_open('Einträge freischalten');
 
-<tr><td bgcolor="#001F3F" valign="top">
+if (!empty($message)) {
+    echo pb_admin_alert(e($message), pb_admin_message_type($messageType));
+}
 
-<?php if (!empty($message)) { ?>
-<div style="padding: 10px; margin: 10px 0; background: <?= $messageType === 'success' ? '#003300' : '#330000' ?>; border: 1px solid <?= $messageType === 'success' ? '#00FF00' : '#FF0000' ?>;">
-    <?= e($message) ?>
-</div>
-<?php } ?>
-
-<?php if ($count_unreleased === 0) { ?>
-<div align="center">
-    <p>Keine Einträge zum Freischalten vorhanden!</p>
-</div>
+if ($count_unreleased === 0) { ?>
+<div class="alert alert-info text-center" role="status"><b>Keine Einträge zum Freischalten vorhanden!</b></div>
 <?php } else { ?>
 
 <p>
@@ -110,17 +104,18 @@ wählen Sie einen Eintrag aus und klicken Sie auf "Eintrag freischalten".
 Um alle Einträge auf einmal freizuschalten, klicken Sie auf "Alle freischalten".
 </p>
 
-<div align="center">
-    <?php if ($count_unreleased === 1) { ?>
-        <p>Es gibt <b>einen</b> nicht freigegebenen Eintrag.</p>
-    <?php } else { ?>
-        <p>Es gibt <b><?= $count_unreleased ?></b> nicht freigegebene Einträge.</p>
-    <?php } ?>
-
-    <form action="?page=release" method="post" style="margin-bottom: 20px;">
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <?php if ($count_unreleased === 1) { ?>
+            Es gibt <span class="badge bg-warning text-dark fs-6">1</span> nicht freigegebenen Eintrag.
+        <?php } else { ?>
+            Es gibt <span class="badge bg-warning text-dark fs-6"><?= $count_unreleased ?></span> nicht freigegebene Einträge.
+        <?php } ?>
+    </div>
+    <form action="?page=release" method="post" class="mb-0">
         <?= csrfField() ?>
         <input type="hidden" name="action" value="release_all">
-        <input type="submit" value="Alle freischalten" style="background: #003366; padding: 5px 15px;">
+        <button type="submit" class="btn btn-success">Alle freischalten</button>
     </form>
 </div>
 
@@ -132,38 +127,30 @@ Um alle Einträge auf einmal freizuschalten, klicken Sie auf "Alle freischalten"
     // Process entry for display
     include __DIR__ . '/entry.inc.php';
     ?>
-<table width="100%" border="0">
-    <tr>
-        <td width="40">
-            <input type="radio" name="entry_id" value="<?= (int) $entry['id'] ?>">
-        </td>
-        <td align="left" bgcolor="#001329">
-            <?= $show_icon ?><b><?= $date ?></b>, <small><?= $time ?></small> -
-            <a href="?page=edit&amp;edit_id=<?= (int) $entry['id'] ?>">Bearbeiten/Löschen</a>
-        </td>
-        <td align="right" width="121" bgcolor="#001329">
-            <?= $email_name ?>
-        </td>
-    </tr>
-    <tr>
-        <td width="40">&nbsp;</td>
-        <td valign="top" bgcolor="#001930">
-            <?= $entry['text'] ?>
-        </td>
-        <td width="121" align="right" valign="top" bgcolor="#001329">
-            <?= $url ?><br>
-            <?= $show_icq ?>
-        </td>
-    </tr>
-</table>
-<br>
+<article class="card pb-entry-card shadow-sm mb-3">
+    <header class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="d-flex align-items-center">
+            <div class="form-check me-3 mb-0">
+                <input id="entry_<?= (int) $entry['id'] ?>" class="form-check-input" type="radio" name="entry_id" value="<?= (int) $entry['id'] ?>">
+                <label for="entry_<?= (int) $entry['id'] ?>" class="form-check-label visually-hidden">Eintrag <?= (int) $entry['id'] ?> auswählen</label>
+            </div>
+            <span><?= $show_icon ?><b><?= $date ?></b>, <small class="text-body-secondary"><?= $time ?></small></span>
+        </div>
+        <span class="text-end"><?= $email_name ?></span>
+    </header>
+    <div class="card-body"><?= $entry['text'] ?></div>
+    <footer class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <a class="btn btn-outline-primary btn-sm" href="?page=edit&amp;edit_id=<?= (int) $entry['id'] ?>">Bearbeiten/Löschen</a>
+        <div class="d-flex flex-wrap gap-2"><?= $url ?> <?= $show_icq ?></div>
+    </footer>
+</article>
 <?php } ?>
 
-<div align="center">
-    <input type="submit" value="Ausgewählten Eintrag freischalten">
+<div class="d-flex justify-content-center">
+    <button type="submit" class="btn btn-primary">Ausgewählten Eintrag freischalten</button>
 </div>
 </form>
 
-<?php } ?>
+<?php }
 
-</td></tr>
+pb_admin_card_close();

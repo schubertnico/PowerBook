@@ -5,9 +5,9 @@
  * Entry Display Template
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
@@ -18,7 +18,7 @@ declare(strict_types=1);
 $show_icon = '';
 if (!empty($entry['icon']) && $entry['icon'] !== 'no' && $entry['icon'] !== '0' && ($config_icons ?? 'N') === 'Y') {
     $iconFile = basename($entry['icon']); // Security: Only filename, no path traversal
-    $show_icon = '<img src="pb_inc/smilies/' . e($iconFile) . '.gif" border="0"> &nbsp;';
+    $show_icon = '<img src="pb_inc/smilies/' . e($iconFile) . '.gif" alt="" class="me-2">';
 }
 
 // Format entry text (escape and apply formatting)
@@ -71,7 +71,7 @@ if (($entry['smilies'] ?? 'N') === 'Y' && ($config_smilies ?? 'N') === 'Y') {
 
 // Homepage URL — BUG-001: eigene Variable $homepage_link, um nicht mit $url
 // des Formular-Input-Scope (guestbook.inc.php Preview) zu kollidieren.
-$homepage_link = '<small>Keine Homepage</small>';
+$homepage_link = '<small class="text-body-secondary">Keine Homepage</small>';
 if (!empty($entry['homepage']) && strlen($entry['homepage']) > 1) {
     $homepage = $entry['homepage'];
     // Add http:// if missing
@@ -80,7 +80,7 @@ if (!empty($entry['homepage']) && strlen($entry['homepage']) > 1) {
     }
     $homepage_link = '<small><a href="' . e($homepage) . '" target="_blank" rel="noopener noreferrer">Homepage</a></small>';
 }
-// Backwards-compat Alias fuer Templates, die noch $url verwenden.
+// Backwards-compat Alias für Templates, die noch $url verwenden.
 $url = $homepage_link;
 
 // Email and name
@@ -89,16 +89,10 @@ if (!empty($entry['email']) && strlen($entry['email']) > 1) {
     $email_name = '<a href="mailto:' . e($entry['email']) . '">' . e($entry['name'] ?? 'Anonym') . '</a>';
 }
 
-// ICQ (legacy, but preserved)
+// ICQ wurde komplett entfernt (Legacy-Service eingestellt). Die Variable
+// $show_icq bleibt als leerer String, damit alte Designs mit (#ICQ#) im
+// Template nicht crashen — der Platzhalter wird einfach durch '' ersetzt.
 $show_icq = '';
-if (($config_icq ?? 'N') === 'Y') {
-    if (!empty($entry['icq']) && strlen($entry['icq']) > 1) {
-        $icqNum = e($entry['icq']);
-        $show_icq = '<small>ICQ: ' . $icqNum . '</small>';
-    } else {
-        $show_icq = '<small>Keine ICQ#</small>';
-    }
-}
 
 // Date and time
 $entryDate = (int) ($entry['date'] ?? 0);
@@ -133,11 +127,29 @@ if (($config_statements ?? 'N') === 'Y' && !empty($entry['statement']) && strlen
     }
 
     $statementBy = e($entry['statement_by'] ?? 'Admin');
-    $entryText .= '<br><br><hr noshade><i><b>' . $statementBy . '</b>\'s Statement:<br><br>' . $statement . '</i>';
+    $entryText .= '<hr class="my-3"><div class="fst-italic"><b>' . $statementBy . '</b>\'s Statement:<br><br>' . $statement . '</div>';
 }
 
 // Apply design template
 $design = $config_design ?? '';
+
+// Bootstrap-Default für leere oder Legacy-Designs (alte Installationen mit
+// HTML4-Markup wie bgcolor=). Sobald in der Konfiguration ein eigenes Design
+// gepflegt wird, das KEIN bgcolor-Attribut enthaelt, wird es weiterverwendet.
+$isLegacyDesign = ($design === '' || stripos($design, 'bgcolor') !== false);
+if ($isLegacyDesign) {
+    $design = '<article class="card pb-entry-card shadow-sm">'
+        . '<header class="card-header d-flex flex-wrap justify-content-between align-items-center">'
+        . '<span>(#ICON#)<b>(#DATE#)</b>, <small class="text-body-secondary">(#TIME#)h</small></span>'
+        . '<span>(#EMAIL_NAME#)</span>'
+        . '</header>'
+        . '<div class="card-body">(#TEXT#)</div>'
+        . '<footer class="card-footer d-flex flex-wrap justify-content-end gap-3 align-items-center text-end">'
+        . '<span>(#URL#)</span>'
+        . '</footer>'
+        . '</article>';
+}
+
 $design = preg_replace('/\(#ICON#\)/', $show_icon, $design) ?? $design;
 $design = preg_replace('/\(#DATE#\)/', $date, $design) ?? $design;
 $design = preg_replace('/\(#TIME#\)/', $time, $design) ?? $design;

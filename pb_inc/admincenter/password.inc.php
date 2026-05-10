@@ -7,14 +7,16 @@
  *            Mail mit Reset-Link versandt. Response IMMER generisch
  *            (keine User Enumeration, BUG-009).
  * Schritt 2: User klickt Link (?page=password&token=...) → Formular zum
- *            Setzen eines neuen Passworts. Altes Passwort bleibt gueltig
+ *            Setzen eines neuen Passworts. Altes Passwort bleibt gültig
  *            bis neues gespeichert wird (BUG-010).
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  */
 
 declare(strict_types=1);
+
+require_once __DIR__ . '/layout.inc.php';
 
 // Variables from parent scope (index.php)
 /** @var PDO $pdo */
@@ -28,7 +30,7 @@ $action = $_POST['action'] ?? '';
 $tokenParam = trim((string) ($_GET['token'] ?? $_POST['token'] ?? ''));
 
 /**
- * Generische Response fuer Recovery-Anfragen — verraet nicht, ob der Account existiert.
+ * Generische Response für Recovery-Anfragen — verraet nicht, ob der Account existiert.
  */
 $genericRecoveryResponse =
     'Falls ein Konto zu diesem Namen oder dieser E-Mail-Adresse existiert, '
@@ -46,7 +48,7 @@ if ($tokenParam !== '' && $action !== 'set_password' && $action !== 'recover') {
     }
 
     if (!$tokenAdmin || (int) $tokenAdmin['reset_token_expires'] < time()) {
-        $message = 'Der Reset-Link ist ungueltig oder abgelaufen. Bitte erneut anfordern.';
+        $message = 'Der Reset-Link ist ungültig oder abgelaufen. Bitte erneut anfordern.';
         $messageType = 'error';
     } else {
         $showSetPasswordForm = true;
@@ -70,7 +72,7 @@ if ($action === 'set_password' && validateCsrfToken($_POST['csrf_token'] ?? ''))
     }
 
     if (!$tokenAdmin || (int) $tokenAdmin['reset_token_expires'] < time()) {
-        $message = 'Der Reset-Link ist ungueltig oder abgelaufen. Bitte erneut anfordern.';
+        $message = 'Der Reset-Link ist ungültig oder abgelaufen. Bitte erneut anfordern.';
         $messageType = 'error';
     } elseif (mb_strlen($newPw1) < 8) {
         $message = 'Das neue Passwort muss mindestens 8 Zeichen lang sein.';
@@ -78,7 +80,7 @@ if ($action === 'set_password' && validateCsrfToken($_POST['csrf_token'] ?? ''))
         $showSetPasswordForm = true;
         $showForm = false;
     } elseif ($newPw1 !== $newPw2) {
-        $message = 'Die beiden Passwoerter stimmen nicht ueberein.';
+        $message = 'Die beiden Passwörter stimmen nicht überein.';
         $messageType = 'error';
         $showSetPasswordForm = true;
         $showForm = false;
@@ -90,7 +92,7 @@ if ($action === 'set_password' && validateCsrfToken($_POST['csrf_token'] ?? ''))
                 "UPDATE {$pb_admin} SET password = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?"
             );
             $stmt->execute([$hashed, (int) $tokenAdmin['id']]);
-            $message = 'Passwort erfolgreich geaendert. Sie koennen sich jetzt einloggen.';
+            $message = 'Passwort erfolgreich geändert. Sie können sich jetzt einloggen.';
             $messageType = 'success';
             $showForm = false;
             $showSetPasswordForm = false;
@@ -132,22 +134,34 @@ if ($action === 'recover' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
                 );
                 $stmt->execute([$token, $expires, (int) $admin['id']]);
 
-                $adminUrl = (string) ($config_admin_url ?? '');
-                $adminUrlTrimmed = rtrim($adminUrl, '/');
-                $resetLink = $adminUrlTrimmed !== ''
-                    ? $adminUrlTrimmed . '/index.php?page=password&token=' . $token
-                    : '?page=password&token=' . $token;
+                // Reset-Link MUSS vollstaendig (Schema + Host + Pfad) sein, damit
+                // er in der Mail anklickbar ist. Reihenfolge:
+                //   1. Konfigurierte $config_admin_url (Admin → Konfiguration).
+                //   2. Fallback aus aktueller Request-URL ($_SERVER) — funktioniert
+                //      sofort nach Installation, ohne dass der Admin die Konfig
+                //      anpassen muss.
+                $adminUrl = trim((string) ($config_admin_url ?? ''));
+                if ($adminUrl !== '') {
+                    $base = rtrim($adminUrl, '/');
+                } else {
+                    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+                    $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
+                    $self = (string) ($_SERVER['PHP_SELF'] ?? '/pb_inc/admincenter/index.php');
+                    // dirname() liefert das Verzeichnis ohne Trailing-Slash.
+                    $base = $scheme . '://' . $host . rtrim(str_replace('\\', '/', dirname($self)), '/');
+                }
+                $resetLink = $base . '/index.php?page=password&token=' . $token;
 
                 $to = sanitizeEmailHeader((string) $admin['email']);
                 if ($to !== '') {
-                    $subject = 'PowerBook: Passwort zuruecksetzen';
+                    $subject = 'PowerBook: Passwort zurücksetzen';
                     $headers = "From: PowerBook <noreply@powerbook.local>\r\n";
                     $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
                     $body = "Hallo,\n\n";
                     $body .= "klicken Sie auf den folgenden Link, um ein neues Passwort zu setzen:\n\n";
                     $body .= $resetLink . "\n\n";
-                    $body .= "Der Link ist 30 Minuten gueltig.\n\n";
-                    $body .= "Falls Sie kein Passwort zuruecksetzen wollten, ignorieren Sie diese Mail.\n\n";
+                    $body .= "Der Link ist 30 Minuten gültig.\n\n";
+                    $body .= "Falls Sie kein Passwort zurücksetzen wollten, ignorieren Sie diese Mail.\n\n";
                     $body .= "--------------------------------------------------------\n";
                     $body .= "PowerBook - PHP Guestbook System\n";
                     $body .= 'DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!';
@@ -166,76 +180,67 @@ if ($action === 'recover' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
     }
     regenerateCsrfToken();
 }
-?>
 
-<tr><td bgcolor="#3F5070" align="center">
-    <b class="headline">P A S S W O R T &nbsp; &nbsp; Z U R Ü C K S E T Z E N</b>
-</td></tr>
+pb_admin_card_open('Passwort zurücksetzen');
 
-<tr><td bgcolor="#001F3F" valign="top">
+if (!empty($message)) {
+    echo pb_admin_alert($message, pb_admin_message_type($messageType));
+}
 
-<?php if (!empty($message)) { ?>
-<div style="padding: 10px; margin: 10px 0; background: <?= $messageType === 'success' ? '#003300' : ($messageType === 'error' ? '#330000' : '#002244') ?>; border: 1px solid <?= $messageType === 'success' ? '#00FF00' : ($messageType === 'error' ? '#FF0000' : '#6090FF') ?>;">
-    <?= $message ?>
+if ($showSetPasswordForm) { ?>
+<div class="pb-card-narrow">
+    <p><b>Neues Passwort festlegen</b></p>
+    <form action="?page=password" method="post" novalidate>
+        <?= csrfField() ?>
+        <input type="hidden" name="action" value="set_password">
+        <input type="hidden" name="token" value="<?= e($tokenParam) ?>">
+
+        <div class="mb-3">
+            <label for="pb_pw1" class="form-label">Neues Passwort <span class="text-danger" aria-hidden="true">*</span></label>
+            <input id="pb_pw1" type="password" class="form-control" name="new_password1" minlength="8" required autocomplete="new-password">
+            <div class="form-text">Mindestens 8 Zeichen.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="pb_pw2" class="form-label">Passwort wiederholen <span class="text-danger" aria-hidden="true">*</span></label>
+            <input id="pb_pw2" type="password" class="form-control" name="new_password2" minlength="8" required autocomplete="new-password">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Passwort setzen</button>
+    </form>
 </div>
-<?php } ?>
-
-<?php if ($showSetPasswordForm) { ?>
-<p><b>Neues Passwort festlegen</b></p>
-<form action="?page=password" method="post">
-    <?= csrfField() ?>
-    <input type="hidden" name="action" value="set_password">
-    <input type="hidden" name="token" value="<?= e($tokenParam) ?>">
-    <table border="0">
-        <tr>
-            <td width="180">Neues Passwort:</td>
-            <td><input type="password" name="new_password1" minlength="8" required></td>
-        </tr>
-        <tr>
-            <td>Passwort wiederholen:</td>
-            <td><input type="password" name="new_password2" minlength="8" required></td>
-        </tr>
-        <tr>
-            <td></td>
-            <td><input type="submit" value="Passwort setzen"></td>
-        </tr>
-    </table>
-</form>
-<p><small>Mindestens 8 Zeichen.</small></p>
 <?php } elseif ($showForm) { ?>
-<p>
-Sie haben Ihr Passwort vergessen? <b>Kein Problem!</b>
-Geben Sie Ihren Namen oder Ihre E-Mail-Adresse ein — wir schicken Ihnen einen Link zum Zuruecksetzen des Passworts.
-</p>
+<div class="pb-card-narrow">
+    <p>
+    Sie haben Ihr Passwort vergessen? <b>Kein Problem!</b>
+    Geben Sie Ihren Namen oder Ihre E-Mail-Adresse ein — wir schicken Ihnen einen Link
+    zum Zurücksetzen des Passworts.
+    </p>
 
-<form action="?page=password" method="post">
-<?= csrfField() ?>
-<input type="hidden" name="action" value="recover">
+    <form action="?page=password" method="post" novalidate>
+        <?= csrfField() ?>
+        <input type="hidden" name="action" value="recover">
 
-<table border="0">
-    <tr>
-        <td width="100">Name:</td>
-        <td>
-            <input type="text" name="name" size="21" maxlength="250">
-            <small>(oder)</small>
-        </td>
-    </tr>
-    <tr>
-        <td width="100">E-Mail:</td>
-        <td><input type="text" name="email_known" size="29" maxlength="250"></td>
-    </tr>
-    <tr>
-        <td>&nbsp;</td>
-        <td><input type="submit" value="Reset-Link anfordern"></td>
-    </tr>
-</table>
-</form>
+        <div class="mb-3">
+            <label for="pb_recover_name" class="form-label">Name</label>
+            <input id="pb_recover_name" type="text" class="form-control" name="name" maxlength="250" autocomplete="username">
+            <div class="form-text">Oder geben Sie unten die E-Mail-Adresse an.</div>
+        </div>
 
-<p><small>
-<b>Hinweis:</b> Nach Klick auf den Mail-Link koennen Sie ein neues Passwort festlegen.
-Der Reset-Link ist 30 Minuten gueltig. Ihr altes Passwort bleibt bis zum erfolgreichen
-Neu-Setzen gueltig.
-</small></p>
-<?php } ?>
+        <div class="mb-3">
+            <label for="pb_recover_email" class="form-label">E-Mail-Adresse</label>
+            <input id="pb_recover_email" type="email" class="form-control" name="email_known" maxlength="250" autocomplete="email">
+        </div>
 
-</td></tr>
+        <button type="submit" class="btn btn-primary">Reset-Link anfordern</button>
+    </form>
+
+    <p class="text-body-secondary mt-3 mb-0"><small>
+    <b>Hinweis:</b> Nach Klick auf den Mail-Link können Sie ein neues Passwort festlegen.
+    Der Reset-Link ist 30 Minuten gültig. Ihr altes Passwort bleibt bis zum erfolgreichen
+    Neu-Setzen gültig.
+    </small></p>
+</div>
+<?php }
+
+pb_admin_card_close();

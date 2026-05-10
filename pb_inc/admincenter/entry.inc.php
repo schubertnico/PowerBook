@@ -5,9 +5,9 @@
  * Admin Entry Display Helper
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
@@ -17,7 +17,6 @@ declare(strict_types=1);
 /** @var string $config_icons */
 /** @var string $config_text_format */
 /** @var string $config_smilies */
-/** @var string $config_icq */
 /** @var string $db_statement */
 
 // IP address
@@ -27,7 +26,7 @@ $ip = !empty($entry['ip']) ? e($entry['ip']) : 'unknown';
 $show_icon = '';
 if (!empty($entry['icon']) && $entry['icon'] !== 'no' && ($config_icons ?? 'N') === 'Y') {
     $iconFile = e($entry['icon']);
-    $show_icon = "<img src=\"../smilies/{$iconFile}.gif\" border=\"0\" alt=\"\"> &nbsp;";
+    $show_icon = "<img src=\"../smilies/{$iconFile}.gif\" alt=\"\" class=\"me-2\">";
 }
 
 // Text processing - escape first, then apply formatting
@@ -76,7 +75,7 @@ if (!empty($entry['homepage']) && strlen($entry['homepage']) > 1) {
     }
     $homepage_link = '<small><a href="' . e($homepage) . '" target="_blank" rel="noopener">Homepage</a></small>';
 } else {
-    $homepage_link = '<small>Keine Homepage</small>';
+    $homepage_link = '<small class="text-body-secondary">Keine Homepage</small>';
 }
 // Backwards-compat Alias.
 $url = $homepage_link;
@@ -89,16 +88,9 @@ if (!empty($entry['email']) && strlen($entry['email']) > 1) {
     $email_name = $entryName;
 }
 
-// ICQ (legacy feature)
+// ICQ wurde komplett entfernt (Legacy-Service eingestellt). Variable bleibt
+// als leerer String fuer Backwards-Kompatibilitaet zu alten Templates.
 $show_icq = '';
-if (($config_icq ?? 'N') === 'Y') {
-    if (!empty($entry['icq']) && strlen($entry['icq']) > 1) {
-        $icqNumber = e($entry['icq']);
-        $show_icq = '<small>ICQ: ' . $icqNumber . '</small>';
-    } else {
-        $show_icq = '<small>Keine ICQ#</small>';
-    }
-}
 
 // Date and time
 $timestamp = (int) ($entry['date'] ?? 0);
@@ -129,7 +121,7 @@ if (!empty($entry['statement']) && strlen($entry['statement']) > 1 && ($db_state
     }
 
     $statementBy = e($entry['statement_by'] ?? 'Admin');
-    $entryText .= "<br><br><hr noshade><i><b>{$statementBy}</b>'s Statement:<br><br>{$statementText}</i>";
+    $entryText .= "<hr class=\"my-3\"><div class=\"fst-italic\"><b>{$statementBy}</b>'s Statement:<br><br>{$statementText}</div>";
 }
 
 // Store processed text back

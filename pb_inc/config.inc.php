@@ -5,9 +5,9 @@
  * Configuration Loader
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
@@ -41,7 +41,6 @@ try {
         $config_text_format = $configRow['text_format'] ?? 'Y';
         $config_icons = $configRow['icons'] ?? 'Y';
         $config_smilies = $configRow['smilies'] ?? 'Y';
-        $config_icq = $configRow['icq'] ?? 'N';
         $config_pages = $configRow['pages'] ?? 'Y';
         $config_use_thanks = $configRow['use_thanks'] ?? 'N';
         $config_language = $configRow['language'] ?? 'D';
@@ -64,7 +63,6 @@ try {
         $config_text_format = 'Y';
         $config_icons = 'Y';
         $config_smilies = 'Y';
-        $config_icq = 'N';
         $config_pages = 'Y';
         $config_use_thanks = 'N';
         $config_language = 'D';
@@ -88,7 +86,6 @@ try {
     $config_text_format = 'Y';
     $config_icons = 'Y';
     $config_smilies = 'Y';
-    $config_icq = 'N';
     $config_pages = 'Y';
     $config_use_thanks = 'N';
     $config_language = 'D';

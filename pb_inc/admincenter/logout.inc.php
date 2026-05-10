@@ -4,20 +4,24 @@
  * Logout Handler
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
+
+require_once __DIR__ . '/layout.inc.php';
 
 // Variables from parent scope
 /** @var array<string, string> $admin_session */
 $logout = $_GET['logout'] ?? '';
 $message = '';
+$messageType = 'info';
 
 if (!isset($admin_session) || empty($admin_session)) {
     $message = 'Sie sind nicht eingeloggt!';
+    $messageType = 'warning';
 } elseif ($logout === 'yes') {
     // Destroy session
     $_SESSION = [];
@@ -36,22 +40,24 @@ if (!isset($admin_session) || empty($admin_session)) {
     }
     session_destroy();
 
-    $message = 'Logout erfolgreich! <a href="index.php">Zur Login-Seite</a>';
+    $message = 'Logout erfolgreich! <a class="alert-link" href="index.php">Zur Login-Seite</a>';
+    $messageType = 'success';
 } else {
     $adminName = e($admin_session['name'] ?? 'Admin');
-    $message = "Sind Sie sicher, dass Sie sich ausloggen möchten, <b>{$adminName}</b>?<br><br>";
-    $message .= '&raquo; <a href="?page=logout&logout=yes">Ja, ausloggen</a> &laquo;';
+    $message = "Sind Sie sicher, dass Sie sich ausloggen möchten, <b>{$adminName}</b>?";
+    $messageType = 'warning';
 }
-?>
 
-<tr><td bgcolor="#3F5070" align="center">
-    <b class="headline">L O G O U T</b>
-</td></tr>
+pb_admin_card_open('Logout');
 
-<tr><td bgcolor="#001F3F" valign="top">
+echo pb_admin_alert($message, $messageType);
 
-<div style="padding: 20px; text-align: center;">
-    <?= $message ?>
+if (!empty($admin_session) && $logout !== 'yes') {
+    ?>
+<div class="d-flex flex-wrap gap-2">
+    <a href="?page=logout&amp;logout=yes" class="btn btn-danger">Ja, ausloggen</a>
+    <a href="?page=home" class="btn btn-outline-secondary">Abbrechen</a>
 </div>
+<?php }
 
-</td></tr>
+pb_admin_card_close();

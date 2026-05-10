@@ -4,9 +4,9 @@
  * Entry Form
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
@@ -17,7 +17,6 @@ declare(strict_types=1);
 $formName = e($name ?? '');
 $formEmail = e($email2 ?? '');
 $formUrl = e($url ?? '');
-$formIcq = e($icq2 ?? '');
 $formText = e($text ?? '');
 
 // Icon checked states
@@ -37,79 +36,106 @@ $iconChecked = [
 $smiliesChecked = (($smilies2 ?? '') === 'Y' || ($show_gb ?? '') !== 'no') ? 'checked' : '';
 
 ?>
-<form action="<?= e($config_guestbook_name) ?>" method="post">
-    <?= csrfField() ?>
-    <table border="0">
-        <tr>
-            <td width="120">Name:</td>
-            <td><input name="name" maxlength="100" size="30" value="<?= $formName ?>"></td>
-        </tr>
-        <tr>
-            <td width="120">eMail:</td>
-            <td><input name="email2" maxlength="250" size="30" value="<?= $formEmail ?>"></td>
-        </tr>
-        <tr>
-            <td width="120">Homepage:</td>
-            <td>
-                <input maxlength="5" size="4" value="http://" readonly>
-                <input name="url" maxlength="100" size="24" value="<?= $formUrl ?>">
-            </td>
-        </tr>
+<section class="card shadow-sm mb-4">
+    <header class="card-header bg-primary text-white">
+        <h2 class="h5 mb-0">Neuen Eintrag schreiben</h2>
+    </header>
+    <div class="card-body">
+        <form action="<?= e($config_guestbook_name) ?>" method="post" novalidate>
+            <?= csrfField() ?>
 
-        <?php if (($config_icq ?? 'N') === 'Y') { ?>
-        <tr>
-            <td width="120">ICQ#:</td>
-            <td><input name="icq2" maxlength="20" size="10" value="<?= $formIcq ?>"></td>
-        </tr>
-        <?php } ?>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="pb_name" class="form-label">Name <span class="text-danger" aria-hidden="true">*</span></label>
+                    <input id="pb_name" name="name" type="text" class="form-control" maxlength="100" required value="<?= $formName ?>" aria-describedby="pb_name_help">
+                    <div id="pb_name_help" class="form-text">Pflichtfeld. Max. 100 Zeichen.</div>
+                </div>
 
-        <?php if (($config_icons ?? 'N') === 'Y') { ?>
-        <tr>
-            <td width="120" valign="top">Icon:</td>
-            <td>
-                <input type="radio" name="icon" value="no" <?= $iconChecked['no'] ?>> Kein Icon<br>
-                <input type="radio" name="icon" value="text" <?= $iconChecked['text'] ?>>
-                    <img src="pb_inc/smilies/text.gif" alt="text">
-                <input type="radio" name="icon" value="question" <?= $iconChecked['question'] ?>>
-                    <img src="pb_inc/smilies/question.gif" alt="question">
-                <input type="radio" name="icon" value="mark" <?= $iconChecked['mark'] ?>>
-                    <img src="pb_inc/smilies/mark.gif" alt="mark">
-                <input type="radio" name="icon" value="shock" <?= $iconChecked['shock'] ?>>
-                    <img src="pb_inc/smilies/shock.gif" alt="shock">
-                <input type="radio" name="icon" value="sad2" <?= $iconChecked['sad2'] ?>>
-                    <img src="pb_inc/smilies/sad2.gif" alt="sad">
-                <input type="radio" name="icon" value="happy1" <?= $iconChecked['happy1'] ?>>
-                    <img src="pb_inc/smilies/happy1.gif" alt="happy">
-                <input type="radio" name="icon" value="happy5" <?= $iconChecked['happy5'] ?>>
-                    <img src="pb_inc/smilies/happy5.gif" alt="happy">
-            </td>
-        </tr>
-        <?php } ?>
+                <div class="col-md-6">
+                    <label for="pb_email" class="form-label">E-Mail-Adresse</label>
+                    <input id="pb_email" name="email2" type="email" class="form-control" maxlength="250" value="<?= $formEmail ?>" aria-describedby="pb_email_help">
+                    <div id="pb_email_help" class="form-text">Optional. Wird nur für Antworten genutzt.</div>
+                </div>
 
-        <tr>
-            <td width="120" valign="top">
-                Text<?php if (($config_text_format ?? 'N') === 'Y') { ?>
-                    &nbsp; <small>(<a href="javascript:TextHelp()">Hilfe</a>)</small>
-                <?php } ?>:
-            </td>
-            <td>
-                <textarea name="text" rows="10" cols="35"><?= $formText ?></textarea><br>
+                <div class="col-md-12">
+                    <label for="pb_url" class="form-label">Homepage</label>
+                    <div class="input-group">
+                        <span class="input-group-text">http://</span>
+                        <input id="pb_url" name="url" type="text" class="form-control" maxlength="100" value="<?= $formUrl ?>" aria-describedby="pb_url_help">
+                    </div>
+                    <div id="pb_url_help" class="form-text">Ohne <code>http://</code> eingeben.</div>
+                </div>
 
-                <?php if (($config_smilies ?? 'N') === 'Y') { ?>
-                <input type="checkbox" name="smilies2" <?= $smiliesChecked ?> value="Y">
-                Smilies aktivieren &nbsp;
-                <small>(<a href="javascript:SmiliesHelp()">Hilfe</a>)</small>
+                <?php if (($config_icons ?? 'N') === 'Y') { ?>
+                <fieldset class="col-12">
+                    <legend class="form-label">Icon</legend>
+                    <div class="d-flex flex-wrap gap-3 align-items-center">
+                        <div class="form-check">
+                            <input id="pb_icon_no" type="radio" class="form-check-input" name="icon" value="no" <?= $iconChecked['no'] ?>>
+                            <label for="pb_icon_no" class="form-check-label">Kein Icon</label>
+                        </div>
+                        <div class="form-check">
+                            <input id="pb_icon_text" type="radio" class="form-check-input" name="icon" value="text" <?= $iconChecked['text'] ?>>
+                            <label for="pb_icon_text" class="form-check-label"><img src="pb_inc/smilies/text.gif" alt="text"></label>
+                        </div>
+                        <div class="form-check">
+                            <input id="pb_icon_question" type="radio" class="form-check-input" name="icon" value="question" <?= $iconChecked['question'] ?>>
+                            <label for="pb_icon_question" class="form-check-label"><img src="pb_inc/smilies/question.gif" alt="question"></label>
+                        </div>
+                        <div class="form-check">
+                            <input id="pb_icon_mark" type="radio" class="form-check-input" name="icon" value="mark" <?= $iconChecked['mark'] ?>>
+                            <label for="pb_icon_mark" class="form-check-label"><img src="pb_inc/smilies/mark.gif" alt="mark"></label>
+                        </div>
+                        <div class="form-check">
+                            <input id="pb_icon_shock" type="radio" class="form-check-input" name="icon" value="shock" <?= $iconChecked['shock'] ?>>
+                            <label for="pb_icon_shock" class="form-check-label"><img src="pb_inc/smilies/shock.gif" alt="shock"></label>
+                        </div>
+                        <div class="form-check">
+                            <input id="pb_icon_sad2" type="radio" class="form-check-input" name="icon" value="sad2" <?= $iconChecked['sad2'] ?>>
+                            <label for="pb_icon_sad2" class="form-check-label"><img src="pb_inc/smilies/sad2.gif" alt="sad"></label>
+                        </div>
+                        <div class="form-check">
+                            <input id="pb_icon_happy1" type="radio" class="form-check-input" name="icon" value="happy1" <?= $iconChecked['happy1'] ?>>
+                            <label for="pb_icon_happy1" class="form-check-label"><img src="pb_inc/smilies/happy1.gif" alt="happy"></label>
+                        </div>
+                        <div class="form-check">
+                            <input id="pb_icon_happy5" type="radio" class="form-check-input" name="icon" value="happy5" <?= $iconChecked['happy5'] ?>>
+                            <label for="pb_icon_happy5" class="form-check-label"><img src="pb_inc/smilies/happy5.gif" alt="happy"></label>
+                        </div>
+                    </div>
+                </fieldset>
                 <?php } ?>
-            </td>
-        </tr>
-        <tr>
-            <td>&nbsp;</td>
-            <td height="30" valign="bottom">
-                <input type="hidden" name="show_gb" value="no">
-                <input type="hidden" name="preview" value="yes">
-                <input type="submit" value="Abschicken">
-                <input type="reset" value="Zurücksetzen">
-            </td>
-        </tr>
-    </table>
-</form>
+
+                <div class="col-12">
+                    <label for="pb_text" class="form-label">
+                        Text <span class="text-danger" aria-hidden="true">*</span>
+                        <?php if (($config_text_format ?? 'N') === 'Y') { ?>
+                        &nbsp;<small>(<a href="javascript:TextHelp()">Formatierungs-Hilfe</a>)</small>
+                        <?php } ?>
+                    </label>
+                    <textarea id="pb_text" name="text" rows="8" class="form-control" maxlength="5000" required aria-describedby="pb_text_help"><?= $formText ?></textarea>
+                    <div id="pb_text_help" class="form-text">Pflichtfeld. Max. 5000 Zeichen.</div>
+
+                    <?php if (($config_smilies ?? 'N') === 'Y') { ?>
+                    <div class="form-check mt-2">
+                        <input id="pb_smilies" type="checkbox" class="form-check-input" name="smilies2" value="Y" <?= $smiliesChecked ?>>
+                        <label for="pb_smilies" class="form-check-label">
+                            Smilies aktivieren &nbsp;
+                            <small>(<a href="javascript:SmiliesHelp()">Hilfe</a>)</small>
+                        </label>
+                    </div>
+                    <?php } ?>
+                </div>
+
+                <div class="col-12">
+                    <input type="hidden" name="show_gb" value="no">
+                    <input type="hidden" name="preview" value="yes">
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary">Vorschau / Abschicken</button>
+                        <button type="reset" class="btn btn-outline-secondary">Zurücksetzen</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>

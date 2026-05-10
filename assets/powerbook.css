@@ -1,0 +1,72 @@
+/* PowerBook - Eigene CSS-Anpassungen über Bootstrap 5.
+ *
+ * Inhalt absichtlich klein gehalten — Bootstrap-Utilities werden bevorzugt.
+ * Hier nur Korrekturen, die mit Bootstrap-Bordmitteln nicht direkt möglich sind.
+ */
+
+/* Body-Hintergrund konsistent halten, wenn Bootstrap noch nicht geladen ist. */
+body.pb-body {
+    min-height: 100vh;
+}
+
+/* Eintrags-Karten: schmale Abstaende, keine knalligen Ecken. */
+.pb-entry-card {
+    margin-bottom: 1rem;
+}
+
+/* Smiley/Icon-Bilder im Eintragstext sollen vertikal ausgerichtet sein. */
+.pb-entry-card img,
+.pb-public img,
+.pb-admin img {
+    vertical-align: middle;
+}
+
+/* Long-Text in Admin-Tabellen darf umbrechen statt zu sprengen. */
+.pb-table-wrap td {
+    word-break: break-word;
+}
+
+/* Layout für Logo-Anker im Adminbereich. */
+.pb-admin-brand img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Einbettung der Lizenz/Pre-Inhalte. */
+.pb-pre {
+    white-space: pre-wrap;
+    font-family: var(--bs-font-monospace);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* Login-Card etwas schmaler zentrieren. */
+.pb-card-narrow {
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Konfig-Helfer-Mini-Tabellen: kleinere Schrift. */
+.pb-placeholder-table {
+    font-size: 0.85rem;
+}
+.pb-placeholder-table td {
+    padding: 0.1rem 0.5rem;
+    border: none;
+}
+
+/* Browser-Default fuer <legend> ist ~1.5em — das laesst eine Fieldset-Ueberschrift
+ * (z. B. "Icon", "Berechtigungen") deutlich groesser wirken als die <label>-Texte
+ * im selben Formular. Wir vereinheitlichen: legend.form-label hat dieselbe
+ * Schriftgroesse, Linienhoehe und das gleiche Margin wie label.form-label.
+ * So wirken alle Form-Felder typografisch gleichwertig.
+ */
+legend.form-label {
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+    font-weight: 400;
+    width: auto;
+    padding: 0;
+}

@@ -158,14 +158,14 @@ cd PowerBook/.docker
 docker compose up -d --build
 
 # 3. Installation im Browser ausf&uuml;hren
-#    -> http://localhost:8080/install_deu.php
+#    -> http://localhost:8081/install_deu.php
 #    Auf "Installation starten" klicken.
 #    Das angezeigte Initial-Passwort SOFORT notieren!
 
 # 4. Loslegen
-# Frontend (G&auml;stebuch):  http://localhost:8080/pbook.php
-# Admin-Center:           http://localhost:8080/pb_inc/admincenter/
-# Mailpit (Test-Mails):   http://localhost:8031</pre>
+# Frontend (G&auml;stebuch):  http://localhost:8081/pbook.php
+# Admin-Center:           http://localhost:8081/pb_inc/admincenter/
+# Mailpit (Test-Mails):   http://localhost:8035</pre>
 
 <div class="warn">
 <b>Hinweis zum Initial-Passwort (Stand April 2026):</b> Bei der Installation wird ein zuf&auml;lliges 16-stelliges Hex-Passwort erzeugt (kein hardcoded <code>powerbook</code> mehr). Das Passwort erscheint <b>einmalig</b> auf der Erfolgsseite. Bitte sofort notieren oder direkt im AdminCenter &auml;ndern.
@@ -199,16 +199,16 @@ Das Repository enth&auml;lt unter <code>.docker/</code> ein vollst&auml;ndiges C
 
 <table border="0" cellpadding="6" width="100%">
     <tr bgcolor="#001329"><td width="140"><b>Service</b></td><td><b>Image</b></td><td><b>Host-Port</b></td></tr>
-    <tr><td><code>web</code></td><td>Apache 2.4 + PHP 8.4</td><td><b>8080</b></td></tr>
+    <tr><td><code>web</code></td><td>Apache 2.4 + PHP 8.4</td><td><b>8081</b></td></tr>
     <tr><td><code>db</code></td><td>MySQL 8.0</td><td>3314</td></tr>
-    <tr><td><code>mail</code></td><td>Axllent Mailpit</td><td>SMTP <b>1031</b>, Web-UI <b>8031</b></td></tr>
+    <tr><td><code>mail</code></td><td>Axllent Mailpit</td><td>SMTP <b>1035</b>, Web-UI <b>8035</b></td></tr>
 </table>
 
 <pre>git clone https://github.com/schubertnico/PowerBook.git
 cd PowerBook/.docker
 docker compose up -d --build</pre>
 
-Anschlie&szlig;end <code>http://localhost:8080/install_deu.php</code> aufrufen und auf <b>"Installation starten"</b> klicken. Die Installation:
+Anschlie&szlig;end <code>http://localhost:8081/install_deu.php</code> aufrufen und auf <b>"Installation starten"</b> klicken. Die Installation:
 <ol>
     <li>legt die MySQL-Tabellen <code>pb_admins</code>, <code>pb_config</code>, <code>pb_entries</code> an (mit Spalten <code>reset_token</code> + <code>reset_token_expires</code> f&uuml;r den sicheren Recovery-Flow),</li>
     <li>erzeugt einen Standard-Admin <b>PowerBook</b> mit zuf&auml;lligem 16-Hex-Passwort,</li>

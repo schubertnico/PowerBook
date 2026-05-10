@@ -4,25 +4,21 @@
  * License Information
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
+
+require_once __DIR__ . '/layout.inc.php';
+
+pb_admin_card_open('MIT-Lizenz');
 ?>
 
-<tr><td bgcolor="#3F5070" align="center">
-    <b class="headline">M I T &nbsp; &nbsp; L I C E N S E</b>
-</td></tr>
-
-<tr><td bgcolor="#001F3F" valign="top">
-
-<div align="center">
-<table border="0" cellpadding="4" cellspacing="1" bgcolor="#6078A0">
-<tr bgcolor="#001329"><td>
-<pre style="white-space: pre-wrap; font-family: monospace; font-size: 12px;">
-MIT License
+<div class="card border-light bg-body-secondary">
+    <div class="card-body">
+        <pre class="pb-pre">MIT License
 
 Copyright (c) 2002 Axel "Expandable" Habermaier (Original PowerBook 1.21)
 Copyright (c) 2025 Nico Schubert (PHP 8.4 Migration & Security Updates)
@@ -45,13 +41,18 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 </pre>
-</td></tr>
-</table>
+    </div>
 </div>
 
-<br>
-<p>
-<b>Repository:</b> <a href="https://github.com/schubertnico/PowerBook.git" target="_blank">https://github.com/schubertnico/PowerBook.git</a>
+<p class="mt-3 mb-0">
+    <b>Projekt:</b>
+    <a href="https://www.powerscripts.org" target="_blank" rel="noopener noreferrer">https://www.powerscripts.org</a>
 </p>
+<p class="text-body-secondary mb-0"><small>
+    Hinweis: Der oben angezeigte MIT-Lizenztext ist rechtlich notwendig
+    und darf nicht entfernt werden, da PowerBook unter dieser Lizenz
+    weiterverteilt wird.
+</small></p>
 
-</td></tr>
+<?php
+pb_admin_card_close();

@@ -5,9 +5,9 @@
  * Validation Functions
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ function validateGuestbookEntry(string $name, string $text, string $email): arra
     }
 
     if (strlen($email) >= 1 && (!str_contains($email, '@') || !str_contains($email, '.'))) {
-        $errors['email'] = 'Ungueltige eMail-Adresse!';
+        $errors['email'] = 'Ungültige E-Mail-Adresse!';
     }
 
     return $errors;

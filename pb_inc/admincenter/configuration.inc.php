@@ -4,12 +4,14 @@
  * Configuration Management
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
+
+require_once __DIR__ . '/layout.inc.php';
 
 // Variables from parent scope (index.php)
 /** @var PDO $pdo */
@@ -18,7 +20,9 @@ declare(strict_types=1);
 
 // Check permission
 if (($admin_session['config'] ?? 'N') !== 'Y') {
-    echo '<div style="color: #FF6666; padding: 20px;">Sie haben keine Berechtigung für die Konfiguration.</div>';
+    pb_admin_card_open('PowerBook Konfiguration');
+    echo pb_admin_alert('Sie haben keine Berechtigung für die Konfiguration.', 'danger');
+    pb_admin_card_close();
 
     return;
 }
@@ -43,7 +47,7 @@ if (($_POST['action'] ?? '') === 'update' && validateCsrfToken($_POST['csrf_toke
     $change_text_format = ($_POST['change_text_format'] ?? 'Y') === 'Y' ? 'Y' : 'N';
     $change_icons = ($_POST['change_icons'] ?? 'Y') === 'Y' ? 'Y' : 'N';
     $change_smilies = ($_POST['change_smilies'] ?? 'Y') === 'Y' ? 'Y' : 'N';
-    $change_icq = ($_POST['change_icq'] ?? 'N') === 'Y' ? 'Y' : 'N';
+    // ICQ-Feature wurde komplett entfernt — keine $change_icq-Variable mehr noetig.
     $change_pages = ($_POST['change_pages'] ?? 'D') === 'L' ? 'L' : 'D';
     $change_use_thanks = ($_POST['change_use_thanks'] ?? 'N') === 'Y' ? 'Y' : 'N';
     $change_language = 'eng'; // Only German supported in this version
@@ -86,6 +90,9 @@ if (($_POST['action'] ?? '') === 'update' && validateCsrfToken($_POST['csrf_toke
     } else {
         try {
             // Update configuration
+            // ICQ-Spalte wird nicht mehr beschrieben (Legacy-Service eingestellt).
+            // Falls die Spalte in der DB noch existiert, behaelt sie ihren
+            // aktuellen Wert; neue Installationen legen sie gar nicht mehr an.
             $stmt = $pdo->prepare("UPDATE {$pb_config} SET
                 `release` = ?,
                 send_email = ?,
@@ -100,7 +107,6 @@ if (($_POST['action'] ?? '') === 'update' && validateCsrfToken($_POST['csrf_toke
                 text_format = ?,
                 icons = ?,
                 smilies = ?,
-                icq = ?,
                 pages = ?,
                 use_thanks = ?,
                 language = ?,
@@ -123,7 +129,6 @@ if (($_POST['action'] ?? '') === 'update' && validateCsrfToken($_POST['csrf_toke
                 $change_text_format,
                 $change_icons,
                 $change_smilies,
-                $change_icq,
                 $change_pages,
                 $change_use_thanks,
                 $change_language,
@@ -171,7 +176,6 @@ if ($showForm) {
         $change_text_format = $config['text_format'] ?? 'Y';
         $change_icons = $config['icons'] ?? 'Y';
         $change_smilies = $config['smilies'] ?? 'Y';
-        $change_icq = $config['icq'] ?? 'N';
         $change_pages = $config['pages'] ?? 'D';
         $change_use_thanks = $config['use_thanks'] ?? 'N';
         $change_language = $config['language'] ?? 'eng';
@@ -185,208 +189,259 @@ if ($showForm) {
 // Helper for checked/selected attributes
 $checked = fn (string $value, string $expected): string => $value === $expected ? 'checked' : '';
 $selected = fn (string $value, string $expected): string => $value === $expected ? 'selected' : '';
-?>
 
-<tr><td bgcolor="#3F5070" align="center">
-    <b class="headline">P O W E R B O O K &nbsp; K O N F I G U R A T I O N</b>
-</td></tr>
+pb_admin_card_open('PowerBook Konfiguration');
 
-<tr><td bgcolor="#001F3F" valign="top">
+if (!empty($message)) {
+    echo pb_admin_alert(e($message), pb_admin_message_type($messageType));
+}
 
-<?php if (!empty($message)) { ?>
-<div style="padding: 10px; margin: 10px 0; background: <?= $messageType === 'success' ? '#003300' : '#330000' ?>; border: 1px solid <?= $messageType === 'success' ? '#00FF00' : '#FF0000' ?>;">
-    <?= e($message) ?>
-</div>
-<?php } ?>
-
-<?php if ($showForm) { ?>
-<form action="?page=configuration" method="post">
+if ($showForm) { ?>
+<form action="?page=configuration" method="post" novalidate>
 <?= csrfField() ?>
 <input type="hidden" name="action" value="update">
 
-<table border="0" width="100%">
-    <tr bgcolor="#001329"><td colspan="2" align="center">
-        <b>ALLGEMEINE KONFIGURATION</b>
-    </td></tr>
-    <tr bgcolor="#001930"><td>
-        <b>Sende E-Mail:</b><br>
-        <small class="info">E-Mail an Admin verschicken, wenn neuer Eintrag verfasst wurde</small>
-    </td><td width="350">
-        <input type="radio" name="change_send_email" value="Y" <?= $checked($change_send_email, 'Y') ?>> Ja &nbsp;&nbsp;
-        <input type="radio" name="change_send_email" value="N" <?= $checked($change_send_email, 'N') ?>> Nein
-    </td></tr>
-    <tr bgcolor="#001329"><td>
-        <b>E-Mail:</b><br>
-        <small class="info">Obige E-Mail an folgende Adresse schicken</small>
-    </td><td width="350">
-        <input type="text" name="change_email" value="<?= e($change_email) ?>" size="35" maxlength="250">
-    </td></tr>
-    <tr bgcolor="#001930"><td>
-        <b>Sprache:</b><br>
-        <small class="info">Diese Version unterstützt nur Deutsch.</small>
-    </td><td width="350">
-        <select size="1" name="change_language">
-            <option value="eng" selected>Deutsch</option>
-        </select>
-    </td></tr>
-    <tr bgcolor="#001329"><td>
-        <b>Gästebuch-URL:</b><br>
-        <small class="info">Name der externen PowerBook-Datei (Standard: pbook.php)</small>
-    </td><td width="350">
-        <input type="text" name="change_guestbook_name" value="<?= e($change_guestbook_name) ?>" size="15" maxlength="250">
-    </td></tr>
-    <tr bgcolor="#001930"><td>
-        <b>Admin-URL:</b><br>
-        <small class="info">URL zum AdminCenter (http://--URL--/pb_inc/admincenter/)</small>
-    </td><td width="350">
-        <input type="text" name="change_admin_url" value="<?= e($change_admin_url) ?>" size="65" maxlength="250">
-    </td></tr>
-    <tr bgcolor="#001329"><td>
-        <b>IP Abblocken:</b><br>
-        <small class="info">Zeitintervall (Sekunden), innerhalb dessen mit der gleichen IP kein zweiter Eintrag verfasst werden kann.</small>
-    </td><td width="350">
-        <input type="text" name="change_spam_check" value="<?= (int) $change_spam_check ?>" size="3" maxlength="10"> Sekunden
-    </td></tr>
-    <tr bgcolor="#001930"><td>
-        <b>Freigeben:</b><br>
-        <small class="info">Neue Einträge sofort freigeben?</small>
-    </td><td width="350">
-        <input type="radio" name="change_release" value="R" <?= $checked($change_release, 'R') ?>> Ja &nbsp;&nbsp;
-        <input type="radio" name="change_release" value="U" <?= $checked($change_release, 'U') ?>> Nein
-    </td></tr>
-    <tr bgcolor="#001329"><td>
-        <b>Text Formatierung:</b><br>
-        <small class="info">Textformatierung (BBCode) zulassen?</small>
-    </td><td width="350">
-        <input type="radio" name="change_text_format" value="Y" <?= $checked($change_text_format, 'Y') ?>> Ja &nbsp;&nbsp;
-        <input type="radio" name="change_text_format" value="N" <?= $checked($change_text_format, 'N') ?>> Nein
-    </td></tr>
-    <tr bgcolor="#001930"><td>
-        <b>Icons:</b><br>
-        <small class="info">Icons zulassen?</small>
-    </td><td width="350">
-        <input type="radio" name="change_icons" value="Y" <?= $checked($change_icons, 'Y') ?>> Ja &nbsp;&nbsp;
-        <input type="radio" name="change_icons" value="N" <?= $checked($change_icons, 'N') ?>> Nein
-    </td></tr>
-    <tr bgcolor="#001329"><td>
-        <b>Smilies:</b><br>
-        <small class="info">Smilies zulassen?</small>
-    </td><td width="350">
-        <input type="radio" name="change_smilies" value="Y" <?= $checked($change_smilies, 'Y') ?>> Ja &nbsp;&nbsp;
-        <input type="radio" name="change_smilies" value="N" <?= $checked($change_smilies, 'N') ?>> Nein
-    </td></tr>
-    <tr bgcolor="#001930"><td>
-        <b>ICQ:</b><br>
-        <small class="info">Eingabe der ICQ# zulassen? (Legacy-Feature)</small>
-    </td><td width="350">
-        <input type="radio" name="change_icq" value="Y" <?= $checked($change_icq, 'Y') ?>> Ja &nbsp;&nbsp;
-        <input type="radio" name="change_icq" value="N" <?= $checked($change_icq, 'N') ?>> Nein
-    </td></tr>
-    <tr bgcolor="#001329"><td>
-        <b>Statement:</b><br>
-        <small class="info">Admin-Statement anzeigen, falls verfügbar?</small>
-    </td><td width="350">
-        <input type="radio" name="change_statements" value="Y" <?= $checked($change_statements, 'Y') ?>> Ja &nbsp;&nbsp;
-        <input type="radio" name="change_statements" value="N" <?= $checked($change_statements, 'N') ?>> Nein
-    </td></tr>
-</table>
-<br><br>
+<!-- ALLGEMEINE KONFIGURATION -->
+<section class="card mb-4">
+    <header class="card-header bg-secondary text-white"><h3 class="h6 mb-0">Allgemeine Konfiguration</h3></header>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label d-block">Sende E-Mail</label>
+                <small class="text-body-secondary d-block mb-2">E-Mail an Admin verschicken, wenn neuer Eintrag verfasst wurde.</small>
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="form-check">
+                        <input id="cfg_send_email_y" class="form-check-input" type="radio" name="change_send_email" value="Y" <?= $checked($change_send_email, 'Y') ?>>
+                        <label for="cfg_send_email_y" class="form-check-label">Ja</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="cfg_send_email_n" class="form-check-input" type="radio" name="change_send_email" value="N" <?= $checked($change_send_email, 'N') ?>>
+                        <label for="cfg_send_email_n" class="form-check-label">Nein</label>
+                    </div>
+                </div>
+            </div>
 
-<table border="0" width="100%">
-    <tr bgcolor="#001329"><td colspan="2" align="center">
-        <b>DESIGN KONFIGURATION</b>
-    </td></tr>
-    <tr bgcolor="#001930"><td>
-        <b>Datum:</b><br>
-        <small class="info">Wie das Datum angezeigt werden soll (Standard: l, j. F Y)<br>
-        <a href="date-help.php?section=date" target="_blank">Hilfe zu Datumsformaten</a></small>
-    </td><td width="450">
-        <input type="text" name="change_date" value="<?= e($change_date) ?>" size="15" maxlength="20">
-    </td></tr>
-    <tr bgcolor="#001329"><td>
-        <b>Zeit:</b><br>
-        <small class="info">Wie die Zeit angezeigt werden soll (Standard: H:i)<br>
-        <a href="date-help.php?section=time" target="_blank">Hilfe zu Zeitformaten</a></small>
-    </td><td width="450">
-        <input type="text" name="change_time" value="<?= e($change_time) ?>" size="15" maxlength="20">
-    </td></tr>
-    <tr bgcolor="#001930"><td>
-        <b>Farbe:</b><br>
-        <small class="info">Farbe zum Hervorheben wichtiger Nachrichten<br>
-        (zur Zeit: <font color="<?= e($change_color) ?>"><?= e($change_color) ?></font>)</small>
-    </td><td width="450">
-        <input type="text" name="change_color" value="<?= e($change_color) ?>" size="10" maxlength="10">
-    </td></tr>
-    <tr bgcolor="#001329"><td>
-        <b>Einträge:</b><br>
-        <small class="info">Anzahl der pro Seite angezeigten Einträge</small>
-    </td><td width="450">
-        <input type="text" name="change_show_entries" value="<?= (int) $change_show_entries ?>" size="3" maxlength="5">
-    </td></tr>
-    <tr bgcolor="#001930"><td valign="top">
-        <b>Seiten:</b><br>
-        <small class="info">Handhabung multipler Seiten</small>
-    </td><td width="450">
-        <input type="radio" name="change_pages" value="L" <?= $checked($change_pages, 'L') ?>> Durchblättern<br>
-        <input type="radio" name="change_pages" value="D" <?= $checked($change_pages, 'D') ?>> Seitennummern anzeigen
-    </td></tr>
-    <tr bgcolor="#001329"><td valign="top">
-        <b>Eintrags-Design:</b><br>
-        <small class="info">Das Design der Einträge</small><br><br>
-        <table border="0">
-            <tr><td class="small">(#ICON#)</td><td class="small">→</td><td class="small">Icon des Eintrags</td></tr>
-            <tr><td class="small">(#DATE#)</td><td class="small">→</td><td class="small">Datum des Eintrags</td></tr>
-            <tr><td class="small">(#TIME#)</td><td class="small">→</td><td class="small">Zeit des Eintrags</td></tr>
-            <tr><td class="small">(#EMAIL_NAME#)</td><td class="small">→</td><td class="small">Name mit E-Mail-Link</td></tr>
-            <tr><td class="small">(#TEXT#)</td><td class="small">→</td><td class="small">Text des Eintrags</td></tr>
-            <tr><td class="small">(#URL#)</td><td class="small">→</td><td class="small">Homepage des Autors</td></tr>
-            <tr><td class="small">(#ICQ#)</td><td class="small">→</td><td class="small">ICQ# des Autors</td></tr>
-        </table>
-    </td><td width="450">
-        <textarea name="change_design" cols="70" rows="9"><?= e($change_design) ?></textarea>
-    </td></tr>
-</table>
-<br><br>
+            <div class="col-md-6">
+                <label for="cfg_email" class="form-label">E-Mail-Adresse <span class="text-danger" aria-hidden="true">*</span></label>
+                <input id="cfg_email" type="email" class="form-control" name="change_email" maxlength="250" value="<?= e($change_email) ?>" aria-describedby="cfg_email_help">
+                <div id="cfg_email_help" class="form-text">Obige E-Mail an folgende Adresse schicken.</div>
+            </div>
 
-<table border="0" width="100%">
-    <tr bgcolor="#001329"><td colspan="2" align="center">
-        <b>DANKSAGUNGS-NACHRICHT</b>
-    </td></tr>
-    <tr bgcolor="#001930"><td>
-        <b>Danksagungs-Nachricht verwenden:</b><br>
-        <small class="info">Danksagungs-E-Mail an Eintrags-Autor verschicken?</small>
-    </td><td width="450">
-        <input type="radio" name="change_use_thanks" value="Y" <?= $checked($change_use_thanks, 'Y') ?>> Ja &nbsp;&nbsp;
-        <input type="radio" name="change_use_thanks" value="N" <?= $checked($change_use_thanks, 'N') ?>> Nein
-    </td></tr>
-    <tr bgcolor="#001329"><td>
-        <b>Titel:</b><br>
-        <small class="info">Titel der E-Mail (nicht benötigt falls oben "Nein" gewählt wurde)</small>
-    </td><td width="450">
-        <input type="text" name="change_thanks_title" value="<?= e($change_thanks_title) ?>" size="35" maxlength="250">
-    </td></tr>
-    <tr bgcolor="#001930"><td valign="top">
-        <b>Text:</b><br>
-        <small class="info">Text der E-Mail</small><br><br>
-        <table border="0">
-            <tr><td class="small">(#NAME#)</td><td class="small">→</td><td class="small">Name des Autors</td></tr>
-            <tr><td class="small">(#EMAIL#)</td><td class="small">→</td><td class="small">E-Mail des Autors</td></tr>
-            <tr><td class="small">(#TEXT#)</td><td class="small">→</td><td class="small">Text des Eintrags</td></tr>
-            <tr><td class="small">(#URL#)</td><td class="small">→</td><td class="small">Homepage des Autors</td></tr>
-            <tr><td class="small">(#ICQ#)</td><td class="small">→</td><td class="small">ICQ# des Autors</td></tr>
-            <tr><td class="small">(#TIME#)</td><td class="small">→</td><td class="small">Datum des Eintrags</td></tr>
-            <tr><td class="small">(#IP#)</td><td class="small">→</td><td class="small">IP-Adresse des Autors</td></tr>
-        </table>
-    </td><td width="450">
-        <textarea name="change_thanks" cols="70" rows="9"><?= e($change_thanks) ?></textarea>
-    </td></tr>
-</table>
-<br>
-<div align="center">
-    <input type="submit" value="Konfiguration speichern">
-    <input type="reset" value="Zurücksetzen">
+            <div class="col-md-6">
+                <label for="cfg_language" class="form-label">Sprache</label>
+                <select id="cfg_language" class="form-select" name="change_language" disabled>
+                    <option value="eng" selected>Deutsch</option>
+                </select>
+                <div class="form-text">Diese Version unterstuetzt nur Deutsch.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label for="cfg_guestbook" class="form-label">Gästebuch-URL <span class="text-danger" aria-hidden="true">*</span></label>
+                <input id="cfg_guestbook" type="text" class="form-control" name="change_guestbook_name" maxlength="250" value="<?= e($change_guestbook_name) ?>">
+                <div class="form-text">Name der externen PowerBook-Datei (Standard: pbook.php).</div>
+            </div>
+
+            <div class="col-md-12">
+                <label for="cfg_admin_url" class="form-label">Admin-URL</label>
+                <input id="cfg_admin_url" type="text" class="form-control" name="change_admin_url" maxlength="250" value="<?= e($change_admin_url) ?>">
+                <div class="form-text">URL zum AdminCenter (z. B. https://example.com/pb_inc/admincenter/).</div>
+            </div>
+
+            <div class="col-md-6">
+                <label for="cfg_spam" class="form-label">IP abblocken (Sekunden)</label>
+                <input id="cfg_spam" type="number" min="0" class="form-control" name="change_spam_check" maxlength="10" value="<?= (int) $change_spam_check ?>">
+                <div class="form-text">Zeitintervall, innerhalb dessen mit der gleichen IP kein zweiter Eintrag verfasst werden kann.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label d-block">Freigabe</label>
+                <small class="text-body-secondary d-block mb-2">Neue Einträge sofort freigeben?</small>
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="form-check">
+                        <input id="cfg_release_y" class="form-check-input" type="radio" name="change_release" value="R" <?= $checked($change_release, 'R') ?>>
+                        <label for="cfg_release_y" class="form-check-label">Ja</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="cfg_release_n" class="form-check-input" type="radio" name="change_release" value="U" <?= $checked($change_release, 'U') ?>>
+                        <label for="cfg_release_n" class="form-check-label">Nein</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label d-block">Text-Formatierung (BBCode)</label>
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="form-check">
+                        <input id="cfg_textfmt_y" class="form-check-input" type="radio" name="change_text_format" value="Y" <?= $checked($change_text_format, 'Y') ?>>
+                        <label for="cfg_textfmt_y" class="form-check-label">Ja</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="cfg_textfmt_n" class="form-check-input" type="radio" name="change_text_format" value="N" <?= $checked($change_text_format, 'N') ?>>
+                        <label for="cfg_textfmt_n" class="form-check-label">Nein</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label d-block">Icons</label>
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="form-check">
+                        <input id="cfg_icons_y" class="form-check-input" type="radio" name="change_icons" value="Y" <?= $checked($change_icons, 'Y') ?>>
+                        <label for="cfg_icons_y" class="form-check-label">Ja</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="cfg_icons_n" class="form-check-input" type="radio" name="change_icons" value="N" <?= $checked($change_icons, 'N') ?>>
+                        <label for="cfg_icons_n" class="form-check-label">Nein</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label d-block">Smilies</label>
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="form-check">
+                        <input id="cfg_smilies_y" class="form-check-input" type="radio" name="change_smilies" value="Y" <?= $checked($change_smilies, 'Y') ?>>
+                        <label for="cfg_smilies_y" class="form-check-label">Ja</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="cfg_smilies_n" class="form-check-input" type="radio" name="change_smilies" value="N" <?= $checked($change_smilies, 'N') ?>>
+                        <label for="cfg_smilies_n" class="form-check-label">Nein</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label d-block">Statements anzeigen</label>
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="form-check">
+                        <input id="cfg_stmt_y" class="form-check-input" type="radio" name="change_statements" value="Y" <?= $checked($change_statements, 'Y') ?>>
+                        <label for="cfg_stmt_y" class="form-check-label">Ja</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="cfg_stmt_n" class="form-check-input" type="radio" name="change_statements" value="N" <?= $checked($change_statements, 'N') ?>>
+                        <label for="cfg_stmt_n" class="form-check-label">Nein</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- DESIGN KONFIGURATION -->
+<section class="card mb-4">
+    <header class="card-header bg-secondary text-white"><h3 class="h6 mb-0">Design</h3></header>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="cfg_date" class="form-label">Datum-Format <span class="text-danger" aria-hidden="true">*</span></label>
+                <input id="cfg_date" type="text" class="form-control" name="change_date" maxlength="20" value="<?= e($change_date) ?>">
+                <div class="form-text">Standard: <code>l, j. F Y</code> &middot;
+                    <a href="date-help.php?section=date" target="_blank" rel="noopener noreferrer">Hilfe</a>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label for="cfg_time" class="form-label">Zeit-Format <span class="text-danger" aria-hidden="true">*</span></label>
+                <input id="cfg_time" type="text" class="form-control" name="change_time" maxlength="20" value="<?= e($change_time) ?>">
+                <div class="form-text">Standard: <code>H:i</code> &middot;
+                    <a href="date-help.php?section=time" target="_blank" rel="noopener noreferrer">Hilfe</a>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label for="cfg_color" class="form-label">Akzentfarbe</label>
+                <div class="input-group">
+                    <input id="cfg_color" type="text" class="form-control" name="change_color" maxlength="10" value="<?= e($change_color) ?>">
+                    <span class="input-group-text" style="background-color: <?= e($change_color) ?>; color: #fff; min-width: 80px;">Vorschau</span>
+                </div>
+                <div class="form-text">Farbe zum Hervorheben wichtiger Nachrichten (zur Zeit: <code><?= e($change_color) ?></code>).</div>
+            </div>
+
+            <div class="col-md-6">
+                <label for="cfg_show" class="form-label">Einträge pro Seite</label>
+                <input id="cfg_show" type="number" min="1" class="form-control" name="change_show_entries" maxlength="5" value="<?= (int) $change_show_entries ?>">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label d-block">Seiten-Handhabung</label>
+                <div class="form-check">
+                    <input id="cfg_pages_l" class="form-check-input" type="radio" name="change_pages" value="L" <?= $checked($change_pages, 'L') ?>>
+                    <label for="cfg_pages_l" class="form-check-label">Durchblaettern (Vor/Zurück)</label>
+                </div>
+                <div class="form-check">
+                    <input id="cfg_pages_d" class="form-check-input" type="radio" name="change_pages" value="D" <?= $checked($change_pages, 'D') ?>>
+                    <label for="cfg_pages_d" class="form-check-label">Seitennummern anzeigen</label>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <label for="cfg_design" class="form-label">Eintrags-Design (HTML-Template) <span class="text-danger" aria-hidden="true">*</span></label>
+                <textarea id="cfg_design" name="change_design" class="form-control font-monospace" rows="9"><?= e($change_design) ?></textarea>
+                <div class="form-text">
+                    Verfügbare Platzhalter:
+                    <table class="pb-placeholder-table d-inline-table align-baseline mt-2">
+                        <tr><td><code>(#ICON#)</code></td><td>Icon</td></tr>
+                        <tr><td><code>(#DATE#)</code></td><td>Datum</td></tr>
+                        <tr><td><code>(#TIME#)</code></td><td>Zeit</td></tr>
+                        <tr><td><code>(#EMAIL_NAME#)</code></td><td>Name mit E-Mail-Link</td></tr>
+                        <tr><td><code>(#TEXT#)</code></td><td>Text</td></tr>
+                        <tr><td><code>(#URL#)</code></td><td>Homepage</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- DANKSAGUNGS-NACHRICHT -->
+<section class="card mb-4">
+    <header class="card-header bg-secondary text-white"><h3 class="h6 mb-0">Danksagungs-Nachricht</h3></header>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label d-block">Nachricht verwenden?</label>
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="form-check">
+                        <input id="cfg_thanks_y" class="form-check-input" type="radio" name="change_use_thanks" value="Y" <?= $checked($change_use_thanks, 'Y') ?>>
+                        <label for="cfg_thanks_y" class="form-check-label">Ja</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="cfg_thanks_n" class="form-check-input" type="radio" name="change_use_thanks" value="N" <?= $checked($change_use_thanks, 'N') ?>>
+                        <label for="cfg_thanks_n" class="form-check-label">Nein</label>
+                    </div>
+                </div>
+                <div class="form-text">Danksagungs-E-Mail an Eintrags-Autor verschicken?</div>
+            </div>
+
+            <div class="col-md-6">
+                <label for="cfg_thanks_title" class="form-label">Titel der E-Mail</label>
+                <input id="cfg_thanks_title" type="text" class="form-control" name="change_thanks_title" maxlength="250" value="<?= e($change_thanks_title) ?>">
+            </div>
+
+            <div class="col-12">
+                <label for="cfg_thanks" class="form-label">Text der E-Mail</label>
+                <textarea id="cfg_thanks" name="change_thanks" class="form-control font-monospace" rows="9"><?= e($change_thanks) ?></textarea>
+                <div class="form-text">
+                    Verfügbare Platzhalter:
+                    <table class="pb-placeholder-table d-inline-table align-baseline mt-2">
+                        <tr><td><code>(#NAME#)</code></td><td>Name</td></tr>
+                        <tr><td><code>(#EMAIL#)</code></td><td>E-Mail</td></tr>
+                        <tr><td><code>(#TEXT#)</code></td><td>Text</td></tr>
+                        <tr><td><code>(#URL#)</code></td><td>Homepage</td></tr>
+                        <tr><td><code>(#TIME#)</code></td><td>Datum</td></tr>
+                        <tr><td><code>(#IP#)</code></td><td>IP</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="d-flex flex-wrap gap-2 justify-content-center">
+    <button type="submit" class="btn btn-primary">Konfiguration speichern</button>
+    <button type="reset" class="btn btn-outline-secondary">Zurücksetzen</button>
 </div>
 </form>
-<?php } ?>
+<?php }
 
-</td></tr>
+pb_admin_card_close();

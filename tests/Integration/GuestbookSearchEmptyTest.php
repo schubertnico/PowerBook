@@ -11,7 +11,7 @@ final class GuestbookSearchEmptyTest extends TestCase
     public function testSearchEmptyMessageIsNotDoubleEscaped(): void
     {
         $response = @file_get_contents(
-            'http://localhost:8080/pbook.php?tmp_where=name&tmp_search=UNLIKELY_STRING_XZY42'
+            POWERBOOK_TEST_BASE_URL . '/pbook.php?tmp_where=name&tmp_search=UNLIKELY_STRING_XZY42'
         );
 
         if ($response === false) {

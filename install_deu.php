@@ -4,82 +4,48 @@
  * Installation Script (German)
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
 
 // BUG-011: Lock-File-Check. Nach erfolgreicher Installation wird '.installed'
-// erstellt. Beim naechsten Aufruf: HTTP 403 und kurze Info-Seite.
+// erstellt. Beim nächsten Aufruf: HTTP 403 und kurze Info-Seite.
 $lockFile = __DIR__ . '/.installed';
 if (file_exists($lockFile)) {
     http_response_code(403);
     echo '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">'
-       . '<title>403 - Installation already completed</title></head><body>'
-       . '<h1>403 - Installation already completed</h1>'
-       . '<p>PowerBook wurde bereits installiert. Loeschen Sie '
+       . '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+       . '<title>403 - Installation already completed</title>'
+       . '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">'
+       . '</head><body class="bg-body-tertiary">'
+       . '<main class="container py-5"><div class="card border-danger shadow-sm">'
+       . '<div class="card-header bg-danger text-white"><h1 class="h4 mb-0">403 &middot; Installation bereits abgeschlossen</h1></div>'
+       . '<div class="card-body">'
+       . '<p>PowerBook wurde bereits installiert. Löschen Sie die Datei <code>'
        . htmlspecialchars($lockFile, ENT_QUOTES, 'UTF-8')
-       . ' manuell, falls Sie neu installieren moechten.</p>'
-       . '</body></html>';
+       . '</code> manuell, falls Sie neu installieren möchten.</p>'
+       . '</div></div></main></body></html>';
     exit;
 }
-?>
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PowerBook - Installation</title>
-    <style type="text/css">
-        body {
-            scrollbar-arrow-color: #001329;
-            scrollbar-base-color: #3F5070;
-        }
-        td {
-            font-size: 13px;
-            font-family: Arial, sans-serif;
-        }
-        b {
-            font-size: 12px;
-        }
-        b.script {
-            font-size: 12px;
-            font-weight: normal;
-            color: #B0B0B0;
-        }
-        div.headline {
-            font-size: 40px;
-            font-family: Arial;
-            font-weight: bold;
-        }
-        input, textarea, select {
-            color: #FFFFFF;
-            border-width: 1px;
-            border-color: #6078A0;
-            border-style: solid;
-            background: #001329;
-        }
-        small {
-            font-size: 11px;
-        }
-        hr {
-            color: #001329;
-        }
-        .success { color: #00FF00; }
-        .error { color: #FF0000; }
-    </style>
-</head>
-<body bgcolor="#002040" topmargin="10" bottommargin="10" leftmargin="10" rightmargin="10" text="#ffffff" link="#B5C3D9" vlink="#B5C3D9" alink="#B5C3D9" marginwidth="0" marginheight="0">
 
-<div align="center">
-<table border="0" cellpadding="5" cellspacing="1" width="90%" bgcolor="#6078A0">
-<tr bgcolor="#001329"><td align="center">
-    <div class="headline">PowerBook</div>
-    <span style="font-size: 11px;">Installation (PHP 8.4 Version)</span>
-</td></tr>
-<tr bgcolor="#001930"><td>
+require_once __DIR__ . '/pb_inc/layout.inc.php';
+
+pb_layout_header('PowerBook - Installation', [
+    'showNav'   => false,
+    'siteName'  => 'PowerBook Installation',
+]);
+?>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <section class="card shadow-sm mb-4">
+            <header class="card-header bg-primary text-white">
+                <h1 class="h4 mb-0">PowerBook &middot; Installation</h1>
+            </header>
+            <div class="card-body">
 
 <?php
 $install = $_GET['install'] ?? '';
@@ -91,12 +57,14 @@ if ($install === 'yes') {
     try {
         $pdo = getDatabase();
 
+        echo '<div class="mb-3">';
+
         // Drop existing tables
-        echo 'Lösche alte Tabellen (falls vorhanden)...<br>';
+        echo 'Loesche alte Tabellen (falls vorhanden)...<br>';
         $pdo->exec("DROP TABLE IF EXISTS {$pb_entries}");
         $pdo->exec("DROP TABLE IF EXISTS {$pb_config}");
         $pdo->exec("DROP TABLE IF EXISTS {$pb_admin}");
-        echo "<span class='success'>Abgeschlossen.</span><br><br>";
+        echo '<span class="text-success">Abgeschlossen.</span><br><br>';
 
         // Create admin table
         echo "Erstelle Tabelle <b>{$pb_admin}</b>...";
@@ -111,7 +79,7 @@ if ($install === 'yes') {
             admins ENUM('Y','N') DEFAULT 'N' NOT NULL,
             PRIMARY KEY (id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        echo " <span class='success'>Abgeschlossen.</span><br>";
+        echo ' <span class="text-success">Abgeschlossen.</span><br>';
 
         // Create config table
         echo "Erstelle Tabelle <b>{$pb_config}</b>...";
@@ -129,7 +97,6 @@ if ($install === 'yes') {
             text_format ENUM('Y','N') DEFAULT 'Y' NOT NULL,
             icons ENUM('Y','N') DEFAULT 'Y' NOT NULL,
             smilies ENUM('Y','N') DEFAULT 'Y' NOT NULL,
-            icq ENUM('Y','N') DEFAULT 'N' NOT NULL,
             pages ENUM('L','D') DEFAULT 'L' NOT NULL,
             use_thanks ENUM('Y','N') DEFAULT 'N' NOT NULL,
             language ENUM('ger1','ger2','eng') DEFAULT 'eng' NOT NULL,
@@ -138,7 +105,7 @@ if ($install === 'yes') {
             thanks TEXT NOT NULL,
             statements ENUM('Y','N') DEFAULT 'Y' NOT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        echo " <span class='success'>Abgeschlossen.</span><br>";
+        echo ' <span class="text-success">Abgeschlossen.</span><br>';
 
         // Create entries table
         echo "Erstelle Tabelle <b>{$pb_entries}</b>...";
@@ -149,7 +116,6 @@ if ($install === 'yes') {
             text TEXT NOT NULL,
             date INT(20) NOT NULL,
             homepage VARCHAR(200) DEFAULT '' NOT NULL,
-            icq VARCHAR(20) DEFAULT '' NOT NULL,
             ip VARCHAR(45) NOT NULL,
             status ENUM('R','U') DEFAULT 'R' NOT NULL,
             icon VARCHAR(100) DEFAULT '' NOT NULL,
@@ -160,35 +126,37 @@ if ($install === 'yes') {
             INDEX idx_status (status),
             INDEX idx_ip (ip)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        echo " <span class='success'>Abgeschlossen.</span><br>";
+        echo ' <span class="text-success">Abgeschlossen.</span><br>';
 
         // Insert standard config
-        echo 'Füge Standard-Konfiguration ein...';
-        $defaultDesign = '<table width="560" border="0">
-<tr bgcolor="#001329"><td align="left">
-(#ICON#)<b>(#DATE#)</b>, <small>(#TIME#)h</small>
-</td><td align="right" width="121">
-(#EMAIL_NAME#)
-</td></tr><tr><td valign="top" bgcolor="#001930">
-(#TEXT#)
-</td><td width="121" align="right" valign="top" bgcolor="#001329">
-(#URL#)<br>
-(#ICQ#)
-</td></tr></table><br>';
+        echo 'Fuege Standard-Konfiguration ein...';
+
+        // Bootstrap-5-Default-Design für Einträge. Wer sein Layout customizen will,
+        // findet die Platzhalter (#ICON#) … (#URL#) im AdminCenter > Konfiguration.
+        $defaultDesign = '<article class="card pb-entry-card shadow-sm">'
+            . '<header class="card-header d-flex flex-wrap justify-content-between align-items-center">'
+            . '<span>(#ICON#)<b>(#DATE#)</b>, <small class="text-body-secondary">(#TIME#)h</small></span>'
+            . '<span>(#EMAIL_NAME#)</span>'
+            . '</header>'
+            . '<div class="card-body">(#TEXT#)</div>'
+            . '<footer class="card-footer d-flex flex-wrap justify-content-end gap-3 align-items-center text-end">'
+            . '<span>(#URL#)</span>'
+            . '</footer>'
+            . '</article>';
 
         $defaultThanks = 'Hallo (#NAME#)!
 
 Vielen Dank für Ihren Eintrag in meinem Gästebuch!
 
-Mit freundlichen Grüßen
+Mit freundlichen Gruessen
 Der Admin';
 
         $stmt = $pdo->prepare("INSERT INTO {$pb_config} VALUES (
             'R', 'N', '', 'l, j. F Y', 'H:i', 30, '#FF0000', 10, 'pbook.php', '',
-            'Y', 'Y', 'Y', 'N', 'D', 'N', 'eng', :design, 'Danke für Ihren Eintrag!', :thanks, 'Y'
+            'Y', 'Y', 'Y', 'D', 'N', 'eng', :design, 'Danke für Ihren Eintrag!', :thanks, 'Y'
         )");
         $stmt->execute([':design' => $defaultDesign, ':thanks' => $defaultThanks]);
-        echo " <span class='success'>Abgeschlossen.</span><br>";
+        echo ' <span class="text-success">Abgeschlossen.</span><br>';
 
         // IMP-006: Zufaelliges Initial-Passwort statt hardcoded 'powerbook'.
         echo 'Erstelle Standard-Admin...';
@@ -200,75 +168,72 @@ Der Admin';
             ':email' => 'admin@example.com',
             ':password' => $adminPassword,
         ]);
-        echo " <span class='success'>Abgeschlossen.</span><br>";
+        echo ' <span class="text-success">Abgeschlossen.</span><br>';
 
         // BUG-011: Lock-File setzen, damit install_deu.php nicht erneut aufgerufen werden kann.
         @file_put_contents(__DIR__ . '/.installed', date('c') . "\n");
 
-        echo '<br><br>';
-        echo "<div style='background: #003300; padding: 15px; border: 2px solid #00FF00;'>";
-        echo "<b class='success'>Installation erfolgreich!</b><br><br>";
-        echo 'Bitte <b>löschen Sie diese Datei</b> (install_deu.php) aus Sicherheitsgründen.<br><br>';
-        echo 'Bearbeiten Sie die Konfiguration und Ihre Admin-Daten im <a href="pb_inc/admincenter/">AdminCenter</a>.<br><br>';
-        echo 'Login-Daten:<br>';
-        echo '- <b>Name:</b> PowerBook<br>';
-        echo '- <b>Passwort:</b> <code style="background:#000;padding:3px 6px;font-family:monospace;">' . htmlspecialchars($initialAdminPassword, ENT_QUOTES, 'UTF-8') . '</code><br><br>';
-        echo '<b>Wichtig:</b> Notieren Sie dieses Passwort JETZT &mdash; es wird nicht erneut angezeigt! &Auml;ndern Sie es nach dem ersten Login.';
+        echo '</div>';
+
+        echo '<div class="alert alert-success" role="status">';
+        echo '<h2 class="h5 alert-heading">Installation erfolgreich!</h2>';
+        echo '<p>Bitte <b>löschen Sie diese Datei</b> (install_deu.php) aus Sicherheitsgruenden.</p>';
+        echo '<p>Bearbeiten Sie die Konfiguration und Ihre Admin-Daten im <a class="alert-link" href="pb_inc/admincenter/">AdminCenter</a>.</p>';
+        echo '<hr>';
+        echo '<p class="mb-1"><b>Login-Daten:</b></p>';
+        echo '<ul class="mb-2"><li><b>Name:</b> PowerBook</li>';
+        echo '<li><b>Passwort:</b> <code class="bg-dark text-warning px-2 py-1 rounded">' . htmlspecialchars($initialAdminPassword, ENT_QUOTES, 'UTF-8') . '</code></li></ul>';
+        echo '<p class="mb-0"><b>Wichtig:</b> Notieren Sie dieses Passwort JETZT &mdash; es wird nicht erneut angezeigt! Ändern Sie es nach dem ersten Login.</p>';
         echo '</div>';
 
     } catch (PDOException $e) {
-        echo "<br><span class='error'><b>Fehler bei der Installation:</b><br>";
+        echo '<div class="alert alert-danger" role="alert">';
+        echo '<b>Fehler bei der Installation:</b><br>';
         echo htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
-        echo '</span><br><br>';
-        echo 'Bitte überprüfen Sie die Datenbankeinstellungen in <b>pb_inc/mysql.inc.php</b>.';
+        echo '<br><br>Bitte überpruefen Sie die Datenbankeinstellungen in <code>pb_inc/mysql.inc.php</code>.';
+        echo '</div>';
     }
 
 } else {
     ?>
 
-<h2>Willkommen zur Installation von PowerBook!</h2>
+<h2 class="h5 mb-3">Willkommen zur Installation von PowerBook!</h2>
 
-<p>Diese Datei erstellt automatisch alle benötigten MySQL-Tabellen.</p>
+<p>Diese Datei erstellt automatisch alle benoetigten MySQL-Tabellen.</p>
 
-<h3>Vor der Installation:</h3>
+<h3 class="h6 mt-4">Vor der Installation</h3>
 <ol>
-    <li>Stellen Sie sicher, dass die Datei <b>pb_inc/mysql.inc.php</b> korrekt konfiguriert ist</li>
-    <li>Die MySQL-Datenbank muss existieren und der Benutzer muss Schreibrechte haben</li>
-    <li>Bei Verwendung von Docker: Starten Sie zuerst die Container mit <code>docker compose up -d</code></li>
+    <li>Stellen Sie sicher, dass die Datei <code>pb_inc/mysql.inc.php</code> korrekt konfiguriert ist.</li>
+    <li>Die MySQL-Datenbank muss existieren und der Benutzer muss Schreibrechte haben.</li>
+    <li>Bei Verwendung von Docker: Starten Sie zuerst die Container mit <code>docker compose up -d</code>.</li>
 </ol>
 
-<h3>Standard-Datenbank-Einstellungen (Docker):</h3>
-<ul>
-    <li><b>Host:</b> db</li>
-    <li><b>Datenbank:</b> powerbook</li>
-    <li><b>Benutzer:</b> powerbook</li>
-    <li><b>Passwort:</b> powerbook_secret</li>
+<h3 class="h6 mt-4">Standard-Datenbank-Einstellungen (Docker)</h3>
+<ul class="list-group list-group-flush mb-3">
+    <li class="list-group-item"><b>Host:</b> db</li>
+    <li class="list-group-item"><b>Datenbank:</b> powerbook</li>
+    <li class="list-group-item"><b>Benutzer:</b> powerbook</li>
+    <li class="list-group-item"><b>Passwort:</b> powerbook_secret</li>
 </ul>
 
-<p><b>Hinweis:</b> Diese Installation löscht möglicherweise vorhandene PowerBook-Tabellen!</p>
+<div class="alert alert-warning" role="alert">
+    <b>Hinweis:</b> Diese Installation loescht möglicherweise vorhandene PowerBook-Tabellen!
+</div>
 
-<br>
-<div align="center">
-    <a href="install_deu.php?install=yes" style="background: #003366; padding: 10px 20px; border: 2px solid #6078A0; text-decoration: none; font-weight: bold;">
+<div class="d-flex justify-content-center mt-3">
+    <a href="install_deu.php?install=yes" class="btn btn-primary btn-lg">
         Installation starten
     </a>
 </div>
-<br>
 
 <?php
 }
 ?>
 
-</td></tr>
-<tr bgcolor="#001329"><td align="center">
-    <small>
-        <a href="https://github.com/schubertnico/PowerBook.git" target="_blank">PowerBook</a>
-        &copy; 2002 by <a href="mailto:expandable@powerscripts.org">Axel Habermaier</a>
-        | PHP 8.4 Update: 2025
-    </small>
-</td></tr>
-</table>
+            </div>
+        </section>
+    </div>
 </div>
 
-</body>
-</html>
+<?php
+pb_layout_footer();

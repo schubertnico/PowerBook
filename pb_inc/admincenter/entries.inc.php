@@ -4,12 +4,14 @@
  * Admin Entry Listing
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
+
+require_once __DIR__ . '/layout.inc.php';
 
 // Variables from parent scope (index.php)
 /** @var PDO $pdo */
@@ -18,12 +20,13 @@ declare(strict_types=1);
 /** @var string $config_icons */
 /** @var string $config_text_format */
 /** @var string $config_smilies */
-/** @var string $config_icq */
 /** @var string $db_statement */
 
 // Check permission
 if (($admin_session['entries'] ?? 'N') !== 'Y') {
-    echo '<div style="color: #FF6666; padding: 20px;">Sie haben keine Berechtigung für die Eintrags-Verwaltung.</div>';
+    pb_admin_card_open('Administration: Einträge');
+    echo pb_admin_alert('Sie haben keine Berechtigung für die Eintrags-Verwaltung.', 'danger');
+    pb_admin_card_close();
 
     return;
 }
@@ -44,13 +47,9 @@ $count_entry = count($entries);
 $stmt = $pdo->query("SELECT COUNT(*) FROM {$pb_entries}");
 $count_pages = $stmt !== false ? (int) $stmt->fetchColumn() : 0;
 $tmp_pages = (int) ceil($count_pages / $perPage);
+
+pb_admin_card_open('Administration: Einträge');
 ?>
-
-<tr><td bgcolor="#3F5070" align="center">
-    <b class="headline">A D M I N I S T R A T I O N : &nbsp; E I N T R Ä G E</b>
-</td></tr>
-
-<tr><td bgcolor="#001F3F" valign="top">
 
 <p>
 Um Einträge zu bearbeiten oder zu löschen, klicken Sie bitte auf den Link "Bearbeiten/Löschen" bei dem gewünschten Eintrag.
@@ -58,7 +57,7 @@ Um ein Statement zu schreiben, klicken Sie bitte auf den "Statement"-Link.
 </p>
 
 <?php if ($count_pages === 0) { ?>
-<p><i>Keine Einträge vorhanden.</i></p>
+<div class="alert alert-info" role="status"><i>Keine Einträge vorhanden.</i></div>
 <?php } else { ?>
 
 <?php include __DIR__ . '/pages.inc.php'; ?>
@@ -67,36 +66,28 @@ Um ein Statement zu schreiben, klicken Sie bitte auf den "Statement"-Link.
     // Process entry for display
     include __DIR__ . '/entry.inc.php';
     ?>
-<table width="100%" border="0">
-    <tr>
-        <td align="left" bgcolor="#001329">
-            <?= $show_icon ?><b><?= $date ?></b>, <small><?= $time ?></small>
-        </td>
-        <td align="right" width="121" bgcolor="#001329">
-            <?= $email_name ?>
-        </td>
-    </tr>
-    <tr>
-        <td valign="top" bgcolor="#001930">
-            <?= $entry['text'] ?><br>
-            <hr color="#001329">
-            <div align="right"><small>
-                IP: <b><?= $ip ?></b> |
-                <a href="?page=edit&amp;edit_id=<?= (int) $entry['id'] ?>">Bearbeiten/Löschen</a> |
-                <a href="?page=statement&amp;id=<?= (int) $entry['id'] ?>">Statement</a>
-            </small></div>
-        </td>
-        <td width="121" align="right" valign="top" bgcolor="#001329">
-            <?= $url ?><br>
+<article class="card pb-entry-card shadow-sm mb-3">
+    <header class="card-header d-flex flex-wrap justify-content-between align-items-center">
+        <span><?= $show_icon ?><b><?= $date ?></b>, <small class="text-body-secondary"><?= $time ?></small></span>
+        <span class="text-end"><?= $email_name ?></span>
+    </header>
+    <div class="card-body">
+        <?= $entry['text'] ?>
+    </div>
+    <footer class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <small class="text-body-secondary">IP: <code><?= $ip ?></code></small>
+        <div class="d-flex flex-wrap gap-2">
+            <?= $url ?>
             <?= $show_icq ?>
-        </td>
-    </tr>
-</table>
-<br>
+            <a class="btn btn-outline-primary btn-sm" href="?page=edit&amp;edit_id=<?= (int) $entry['id'] ?>">Bearbeiten/Löschen</a>
+            <a class="btn btn-outline-secondary btn-sm" href="?page=statement&amp;id=<?= (int) $entry['id'] ?>">Statement</a>
+        </div>
+    </footer>
+</article>
 <?php } ?>
 
 <?php include __DIR__ . '/pages.inc.php'; ?>
 
-<?php } ?>
+<?php }
 
-</td></tr>
+pb_admin_card_close();

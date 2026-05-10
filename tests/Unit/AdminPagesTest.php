@@ -120,20 +120,23 @@ class AdminPagesTest extends TestCase
             'head_count_unreleased' => 5,
         ]);
 
-        $this->assertStringContainsString('W I L L K O M M E N', $output);
+        $this->assertStringContainsString('Willkommen', $output);
         $this->assertStringContainsString('Willkommen im AdminCenter', $output);
     }
 
     #[Test]
-    public function homePageShowsPhpVersion(): void
+    public function homePageDoesNotLeakPhpVersion(): void
     {
+        // Sicherheitsanforderung: Konkrete PHP- und PowerBook-Versionsnummern
+        // sind ein Information-Disclosure-Vektor und werden auf der Home-Seite
+        // bewusst NICHT mehr angezeigt.
         $output = $this->renderAdminPage('home.inc.php', [
             'head_count_entries' => 10,
             'head_count_unreleased' => 0,
         ]);
 
-        $this->assertStringContainsString(PHP_VERSION, $output);
-        $this->assertStringContainsString('PowerBook Version', $output);
+        $this->assertStringNotContainsString(PHP_VERSION, $output);
+        $this->assertStringNotContainsString('PHP 8.4 Update', $output);
     }
 
     #[Test]
@@ -161,7 +164,7 @@ class AdminPagesTest extends TestCase
             'name' => '',
         ]);
 
-        $this->assertStringContainsString('L O G I N', $output);
+        $this->assertStringContainsString('Login', $output);
         $this->assertStringContainsString('<form', $output);
         $this->assertStringContainsString('name="password"', $output);
         $this->assertStringContainsString('Ein Login ist erforderlich', $output);
@@ -205,7 +208,7 @@ class AdminPagesTest extends TestCase
             'admin_session' => [],
         ]);
 
-        $this->assertStringContainsString('L O G O U T', $output);
+        $this->assertStringContainsString('Logout', $output);
         $this->assertStringContainsString('nicht eingeloggt', $output);
     }
 
@@ -251,7 +254,7 @@ class AdminPagesTest extends TestCase
     {
         $output = $this->renderAdminPage('license.inc.php');
 
-        $this->assertStringContainsString('M I T', $output);
+        $this->assertStringContainsString('MIT-Lizenz', $output);
         $this->assertStringContainsString('MIT License', $output);
         $this->assertStringContainsString('Permission is hereby granted', $output);
     }
@@ -270,7 +273,8 @@ class AdminPagesTest extends TestCase
     {
         $output = $this->renderAdminPage('license.inc.php');
 
-        $this->assertStringContainsString('github.com/schubertnico/PowerBook', $output);
+        // Anonymisierter Projekt-Link statt internem Repo-Verweis.
+        $this->assertStringContainsString('powerscripts.org', $output);
     }
 
     // ========================================================================
@@ -282,7 +286,8 @@ class AdminPagesTest extends TestCase
     {
         $output = $this->renderAdminPage('empty.inc.php');
 
-        $this->assertStringContainsString('<tr>', $output);
+        // Bootstrap-Migration: empty.inc.php nutzt jetzt pb_admin_card_open()/close().
+        $this->assertStringContainsString('<section class="card', $output);
         $this->assertStringContainsString('&nbsp;', $output);
     }
 
@@ -501,7 +506,8 @@ class AdminPagesTest extends TestCase
 
         $this->assertStringContainsString('<b>Bold text</b>', $entryText);
         $this->assertStringContainsString('happy1.gif', $entryText);
-        $this->assertStringContainsString('12345678', $show_icq);
+        // ICQ-Feature wurde komplett entfernt — $show_icq ist immer leer.
+        $this->assertSame('', $show_icq);
     }
 
     #[Test]
@@ -559,7 +565,7 @@ class AdminPagesTest extends TestCase
             'admin_session' => ['config' => 'Y'],
         ]);
 
-        $this->assertStringContainsString('K O N F I G U R A T I O N', $output);
+        $this->assertStringContainsString('Konfiguration', $output);
         $this->assertStringContainsString('<form', $output);
         $this->assertStringContainsString('change_email', $output);
         $this->assertStringContainsString('change_date', $output);
@@ -698,7 +704,7 @@ class AdminPagesTest extends TestCase
             'config_icq' => 'N',
         ]);
 
-        $this->assertStringContainsString('B E A R B E I T E N', $output);
+        $this->assertStringContainsString('bearbeiten', $output);
         $this->assertStringContainsString('EditTestUser', $output);
         $this->assertStringContainsString('Edit me', $output);
         $this->assertStringContainsString('Speichern', $output);
@@ -834,7 +840,7 @@ class AdminPagesTest extends TestCase
         ]);
 
         $this->assertStringContainsString('Keine Eintr', $output);
-        $this->assertStringContainsString('F R E I S C H A L T E N', $output);
+        $this->assertStringContainsString('freischalten', $output);
     }
 
     #[Test]
@@ -934,7 +940,7 @@ class AdminPagesTest extends TestCase
     {
         $output = $this->renderAdminPage('password.inc.php');
 
-        $this->assertStringContainsString('P A S S W O R T', $output);
+        $this->assertStringContainsString('Passwort', $output);
         $this->assertStringContainsString('<form', $output);
         $this->assertStringContainsString('name="name"', $output);
         $this->assertStringContainsString('name="email_known"', $output);
@@ -1069,7 +1075,7 @@ class AdminPagesTest extends TestCase
             'db_statement' => 'N',
         ]);
 
-        $this->assertStringContainsString('S T A T E M E N T S', $output);
+        $this->assertStringContainsString('Statements', $output);
         $this->assertStringContainsString('edit_statement', $output);
         $this->assertStringContainsString('Statement speichern', $output);
         $this->assertStringContainsString('Some text', $output);
@@ -1327,9 +1333,9 @@ class AdminPagesTest extends TestCase
             'config_admin_url' => '',
         ]);
 
-        $this->assertStringContainsString('A D M I N S', $output);
-        $this->assertStringContainsString('ADMINS BEARBEITEN', $output);
-        $this->assertStringContainsString('ADMIN HINZUF', $output);
+        $this->assertStringContainsString('Admins', $output);
+        $this->assertStringContainsString('Admins bearbeiten', $output);
+        $this->assertStringContainsString('Admin hinzuf', $output);
         $this->assertStringContainsString('SuperAdmin', $output);
     }
 
