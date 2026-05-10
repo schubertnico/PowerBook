@@ -4,12 +4,14 @@
  * Admin Management
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
+
+require_once __DIR__ . '/layout.inc.php';
 
 // BUG-006: Helper-Funktionen aus eigener Datei laden, damit sie im Root-Scope
 // hoistet werden UND mehrfaches include dieser admins.inc.php (z. B. in Tests)
@@ -24,7 +26,9 @@ require_once __DIR__ . '/admin_email_helpers.inc.php';
 
 // Check permission
 if (($admin_session['admins'] ?? 'N') !== 'Y') {
-    echo '<div style="color: #FF6666; padding: 20px;">Sie haben keine Berechtigung für die Admin-Verwaltung.</div>';
+    pb_admin_card_open('Administration: Admins');
+    echo pb_admin_alert('Sie haben keine Berechtigung für die Admin-Verwaltung.', 'danger');
+    pb_admin_card_close();
 
     return;
 }
@@ -103,9 +107,9 @@ if ($action === 'add' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
                     ]);
 
                     if (!$mailSent) {
-                        $message = 'Admin erfolgreich hinzugefuegt, aber die E-Mail konnte NICHT versendet werden! '
+                        $message = 'Admin erfolgreich hinzugefügt, aber die E-Mail konnte NICHT versendet werden! '
                             . '<br><b>Notieren Sie das Initial-Passwort jetzt:</b> '
-                            . '<code style="background:#000;padding:3px 6px;font-family:monospace;">'
+                            . '<code class="bg-dark text-warning px-2 py-1 rounded">'
                             . htmlspecialchars($tempPassword, ENT_QUOTES, 'UTF-8')
                             . '</code><br>'
                             . 'Das Passwort wird nicht erneut angezeigt.';
@@ -286,130 +290,171 @@ try {
         $messageType = 'error';
     }
 }
+
+pb_admin_card_open('Administration: Admins');
+
+if (!empty($message)) {
+    echo pb_admin_alert($message, pb_admin_message_type($messageType));
+}
 ?>
-
-<tr><td bgcolor="#3F5070" align="center">
-    <b class="headline">A D M I N I S T R A T I O N : &nbsp; A D M I N S</b>
-</td></tr>
-
-<tr><td bgcolor="#001F3F" valign="top">
-
-<?php if (!empty($message)) { ?>
-<div style="padding: 10px; margin: 10px 0; background: <?= $messageType === 'success' ? '#003300' : '#330000' ?>; border: 1px solid <?= $messageType === 'success' ? '#00FF00' : '#FF0000' ?>;">
-    <?= $message ?>
-</div>
-<?php } ?>
 
 <p>
 Dies ist eine Liste mit allen Admins (zur Zeit <b><?= $countAdmins ?></b>), die bei dieser PowerBook-Version registriert sind.
 Falls Sie die Berechtigung haben, können Sie diese Admins bearbeiten.
 Jedoch können Sie weder sich noch den SuperAdmin löschen oder Ihre bzw. seine Berechtigungen ändern.
-Nutzen Sie das Formular ganz unten, um einen neuen Admin hinzuzufügen.
+Nutzen Sie das Formular ganz unten, um einen neuen Admin hinzuzufuegen.
 </p>
 
-<table border="0" width="100%">
-<tr bgcolor="#001329"><td colspan="7" align="center">
-    <b>ADMINS BEARBEITEN</b>
-</td></tr>
-<tr bgcolor="#001930">
-    <td align="center"><b><font color="#FF0000">Löschen</font></b></td>
-    <td align="center"><b>Name</b></td>
-    <td align="center"><b>E-Mail</b></td>
-    <td align="center"><b>Neues Passwort</b></td>
-    <td colspan="2" align="center"><b>Berechtigungen</b></td>
-    <td align="center"><b>Aktion</b></td>
-</tr>
+<h3 class="h6 mt-4">Admins bearbeiten</h3>
 
-<?php
-$rowColor = '#001329';
-foreach ($admins as $admin) {
+<?php foreach ($admins as $admin) {
     $isSuper = ($admin['id'] === 1);
     $isSelf = ($admin['id'] === $admin_session['id']);
+    $rowId = (int) $admin['id'];
     ?>
-<form action="?page=admins" method="post">
-<tr bgcolor="<?= $rowColor ?>">
-    <td align="center">
-        <?php if ($isSuper || $isSelf) { ?>
-            &nbsp;
-        <?php } else { ?>
-            <input type="checkbox" name="delete" value="yes">
-        <?php } ?>
-    </td>
-    <td align="center">
-        <input type="text" name="edit_name" maxlength="100" size="14" value="<?= e($admin['name']) ?>">
-    </td>
-    <td align="center">
-        <input type="text" name="edit_email" maxlength="250" value="<?= e($admin['email']) ?>">
-    </td>
-    <td align="center">
-        <input type="password" name="edit_password1" size="15" maxlength="100" placeholder="Neues Passwort"><br>
-        <input type="password" name="edit_password2" size="15" maxlength="100" placeholder="Wiederholen">
-    </td>
-    <td>
-        <?php if ($isSuper || $isSelf) { ?>
-            &nbsp;
-        <?php } else { ?>
-            &nbsp;<input type="checkbox" name="edit_config" value="Y" <?= $admin['config'] === 'Y' ? 'checked' : '' ?>> <small>PowerBook Konfiguration<br>
-            &nbsp;<input type="checkbox" name="edit_admins" value="Y" <?= $admin['admins'] === 'Y' ? 'checked' : '' ?>> Admin-Verwaltung</small>
-        <?php } ?>
-    </td>
-    <td>
-        <?php if ($isSuper || $isSelf) { ?>
-            &nbsp;
-        <?php } else { ?>
-            &nbsp;<input type="checkbox" name="edit_release" value="Y" <?= $admin['release'] === 'Y' ? 'checked' : '' ?>> <small>Eintrags-Freischaltung<br>
-            &nbsp;<input type="checkbox" name="edit_entries" value="Y" <?= $admin['entries'] === 'Y' ? 'checked' : '' ?>> Eintrags-Verwaltung</small>
-        <?php } ?>
-    </td>
-    <td align="center">
-        <input type="hidden" name="action" value="edit">
-        <input type="hidden" name="edit_id" value="<?= (int) $admin['id'] ?>">
-        <?= csrfField() ?>
-        <input type="submit" value="Update">
-    </td>
-</tr>
+<form action="?page=admins" method="post" class="card mb-3 pb-table-wrap">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span><strong><?= e($admin['name']) ?></strong>
+            <?php if ($isSuper) { ?>
+                <span class="badge bg-warning text-dark ms-2">SuperAdmin</span>
+            <?php } ?>
+            <?php if ($isSelf) { ?>
+                <span class="badge bg-info text-dark ms-2">Sie</span>
+            <?php } ?>
+        </span>
+        <small class="text-body-secondary">ID: <?= $rowId ?></small>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="pb_admin_name_<?= $rowId ?>" class="form-label">Name</label>
+                <input id="pb_admin_name_<?= $rowId ?>" type="text" class="form-control" name="edit_name" maxlength="100" value="<?= e($admin['name']) ?>">
+            </div>
+            <div class="col-md-4">
+                <label for="pb_admin_email_<?= $rowId ?>" class="form-label">E-Mail-Adresse</label>
+                <input id="pb_admin_email_<?= $rowId ?>" type="email" class="form-control" name="edit_email" maxlength="250" value="<?= e($admin['email']) ?>">
+            </div>
+            <div class="col-md-4">
+                <label for="pb_admin_pw1_<?= $rowId ?>" class="form-label">Neues Passwort</label>
+                <input id="pb_admin_pw1_<?= $rowId ?>" type="password" class="form-control mb-2" name="edit_password1" maxlength="100" placeholder="Optional, leer lassen für keine Änderung">
+                <input id="pb_admin_pw2_<?= $rowId ?>" type="password" class="form-control" name="edit_password2" maxlength="100" placeholder="Wiederholen">
+                <div class="form-text">Mindestens 8 Zeichen, falls geändert.</div>
+            </div>
+
+            <?php if (!$isSuper && !$isSelf) { ?>
+            <fieldset class="col-12">
+                <legend class="form-label">Berechtigungen</legend>
+                <div class="row g-2">
+                    <div class="col-sm-6 col-md-3">
+                        <div class="form-check">
+                            <input id="pb_admin_perm_config_<?= $rowId ?>" class="form-check-input" type="checkbox" name="edit_config" value="Y" <?= $admin['config'] === 'Y' ? 'checked' : '' ?>>
+                            <label for="pb_admin_perm_config_<?= $rowId ?>" class="form-check-label">Konfiguration</label>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="form-check">
+                            <input id="pb_admin_perm_admins_<?= $rowId ?>" class="form-check-input" type="checkbox" name="edit_admins" value="Y" <?= $admin['admins'] === 'Y' ? 'checked' : '' ?>>
+                            <label for="pb_admin_perm_admins_<?= $rowId ?>" class="form-check-label">Admin-Verwaltung</label>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="form-check">
+                            <input id="pb_admin_perm_release_<?= $rowId ?>" class="form-check-input" type="checkbox" name="edit_release" value="Y" <?= $admin['release'] === 'Y' ? 'checked' : '' ?>>
+                            <label for="pb_admin_perm_release_<?= $rowId ?>" class="form-check-label">Eintrags-Freischaltung</label>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="form-check">
+                            <input id="pb_admin_perm_entries_<?= $rowId ?>" class="form-check-input" type="checkbox" name="edit_entries" value="Y" <?= $admin['entries'] === 'Y' ? 'checked' : '' ?>>
+                            <label for="pb_admin_perm_entries_<?= $rowId ?>" class="form-check-label">Eintrags-Verwaltung</label>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div class="col-12">
+                <div class="form-check text-danger">
+                    <input id="pb_admin_delete_<?= $rowId ?>" class="form-check-input" type="checkbox" name="delete" value="yes">
+                    <label for="pb_admin_delete_<?= $rowId ?>" class="form-check-label fw-semibold">
+                        Diesen Admin endgültig löschen
+                    </label>
+                </div>
+            </div>
+            <?php } else { ?>
+            <div class="col-12">
+                <div class="alert alert-info py-2 mb-0" role="status">
+                    <small>Berechtigungen können für diesen Eintrag nicht über dieses Formular geändert werden.</small>
+                </div>
+            </div>
+            <?php } ?>
+
+            <div class="col-12">
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="edit_id" value="<?= $rowId ?>">
+                <?= csrfField() ?>
+                <button type="submit" class="btn btn-primary">Speichern / Update</button>
+            </div>
+        </div>
+    </div>
 </form>
+<?php } ?>
+
+<h3 class="h6 mt-5">Admin hinzufügen</h3>
+
+<form action="?page=admins" method="post" class="card mb-3" novalidate>
+    <div class="card-header bg-success text-white">
+        <strong>Neuen Admin anlegen</strong>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="pb_add_name" class="form-label">Name <span class="text-danger" aria-hidden="true">*</span></label>
+                <input id="pb_add_name" type="text" class="form-control" name="add_name" maxlength="100" required value="<?= e($add_name) ?>">
+            </div>
+            <div class="col-md-6">
+                <label for="pb_add_email" class="form-label">E-Mail-Adresse <span class="text-danger" aria-hidden="true">*</span></label>
+                <input id="pb_add_email" type="email" class="form-control" name="add_email" maxlength="250" required value="<?= e($add_email) ?>">
+            </div>
+
+            <fieldset class="col-12">
+                <legend class="form-label">Berechtigungen</legend>
+                <div class="row g-2">
+                    <div class="col-sm-6 col-md-3">
+                        <div class="form-check">
+                            <input id="pb_add_perm_config" class="form-check-input" type="checkbox" name="add_config" value="Y" <?= $add_config === 'Y' ? 'checked' : '' ?>>
+                            <label for="pb_add_perm_config" class="form-check-label">Konfiguration</label>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="form-check">
+                            <input id="pb_add_perm_admins" class="form-check-input" type="checkbox" name="add_admins" value="Y" <?= $add_admins === 'Y' ? 'checked' : '' ?>>
+                            <label for="pb_add_perm_admins" class="form-check-label">Admin-Verwaltung</label>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="form-check">
+                            <input id="pb_add_perm_release" class="form-check-input" type="checkbox" name="add_release" value="Y" <?= $add_release === 'Y' ? 'checked' : '' ?>>
+                            <label for="pb_add_perm_release" class="form-check-label">Eintrags-Freischaltung</label>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="form-check">
+                            <input id="pb_add_perm_entries" class="form-check-input" type="checkbox" name="add_entries" value="Y" <?= $add_entries === 'Y' ? 'checked' : '' ?>>
+                            <label for="pb_add_perm_entries" class="form-check-label">Eintrags-Verwaltung</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-text">Mindestens eine Berechtigung muss aktiv sein.</div>
+            </fieldset>
+
+            <div class="col-12">
+                <input type="hidden" name="action" value="add">
+                <?= csrfField() ?>
+                <button type="submit" class="btn btn-success">Admin hinzufügen</button>
+            </div>
+        </div>
+    </div>
+</form>
+
 <?php
-        $rowColor = ($rowColor === '#001329') ? '#001930' : '#001329';
-}
-?>
-</table>
-
-<br><br>
-
-<form action="?page=admins" method="post">
-<table border="0" width="100%">
-<tr bgcolor="#001329"><td colspan="5" align="center">
-    <b>ADMIN HINZUFÜGEN</b>
-</td></tr>
-<tr bgcolor="#001930">
-    <td align="center"><b>Name</b></td>
-    <td align="center"><b>E-Mail</b></td>
-    <td colspan="2" align="center"><b>Berechtigungen</b></td>
-    <td align="center"><b>Aktion</b></td>
-</tr>
-<tr bgcolor="#001329">
-    <td align="center">
-        <input type="text" name="add_name" maxlength="100" value="<?= e($add_name) ?>">
-    </td>
-    <td align="center">
-        <input type="text" name="add_email" maxlength="250" value="<?= e($add_email) ?>">
-    </td>
-    <td>
-        &nbsp;<input type="checkbox" name="add_config" value="Y" <?= $add_config === 'Y' ? 'checked' : '' ?>> <small>PowerBook Konfiguration<br>
-        &nbsp;<input type="checkbox" name="add_admins" value="Y" <?= $add_admins === 'Y' ? 'checked' : '' ?>> Admin-Verwaltung</small>
-    </td>
-    <td>
-        &nbsp;<input type="checkbox" name="add_release" value="Y" <?= $add_release === 'Y' ? 'checked' : '' ?>> <small>Eintrags-Freischaltung<br>
-        &nbsp;<input type="checkbox" name="add_entries" value="Y" <?= $add_entries === 'Y' ? 'checked' : '' ?>> Eintrags-Verwaltung</small>
-    </td>
-    <td align="center">
-        <input type="hidden" name="action" value="add">
-        <?= csrfField() ?>
-        <input type="submit" value="Hinzufügen">
-    </td>
-</tr>
-</table>
-</form>
-
-</td></tr>
+pb_admin_card_close();

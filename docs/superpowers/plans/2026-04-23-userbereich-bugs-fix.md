@@ -10,6 +10,8 @@
 
 **Test-Ausführung:** `docker exec powerbook_web vendor/bin/phpunit --testsuite Unit` (oder Integration). Lokaler Fallback: `vendor/bin/phpunit`.
 
+> **Port-Hinweis (Mai 2026):** Die Bash-Snippets in diesem Plan referenzieren `localhost:8080` und `localhost:8031` als historischen Snapshot. Container-Ports wurden inzwischen auf **8081** (web), **1035** (Mailpit SMTP) und **8035** (Mailpit UI) verschoben — bei aktueller Reproduktion entsprechend ersetzen oder `PB_TEST_BASE_URL` setzen. Integration-Tests in `tests/Integration/` lesen die Base-URL bereits aus dieser Env-Var (Default `http://localhost:8081`).
+
 **Ausschluss:** Improvements aus `2026-04-23-Userbereichs-improvements.md` werden hier **nicht** adressiert, nur die im Bug-Report dokumentierten Fehler.
 
 ---

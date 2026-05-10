@@ -217,3 +217,10 @@ dump.rdb
 /scratch/
 NOTES.local.md
 TODO.local.md
+
+
+# -------------------------------------------------------------
+# Ralph-Loop Arbeitsdateien (Status, Helper-Skripte, Prompts)
+# nur lokal relevant, nicht versionieren.
+# -------------------------------------------------------------
+/.ralph-loop/*

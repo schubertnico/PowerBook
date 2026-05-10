@@ -243,15 +243,19 @@ class AdminHelpersTest extends TestCase
     {
         $footer = getEmailFooter();
 
-        $this->assertStringContainsString('PowerBook - PHP Guestbook System', $footer);
+        // Anonymisiertes Branding: kein "PHP Guestbook System" mehr (nennt
+        // implizit die Sprache und damit eine Angriffsoberflaeche).
+        $this->assertStringContainsString('PowerBook', $footer);
+        $this->assertStringContainsString('Gaestebuch-System', $footer);
     }
 
     #[Test]
-    public function getEmailFooterContainsGitHubUrl(): void
+    public function getEmailFooterContainsProjectUrl(): void
     {
         $footer = getEmailFooter();
 
-        $this->assertStringContainsString('https://github.com/schubertnico/PowerBook.git', $footer);
+        // Generischer Projekt-Link statt internem Repo-Verweis.
+        $this->assertStringContainsString('https://www.powerscripts.org', $footer);
     }
 
     #[Test]

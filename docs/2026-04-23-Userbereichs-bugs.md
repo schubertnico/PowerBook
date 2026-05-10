@@ -1,7 +1,8 @@
 # PowerBook Userbereich - Bug-Report
 **Datum:** 2026-04-23
 **Tester:** Senior-QA-Engineer (Claude)
-**Testumgebung:** http://localhost:8080 (Admin-Center unter /pb_inc/admincenter/index.php)
+**Testumgebung (zum Audit-Zeitpunkt):** http://localhost:8080 (Admin-Center unter /pb_inc/admincenter/index.php)
+> **Hinweis (Mai 2026):** Container-Ports wurden inzwischen verschoben (`web` 8080→**8081**, Mailpit 1031→**1035**, 8031→**8035**) wegen Konflikten mit anderen Compose-Stacks. Reproduktionsskripte unten sind historische Snapshots — bei aktueller Reproduktion entsprechend ersetzen. Aktuelle Ports: siehe README.md.
 
 > Diese Datei enthält **nur Bugs**. Workflow-/UX-Hinweise siehe `2026-04-23-Userbereichs-improvements.md`.
 >

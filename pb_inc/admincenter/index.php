@@ -4,9 +4,9 @@
  * Admin Center Main Entry Point
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
@@ -19,13 +19,14 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/config.inc.php';
 require_once __DIR__ . '/../error-handler.inc.php';
 require_once __DIR__ . '/../validation.inc.php';
+require_once __DIR__ . '/layout.inc.php';
 // BUG-010: Falls die DB noch keine reset_token-Spalten hat, nachziehen.
 require_once __DIR__ . '/password_migrate.php';
 
 // Allowed pages whitelist (LFI protection)
 // BUG-004: Die Legacy-/Helper-/Platzhalter-Seiten (Email-Notifications, Paginierungs-Helper,
 // Empty-Placeholder) sind keine eigenstaendigen Admin-Views und wurden deshalb aus der
-// Whitelist entfernt — Direktaufruf faellt auf 'home' zurueck.
+// Whitelist entfernt — Direktaufruf faellt auf 'home' zurück.
 $allowedPages = [
     'home', 'login', 'logout', 'license', 'admins',
     'entries', 'configuration', 'password', 'release',
@@ -66,17 +67,17 @@ $admin_session = [
 if ($login === 'yes') {
     // CSRF validation
     if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
-        $login_message = 'CSRF-Token ungültig. Bitte die Seite neu laden.<br><br>';
+        $login_message = 'CSRF-Token ungültig. Bitte die Seite neu laden.';
         logCsrfFailure('admin_login');
     } elseif (empty($name) || empty($password)) {
-        $login_message = 'Bitte <b>Name <i>und</i> Passwort</b> angeben!<br><br>';
+        $login_message = 'Bitte <b>Name <i>und</i> Passwort</b> angeben!';
     } else {
         $stmt = $pdo->prepare("SELECT * FROM {$pb_admin} WHERE name = :name LIMIT 1");
         $stmt->execute([':name' => $name]);
         $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$admin) {
-            $login_message = 'Admin <b>' . e($name) . '</b> nicht in der Datenbank!<br><br>';
+            $login_message = 'Admin <b>' . e($name) . '</b> nicht in der Datenbank!';
             logFailedLogin($name);
         } else {
             // Verify password with migration support
@@ -114,7 +115,7 @@ if ($login === 'yes') {
                 logSuccessfulLogin($name);
                 regenerateCsrfToken();
             } else {
-                $login_message = 'Sie gaben ein <b>falsches Passwort</b> ein!<br><br>';
+                $login_message = 'Sie gaben ein <b>falsches Passwort</b> ein!';
                 logFailedLogin($name);
             }
         }
@@ -183,96 +184,50 @@ try {
 
 // Build header message
 if (empty($welcome_admin)) {
-    $head_message = 'Nicht eingeloggt. <a href="?page=login">Hier einloggen</a>.';
+    $head_message = 'Nicht eingeloggt. <a href="?page=login" class="alert-link">Hier einloggen</a>.';
 } else {
-    $head_message = 'Hallo, ' . e($welcome_admin) . '! [ <a href="?page=logout">Logout</a> ]';
+    $head_message = 'Hallo, <b>' . e($welcome_admin) . '</b>! &middot; <a href="?page=logout" class="alert-link">Logout</a>';
 }
 
-?>
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PowerBook - AdminCenter</title>
-    <link rel="stylesheet" href="powerbook.css" type="text/css">
-</head>
-<body bgcolor="#002040" topmargin="10" bottommargin="10" leftmargin="10" rightmargin="10" text="#ffffff" link="#B5C3D9" vlink="#B5C3D9" alink="#B5C3D9" marginwidth="0" marginheight="0">
+// Login-/Eingeloggt-Status entscheidet, ob Subnav und Counts gezeigt werden.
+$loggedIn = !empty($welcome_admin);
 
-<table border="0" width="100%" cellpadding="4" cellspacing="1">
-    <tr>
-        <td width="500">
-            <a href="?page=home" class="logo"><img src="powerbook.gif" width="461" height="179" border="0" alt="PowerBook"></a>
-        </td>
-        <td width="*" align="center" valign="center">
-            <b>PowerBook AdminCenter</b><br>
-            <small>
-                <a href="?page=license">Lizenz</a> |
-                <a href="../../<?= e($config_guestbook_name) ?>">Externe Seite</a> |
-                <a href="https://github.com/schubertnico/PowerBook.git" target="_blank">GitHub</a>
-            </small>
-        </td>
-    </tr>
-</table>
+pb_admin_layout_header('PowerBook AdminCenter', [
+    'headMessage'  => $head_message,
+    'publicCount'  => $head_count_entries,
+    'hiddenCount'  => $head_count_unreleased,
+    'showCounts'   => $loggedIn,
+    'showSubNav'   => $loggedIn,
+    'guestbookUrl' => '../../' . ((string) ($config_guestbook_name ?? 'pbook.php')),
+]);
 
-<br><br><br>
-
-<div align="right">
-    <small>&raquo; <a href="?page=configuration">PowerBook Konfiguration</a> &laquo;</small>
-</div>
-
-<table border="0" cellpadding="4" cellspacing="1" width="100%" bgcolor="#6078A0">
-    <tr bgcolor="#001329">
-        <td valign="bottom" align="left">
-            <b class="small">&raquo; <?= $head_message ?></b>
-        </td>
-        <td width="300" align="right">
-            <b class="small">
-                Öffentliche Einträge: <a href="?page=entries"><?= $head_count_entries ?></a><br>
-                Versteckte Einträge: <a href="?page=release"><?= $head_count_unreleased ?></a>
-            </b>
-        </td>
-    </tr>
-    <tr bgcolor="#001329">
-        <td colspan="2" align="center">
-            <b>Administration</b><br>
-            <small>
-                <a href="?page=entries">Einträge</a> |
-                <a href="?page=admins">Admins</a>
-            </small>
-        </td>
-    </tr>
-</table>
-<br><br>
-
-<table cellpadding="4" cellspacing="1" width="100%" bgcolor="#6078A0">
-<?php
-
-if ($installation_required) { ?>
-<tr><td bgcolor="#3F5070" align="center">
-    <b class="headline">I N S T A L L A T I O N &nbsp; &nbsp; E R F O R D E R L I C H</b>
-</td></tr>
-<tr><td bgcolor="#001F3F" valign="top">
-    <div style="padding: 20px; text-align: center;">
-        <p style="color: #FF6666; font-size: 14px;">
-            <b>Die PowerBook-Datenbanktabellen wurden nicht gefunden!</b>
-        </p>
-        <p>
-            Bitte führen Sie zuerst die Installation aus, um die erforderlichen<br>
-            Datenbanktabellen zu erstellen.
-        </p>
-        <p style="margin-top: 20px;">
-            <a href="../../install_deu.php" style="background: #3F5070; color: #FFFFFF; padding: 10px 20px; text-decoration: none; border: 1px solid #6078A0;">
-                &raquo; Zur Installation &laquo;
-            </a>
-        </p>
-        <p style="margin-top: 20px; font-size: 11px; color: #888888;">
-            Falls Sie die Installation bereits durchgeführt haben, prüfen Sie bitte<br>
-            die Datenbank-Konfiguration in <code>pb_inc/mysql.inc.php</code>.
-        </p>
-    </div>
-</td></tr>
-<?php } else {
+if ($installation_required) {
+    ?>
+    <section class="card border-warning shadow-sm mb-4">
+        <header class="card-header bg-warning text-dark">
+            <h2 class="h5 mb-0">Installation erforderlich</h2>
+        </header>
+        <div class="card-body text-center">
+            <p class="lead text-danger fw-semibold">
+                Die PowerBook-Datenbanktabellen wurden nicht gefunden!
+            </p>
+            <p class="mb-4">
+                Bitte fuehren Sie zuerst die Installation aus, um die erforderlichen
+                Datenbanktabellen zu erstellen.
+            </p>
+            <p class="mb-4">
+                <a href="../../install_deu.php" class="btn btn-primary">
+                    &raquo; Zur Installation &laquo;
+                </a>
+            </p>
+            <p class="text-body-secondary mb-0"><small>
+                Falls Sie die Installation bereits durchgefuehrt haben, pruefen Sie bitte
+                die Datenbank-Konfiguration in <code>pb_inc/mysql.inc.php</code>.
+            </small></p>
+        </div>
+    </section>
+    <?php
+} else {
 
     // Validate and include page (LFI protection)
     if (!in_array($page, $allowedPages, true)) {
@@ -282,25 +237,11 @@ if ($installation_required) { ?>
     $pageFile = __DIR__ . '/' . $page . '.inc.php';
 
     if (!file_exists($pageFile)) {
-        echo '<tr bgcolor="#001329"><td>';
-        echo '<div align="center">Die Seite <b>' . e($page) . '</b> wurde nicht gefunden.</div>';
-        echo '</td></tr>';
+        echo '<div class="alert alert-warning text-center" role="alert">Die Seite <b>' . e($page) . '</b> wurde nicht gefunden.</div>';
     } else {
         include $pageFile;
     }
 
 }
-?>
-</table>
 
-<br>
-<center>
-    <small>
-        <a href="https://github.com/schubertnico/PowerBook.git" target="_blank">PowerBook</a>
-        &copy; 2002 by <a href="mailto:expandable@powerscripts.org">Axel Habermaier</a>
-        | PHP 8.4 Update: 2025
-    </small>
-</center>
-
-</body>
-</html>
+pb_admin_layout_footer();

@@ -5,9 +5,9 @@
  * New Entry Notification Email
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
@@ -27,17 +27,14 @@ if (!empty($toEmail) && filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
         Hallo!
 
         {$fromName} hat gerade einen neuen Eintrag in Ihrem Gaestebuch verfasst. Sollten Eintraege freigeschaltet werden muessen, tun Sie dies bitte im AdminCenter ({$adminUrl}).
-        Dort koennen Sie auch diese automatische eMail, welche bei jedem neuen Eintrag an Sie geschickt wird, deaktivieren.
+        Dort koennen Sie auch diese automatische E-Mail, welche bei jedem neuen Eintrag an Sie geschickt wird, deaktivieren.
 
         --------------------------------------------------------
 
-        PowerBook (C) 2002 by Axel Habermaier
-        PHP 8.4 Update: 2025
+        PowerBook - Gaestebuch-System
+        https://www.powerscripts.org
 
-        Link: https://github.com/schubertnico/PowerBook.git
-
-
-        Diese eMail wurde automatisch generiert.
+        Diese E-Mail wurde automatisch generiert.
         EOT;
 
     $headers = [

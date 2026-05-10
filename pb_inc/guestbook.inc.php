@@ -4,9 +4,9 @@
  * Main Guestbook Display and Entry Handler
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
@@ -21,6 +21,7 @@ if (!defined('PB_ENTRY')) {
 require_once __DIR__ . '/config.inc.php';
 require_once __DIR__ . '/functions.inc.php';
 require_once __DIR__ . '/error-handler.inc.php';
+require_once __DIR__ . '/layout.inc.php';
 
 // Get request parameters safely
 $show_gb = $_GET['show_gb'] ?? $_POST['show_gb'] ?? 'yes';
@@ -37,7 +38,6 @@ $tmp_where = $_GET['tmp_where'] ?? $_POST['tmp_where'] ?? '';
 $name = trim($_POST['name'] ?? '');
 $email2 = trim($_POST['email2'] ?? '');
 $url = trim($_POST['url'] ?? '');
-$icq2 = trim($_POST['icq2'] ?? '');
 $text = $_POST['text'] ?? '';
 $smilies2 = $_POST['smilies2'] ?? 'N';
 $icon = $_POST['icon'] ?? '';
@@ -83,27 +83,23 @@ if ($show_gb !== 'no') {
 
     if ($installation_required) {
         ?>
-        <table border="0" cellpadding="4" cellspacing="1" width="100%" bgcolor="#6078A0">
-            <tr><td bgcolor="#3F5070" align="center">
-                <b style="color: #FFFFFF;">I N S T A L L A T I O N &nbsp; &nbsp; E R F O R D E R L I C H</b>
-            </td></tr>
-            <tr><td bgcolor="#001F3F" valign="top">
-                <div style="padding: 20px; text-align: center; color: #FFFFFF;">
-                    <p style="color: #FF6666; font-size: 14px;">
-                        <b>Die PowerBook-Datenbanktabellen wurden nicht gefunden!</b>
-                    </p>
-                    <p>
-                        Bitte führen Sie zuerst die Installation aus, um die erforderlichen<br>
-                        Datenbanktabellen zu erstellen.
-                    </p>
-                    <p style="margin-top: 20px;">
-                        <a href="install_deu.php" style="background: #3F5070; color: #FFFFFF; padding: 10px 20px; text-decoration: none; border: 1px solid #6078A0;">
-                            &raquo; Zur Installation &laquo;
-                        </a>
-                    </p>
-                </div>
-            </td></tr>
-        </table>
+        <div class="card border-warning shadow-sm mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h2 class="h5 mb-0">Installation erforderlich</h2>
+            </div>
+            <div class="card-body text-center">
+                <p class="lead text-danger fw-semibold">
+                    Die PowerBook-Datenbanktabellen wurden nicht gefunden!
+                </p>
+                <p class="mb-4">
+                    Bitte fuehren Sie zuerst die Installation aus, um die erforderlichen
+                    Datenbanktabellen zu erstellen.
+                </p>
+                <a href="install_deu.php" class="btn btn-primary">
+                    &raquo; Zur Installation &laquo;
+                </a>
+            </div>
+        </div>
         <?php
         return;
     }
@@ -134,7 +130,7 @@ if ($show_gb !== 'no') {
     }
 
     if ($tmp_search === '') {
-        $count_entries = "Dieses Gästebuch enthält <b>{$count_pages}</b> {$entries_word}.";
+        $count_entries = "Dieses Gästebuch enthaelt <b>{$count_pages}</b> {$entries_word}.";
     } else {
         $count_entries = "<b>{$count_pages}</b> {$entries_word} gefunden.<br><a href=\"" . e($config_guestbook_name) . '">Alle Einträge Auflisten</a>';
     }
@@ -142,22 +138,23 @@ if ($show_gb !== 'no') {
     ?>
 
 <!-- Navigation Header -->
-<a name="#top-of-page"></a>
-<div align="center">
-   <a href="#write-entry">Eintrag Schreiben</a> | <a href="<?= e($config_guestbook_name) ?>?show_gb=no&amp;show_form=no&amp;search=yes">Nach Eintrag Suchen</a><br>
-   <small><?= $count_entries ?></small><br><br>
+<div class="d-flex flex-wrap justify-content-between align-items-center bg-body-secondary rounded p-3 mb-3">
+    <div class="d-flex flex-wrap gap-2">
+        <a href="#write-entry" class="btn btn-primary btn-sm">Eintrag schreiben</a>
+        <a href="<?= e($config_guestbook_name) ?>?show_gb=no&amp;show_form=no&amp;search=yes" class="btn btn-outline-secondary btn-sm">Nach Eintrag suchen</a>
+    </div>
+    <small class="text-body-secondary"><?= $count_entries ?></small>
 </div>
-   <?php include __DIR__ . '/pages.inc.php'; ?>
-<br>
+<?php include __DIR__ . '/pages.inc.php'; ?>
 
 <!-- Entry List -->
 <?php
 
     if ($message !== '') {
-        echo '<div align="center"><b>' . e($message) . '</b></div>';
+        echo '<div class="alert alert-info text-center" role="status"><b>' . e($message) . '</b></div>';
     } elseif ($message_html !== '') {
         // BUG-007: $message_html ist vertrauenswuerdiges HTML (keine User-Eingabe), daher KEIN e().
-        echo '<div align="center"><b>' . $message_html . '</b></div>';
+        echo '<div class="alert alert-warning text-center" role="status"><b>' . $message_html . '</b></div>';
     }
 
     while ($entry = $entriesStmt->fetch(PDO::FETCH_ASSOC)) {
@@ -167,15 +164,15 @@ if ($show_gb !== 'no') {
     include __DIR__ . '/pages.inc.php';
 
     // Clear form variables
-    unset($email, $url, $icq, $smilies, $text, $name);
+    unset($email, $url, $smilies, $text, $name);
 
     ?>
 
-<br><a name="#write-entry"></a><br>
+<a id="write-entry"></a>
 
-<div align="center">
-   <a href="#top-of-page">Nach Oben</a>
-</div><br><br>
+<div class="text-center mt-4 mb-4">
+    <a href="#top-of-page" class="btn btn-link btn-sm">Nach oben &uarr;</a>
+</div>
 
 <?php
 }
@@ -195,22 +192,22 @@ if ($preview === 'yes') {
         $show_form = 'yes';
     } elseif (mb_strlen($name) > 100) {
         // BUG-008: serverseitige Laengenpruefung (client-maxlength umgehbar).
-        $error = 'Der <b>Name</b> darf hoechstens 100 Zeichen lang sein!';
+        $error = 'Der <b>Name</b> darf höchstens 100 Zeichen lang sein!';
         $show_form = 'yes';
     } elseif (strlen(trim($text)) === 0) {
         $error = 'Bitte einen <b>Text</b> eingeben!!';
         $show_form = 'yes';
     } elseif (mb_strlen($text) > 5000) {
-        $error = 'Der <b>Text</b> darf hoechstens 5000 Zeichen lang sein!';
+        $error = 'Der <b>Text</b> darf höchstens 5000 Zeichen lang sein!';
         $show_form = 'yes';
     } elseif (strlen($email2) >= 1 && !filter_var($email2, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Ungültige <b>eMail-Adresse</b>!';
+        $error = 'Ungültige <b>E-Mail-Adresse</b>!';
         $show_form = 'yes';
     } elseif (mb_strlen($email2) > 250) {
-        $error = 'Die <b>eMail-Adresse</b> darf hoechstens 250 Zeichen lang sein!';
+        $error = 'Die <b>E-Mail-Adresse</b> darf höchstens 250 Zeichen lang sein!';
         $show_form = 'yes';
     } elseif (mb_strlen($url) > 255) {
-        $error = 'Die <b>Homepage-URL</b> darf hoechstens 255 Zeichen lang sein!';
+        $error = 'Die <b>Homepage-URL</b> darf höchstens 255 Zeichen lang sein!';
         $show_form = 'yes';
     } else {
         $show_form = 'no';
@@ -222,13 +219,11 @@ if ($preview === 'yes') {
     $raw_name = $name;
     $raw_email2 = $email2;
     $raw_url = $url;
-    $raw_icq2 = $icq2;
 
     // Sanitize input for display AFTER validation
     $name = e($name);
     $email2 = e($email2);
     $url = e($url);
-    $icq2 = e($icq2);
 
     if ($show_preview === 'yes') {
 
@@ -238,7 +233,6 @@ if ($preview === 'yes') {
             'email' => $email2,
             'smilies' => $smilies2,
             'homepage' => $url,
-            'icq' => $icq2,
             'date' => time(),
             'icon' => ($icon === 'no' || $icon === '') ? '' : $icon,
             'statement' => '',
@@ -247,34 +241,40 @@ if ($preview === 'yes') {
 
         $text_escaped = str_replace('"', '&quot;', $text);
 
+        echo '<div class="card border-info shadow-sm mb-4">';
+        echo '<div class="card-header bg-info text-dark"><h2 class="h5 mb-0">Vorschau</h2></div>';
+        echo '<div class="card-body">';
+
         include __DIR__ . '/entry.inc.php';
 
         echo '
-         <form action="' . e($config_guestbook_name) . '" method="post">
+         <form action="' . e($config_guestbook_name) . '" method="post" class="mt-3">
             ' . csrfField() . '
             <input type="hidden" name="name2" value="' . e($raw_name) . '">
             <input type="hidden" name="email2" value="' . e($raw_email2) . '">
             <input type="hidden" name="url2" value="' . e($raw_url) . '">
             <input type="hidden" name="icon2" value="' . e($icon) . '">
-            <input type="hidden" name="icq2" value="' . e($raw_icq2) . '">
             <input type="hidden" name="text2" value="' . e($text_escaped) . '">
             <input type="hidden" name="smilies2" value="' . e($smilies2) . '">
             <input type="hidden" name="show_gb" value="no">
             <input type="hidden" name="preview" value="no">
             <input type="hidden" name="add_entry" value="yes">
             <input type="hidden" name="show_form" value="no">
-            <div align="center">
-            <input type="submit" value="Eintragen!">
-            <input type="button" value="Zurück" onClick="javascript:history.back()"></div>
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+                <button type="submit" class="btn btn-success">Eintragen!</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="javascript:history.back()">Zurück</button>
+            </div>
          </form>
       ';
+
+        echo '</div></div>';
     }
 }
 
 // Show entry form
 if ($show_form !== 'no') {
     if (isset($error) && strlen($error) > 1) {
-        echo '<font color="' . e($config_color) . '">' . $error . '</font><br>';
+        echo '<div class="alert alert-danger" role="alert">' . $error . '</div>';
     }
 
     $text = e($text ?? '');
@@ -339,10 +339,13 @@ if ($add_entry === 'yes') {
                 $icon2 = ($icon2 === 'no' || $icon2 === '') ? '0' : $icon2;
                 $smilies2 = ($smilies2 === 'Y') ? 'Y' : 'N';
 
+                // ICQ-Spalte wird nicht mehr beschrieben (Legacy-Service eingestellt).
+                // Bestehende DB-Spalten in alten Installationen behalten ihren
+                // DEFAULT-Wert ('') beim INSERT.
                 $insertStmt = $pdo->prepare("
                     INSERT INTO {$pb_entries}
-                    (name, email, text, date, homepage, icq, ip, status, icon, smilies, statement, statement_by)
-                    VALUES (:name, :email, :text, :date, :homepage, :icq, :ip, :status, :icon, :smilies, :statement, :statement_by)
+                    (name, email, text, date, homepage, ip, status, icon, smilies, statement, statement_by)
+                    VALUES (:name, :email, :text, :date, :homepage, :ip, :status, :icon, :smilies, :statement, :statement_by)
                 ");
 
                 $insertStmt->execute([
@@ -351,7 +354,6 @@ if ($add_entry === 'yes') {
                     ':text' => $text2,
                     ':date' => $time,
                     ':homepage' => $url2,
-                    ':icq' => $icq2,
                     ':ip' => $ip,
                     ':status' => $config_release,
                     ':icon' => $icon2,
@@ -391,40 +393,38 @@ if ($add_entry === 'yes') {
         }
     }
 
-    echo '<div align="center"><a href="' . e($config_guestbook_name) . '">' . $message . '</a></div>';
+    $alertVariant = $messageType === 'success' ? 'success' : 'danger';
+    echo '<div class="alert alert-' . $alertVariant . ' text-center" role="alert">'
+       . '<a class="alert-link" href="' . e($config_guestbook_name) . '">' . $message . '</a></div>';
 }
 
 // Search form
 if ($search === 'yes') {
     ?>
-     <form action="<?= e($config_guestbook_name) ?>" method="get"><table border="0">
-        <tr><td>
-           Suchen nach:
-        </td><td>
-           <input type="text" size="15" maxlength="100" name="tmp_search">
-        </td></tr>
-        <tr><td>
-           Ort der Suche:
-        </td><td>
-           <select size="1" name="tmp_where">
-              <option value="name">Autor</option>
-              <option value="text">Text</option>
-           </select>
-        </td></tr>
-        <tr><td colspan="2" align="center">
-              <input type="submit" value="Suchen!">
-              <input type="button" value="Zurück" onClick="javascript:history.back()">
-        </td></tr>
-     </table></form>
+    <div class="card shadow-sm mb-4 pb-card-narrow">
+        <div class="card-header bg-secondary text-white">
+            <h2 class="h5 mb-0">Einträge durchsuchen</h2>
+        </div>
+        <div class="card-body">
+            <form action="<?= e($config_guestbook_name) ?>" method="get">
+                <div class="mb-3">
+                    <label for="tmp_search" class="form-label">Suchen nach</label>
+                    <input id="tmp_search" type="text" class="form-control" maxlength="100" name="tmp_search" placeholder="Begriff eingeben">
+                    <div class="form-text">Geben Sie einen Begriff ein, der im gewählten Feld vorkommt.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="tmp_where" class="form-label">Ort der Suche</label>
+                    <select id="tmp_where" class="form-select" name="tmp_where">
+                        <option value="name">Autor (Name)</option>
+                        <option value="text">Eintragstext</option>
+                    </select>
+                </div>
+                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                    <button type="submit" class="btn btn-primary">Suchen!</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="javascript:history.back()">Zurück</button>
+                </div>
+            </form>
+        </div>
+    </div>
   <?php
 }
-
-?>
-
-<br><br>
-<div align="center">
-   <small><a href="https://github.com/schubertnico/PowerBook.git" target="_blank">PowerBook</a>
-   &copy; 2002 <a href="mailto:expandable@powerscripts.org">Axel Habermaier</a>
-   | PHP 8.4 Update: 2025
-   </small>
-</div>

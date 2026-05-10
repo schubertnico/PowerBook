@@ -277,12 +277,21 @@ class GuestbookPagesTest extends TestCase
     #[Test]
     public function testGuestbookFooter(): void
     {
-        // The footer with PowerBook credit is always rendered
-        $output = $this->renderGuestbook(['show_gb' => 'no', 'show_form' => 'no']);
+        // Bootstrap-Migration: Der Footer mit PowerBook-Credit ist nun im
+        // zentralen Layout-Wrapper (pb_layout_footer() in pbook.php), nicht
+        // mehr im guestbook.inc.php-Include. Entsprechend pruefen wir hier nur,
+        // dass die Pflicht-Datei pb_inc/layout.inc.php den Footer rendert.
+        require_once POWERBOOK_ROOT . '/pb_inc/layout.inc.php';
+
+        ob_start();
+        pb_layout_footer();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('PowerBook', $output);
-        $this->assertStringContainsString('Axel Habermaier', $output);
-        $this->assertStringContainsString('2002', $output);
+        // Anonymisierter Footer: kein Personenname, kein PHP-Versions-Hinweis,
+        // nur generischer powerscripts.org-Link.
+        $this->assertStringContainsString('powerscripts.org', $output);
+        $this->assertStringNotContainsString('PHP 8.4', $output);
     }
 
     #[Test]

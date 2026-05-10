@@ -11,7 +11,7 @@
  * Verwendung in admins.inc.php verfuegbar.
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  */
 
 declare(strict_types=1);
@@ -39,8 +39,8 @@ function formatAdminPermissions(array $data): string
 function getEmailFooter(): string
 {
     return "\n--------------------------------------------------------\n"
-         . "PowerBook - PHP Guestbook System\n"
-         . "https://github.com/schubertnico/PowerBook.git\n\n"
+         . "PowerBook - Gaestebuch-System\n"
+         . "https://www.powerscripts.org\n\n"
          . 'DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!';
 }
 

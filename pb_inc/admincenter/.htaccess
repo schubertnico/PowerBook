@@ -40,8 +40,10 @@
 # -------------------------------------------------------------
 # - index.php          → Routing-Einstieg
 # - date-help.php      → Popup-Hilfe (vom configuration.inc.php verlinkt)
-# - powerbook.css      → AdminCenter-Stylesheet
-# - powerbook.gif      → AdminCenter-Logo
+# - powerbook.gif      → optionales AdminCenter-Logo (Legacy)
+#
+# Stylesheets liegen seit der Bootstrap-5-Migration zentral unter
+# /assets/powerbook.css (siehe pb_inc/layout.inc.php).
 #
 # Alle anderen .php sind via Routing (?page=xxx) erreichbar,
 # nicht direkt — das blockt die obige FilesMatch-Regel.

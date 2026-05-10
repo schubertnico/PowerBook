@@ -5,9 +5,9 @@
  * Database Configuration
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);

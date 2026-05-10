@@ -4,12 +4,14 @@
  * Admin Statements
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
+
+require_once __DIR__ . '/layout.inc.php';
 
 // Variables from parent scope (index.php)
 /** @var PDO $pdo */
@@ -18,11 +20,12 @@ declare(strict_types=1);
 /** @var string $config_icons */
 /** @var string $config_text_format */
 /** @var string $config_smilies */
-/** @var string $config_icq */
 
 // Check permission
 if (($admin_session['entries'] ?? 'N') !== 'Y') {
-    echo '<div style="color: #FF6666; padding: 20px;">Sie haben keine Berechtigung für Statements.</div>';
+    pb_admin_card_open('Statements');
+    echo pb_admin_alert('Sie haben keine Berechtigung für Statements.', 'danger');
+    pb_admin_card_close();
 
     return;
 }
@@ -35,7 +38,8 @@ $showForm = true;
 
 if ($id === 0) {
     // BUG-005: Echter Link statt history.back().
-    $message = 'Es ist ein Fehler aufgetreten: <b>ID unbekannt!</b> <a href="?page=entries">Zur Eintragsliste</a>';
+    $message = 'Es ist ein Fehler aufgetreten: <b>ID unbekannt!</b> <a class="alert-link" href="?page=entries">Zur Eintragsliste</a>';
+    $messageType = 'error';
     $showForm = false;
 }
 
@@ -118,24 +122,17 @@ if (!function_exists('formatStatement')) {
         return str_replace(array_keys($smilies), array_values($smilies), $text);
     }
 }
-?>
 
-<tr><td bgcolor="#3F5070" align="center">
-    <b class="headline">S T A T E M E N T S</b>
-</td></tr>
+pb_admin_card_open('Statements');
 
-<tr><td bgcolor="#001F3F" valign="top">
+if (!empty($message)) {
+    echo pb_admin_alert($message, pb_admin_message_type($messageType));
+    if ($messageType === 'success') {
+        echo '<p><a class="btn btn-outline-secondary btn-sm" href="?page=entries">Zurück zur Eintrags-Übersicht</a></p>';
+    }
+}
 
-<?php if (!empty($message)) { ?>
-<div style="padding: 10px; margin: 10px 0; background: <?= $messageType === 'success' ? '#003300' : '#330000' ?>; border: 1px solid <?= $messageType === 'success' ? '#00FF00' : '#FF0000' ?>;">
-    <?= $message ?>
-</div>
-<?php if ($messageType === 'success') { ?>
-<p><a href="?page=entries">Zurück zur Eintrags-Übersicht</a></p>
-<?php } ?>
-<?php } ?>
-
-<?php if ($showForm && $entry) { ?>
+if ($showForm && $entry) { ?>
 <p>
 Sie können mit dem untenstehenden Formular Statements schreiben oder bearbeiten.
 Um ein Statement zu löschen, lassen Sie das Formular einfach leer.
@@ -157,65 +154,50 @@ $db_statement = 'N'; // Don't show statement in preview
     }
     ?>
 
-<table width="100%" border="0">
-    <tr>
-        <td align="left" bgcolor="#001329">
-            <?= $show_icon ?><b><?= $date ?></b>, <small><?= $time ?></small>
-        </td>
-        <td align="right" width="121" bgcolor="#001329">
-            <?= $email_name ?>
-        </td>
-    </tr>
-    <tr>
-        <td valign="top" bgcolor="#001930">
-            <?= $entry['text'] ?>
-            <?php if (!empty($statementPreview)) { ?>
-            <br><br><hr noshade>
-            <i><b><?= $currentBy ?></b>'s Statement:<br><br><?= $statementPreview ?></i>
-            <?php } ?>
-        </td>
-        <td width="121" align="right" valign="top" bgcolor="#001329">
-            <?= $url ?><br>
-            <?= $show_icq ?>
-        </td>
-    </tr>
-</table>
-<br><br>
+<article class="card pb-entry-card shadow-sm mb-3">
+    <header class="card-header d-flex flex-wrap justify-content-between align-items-center">
+        <span><?= $show_icon ?><b><?= $date ?></b>, <small class="text-body-secondary"><?= $time ?></small></span>
+        <span class="text-end"><?= $email_name ?></span>
+    </header>
+    <div class="card-body">
+        <?= $entry['text'] ?>
+        <?php if (!empty($statementPreview)) { ?>
+        <hr class="my-3">
+        <div class="fst-italic"><b><?= $currentBy ?></b>'s Statement:<br><br><?= $statementPreview ?></div>
+        <?php } ?>
+    </div>
+    <footer class="card-footer d-flex flex-wrap justify-content-end gap-3">
+        <?= $url ?>
+        <?= $show_icq ?>
+    </footer>
+</article>
 
-<div align="center">
-<form action="?page=statement" method="post">
+<form action="?page=statement" method="post" class="mt-4" novalidate>
 <?= csrfField() ?>
 <input type="hidden" name="action" value="update">
 <input type="hidden" name="id" value="<?= $id ?>">
 
-<table border="0">
-    <tr bgcolor="#001329">
-        <td width="120" valign="top">
-            Statement:
-            <?php if (($config_text_format ?? 'N') === 'Y') { ?>
-            <br><small><a href="../text-help.html" target="_blank">Hilfe</a></small>
-            <?php } ?>
-        </td>
-        <td>
-            <textarea name="edit_statement" rows="10" cols="50"><?= e($edit_statement ?? '') ?></textarea>
-        </td>
-    </tr>
-    <tr bgcolor="#001930">
-        <td width="120">&nbsp;</td>
-        <td>
-            <input type="submit" value="Statement speichern">
-            <input type="reset" value="Zurücksetzen">
-        </td>
-    </tr>
-</table>
-</form>
+<div class="mb-3">
+    <label for="pb_statement" class="form-label">
+        Statement
+        <?php if (($config_text_format ?? 'N') === 'Y') { ?>
+        &nbsp;<small><a href="../text-help.html" target="_blank" rel="noopener noreferrer">Formatierungs-Hilfe</a></small>
+        <?php } ?>
+    </label>
+    <textarea id="pb_statement" name="edit_statement" rows="8" class="form-control"><?= e($edit_statement ?? '') ?></textarea>
+    <div class="form-text">Leer lassen, um ein vorhandenes Statement zu löschen.</div>
 </div>
 
-<p><small>
+<div class="d-flex flex-wrap gap-2">
+    <button type="submit" class="btn btn-primary">Statement speichern</button>
+    <button type="reset" class="btn btn-outline-secondary">Zurücksetzen</button>
+</div>
+</form>
+
+<p class="text-body-secondary mt-3 mb-0"><small>
 <b>Hinweis:</b> Das Statement wird unter dem Namen "<b><?= e($admin_session['name'] ?? 'Admin') ?></b>" gespeichert.
-Lassen Sie das Textfeld leer, um ein vorhandenes Statement zu löschen.
 </small></p>
 
-<?php } ?>
+<?php }
 
-</td></tr>
+pb_admin_card_close();

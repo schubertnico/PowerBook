@@ -60,7 +60,8 @@ class ValidationTest extends TestCase
         $errors = validateGuestbookEntry('Test User', 'Test message', 'invalid-email');
 
         $this->assertArrayHasKey('email', $errors);
-        $this->assertStringContainsString('eMail', $errors['email']);
+        // Fehlermeldung wurde auf "E-Mail-Adresse" vereinheitlicht.
+        $this->assertStringContainsString('E-Mail-Adresse', $errors['email']);
     }
 
     #[Test]

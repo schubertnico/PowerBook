@@ -4,50 +4,64 @@
  * Admin Center Home Page
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  */
 
 declare(strict_types=1);
+
+require_once __DIR__ . '/layout.inc.php';
+
+pb_admin_card_open('Willkommen');
 ?>
 
-<tr>
-    <td bgcolor="#3F5070" align="center">
-        <b class="headline">W I L L K O M M E N</b>
-    </td>
-</tr>
-<tr>
-    <td bgcolor="#001F3F" valign="top">
-
-<p>Willkommen im AdminCenter von PowerBook!</p>
+<p class="lead">Willkommen im AdminCenter von PowerBook!</p>
 
 <p>
-    Vielen Dank, dass Sie PowerBook benutzen. Bei Fragen oder Problemen besuchen Sie bitte das
-    <a href="https://github.com/schubertnico/PowerBook.git" target="_blank">GitHub Repository</a>.
+    Vielen Dank, dass Sie PowerBook benutzen. Bei Fragen oder Problemen besuchen Sie bitte
+    <a href="https://www.powerscripts.org" target="_blank" rel="noopener noreferrer">powerscripts.org</a>.
 </p>
 
-<h3>Schnellnavigation</h3>
-<ul>
-    <li><a href="?page=entries">Einträge verwalten</a></li>
-    <li><a href="?page=release">Einträge freischalten</a></li>
-    <li><a href="?page=admins">Administratoren verwalten</a></li>
-    <li><a href="?page=configuration">Konfiguration</a></li>
-</ul>
+<div class="row g-4 mt-2">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h3 class="h6 card-title">Schnellnavigation</h3>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><a href="?page=entries">Einträge verwalten</a></li>
+                    <li class="list-group-item"><a href="?page=release">Einträge freischalten</a></li>
+                    <li class="list-group-item"><a href="?page=admins">Administratoren verwalten</a></li>
+                    <li class="list-group-item"><a href="?page=configuration">Konfiguration</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h3 class="h6 card-title">Systeminfo</h3>
+                <dl class="row mb-0">
+                    <?php /*
+                     * Aus Sicherheitsgruenden werden konkrete PHP- oder
+                     * PowerBook-Versionen NICHT mehr angezeigt — diese sind
+                     * Information-Disclosure-Vektoren fuer Angreifer.
+                     */ ?>
+                    <dt class="col-sm-6">Öffentliche Einträge</dt>
+                    <dd class="col-sm-6"><span class="badge bg-success"><?= (int) ($head_count_entries ?? 0) ?></span></dd>
 
-<h3>Systeminfo</h3>
-<ul>
-    <li><strong>PHP Version:</strong> <?= e(PHP_VERSION) ?></li>
-    <li><strong>PowerBook Version:</strong> 2.0 (PHP 8.4 Update)</li>
-    <li><strong>Öffentliche Einträge:</strong> <?= $head_count_entries ?></li>
-    <li><strong>Versteckte Einträge:</strong> <?= $head_count_unreleased ?></li>
-</ul>
+                    <dt class="col-sm-6">Versteckte Einträge</dt>
+                    <dd class="col-sm-6"><span class="badge bg-warning text-dark"><?= (int) ($head_count_unreleased ?? 0) ?></span></dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
 
-<p><small>
-    Original: PowerBook 1.21 &copy; 2002 by
-    <a href="mailto:expandable@powerscripts.org">Axel Habermaier</a><br>
-    PHP 8.4 Update: 2025 by Nico Schubert
+<p class="text-body-secondary mt-4 mb-0"><small>
+    PowerBook &middot;
+    <a href="https://www.powerscripts.org" target="_blank" rel="noopener noreferrer">powerscripts.org</a>
 </small></p>
 
-    </td>
-</tr>
+<?php
+pb_admin_card_close();

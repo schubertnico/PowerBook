@@ -300,7 +300,8 @@ class CoverageBoostTest extends TestCase
         );
 
         // Should show email error
-        $this->assertStringContainsString('eMail', $output);
+        // Label/Fehlermeldung wurde auf "E-Mail-Adresse" vereinheitlicht.
+        $this->assertStringContainsString('E-Mail-Adresse', $output);
     }
 
     #[Test]
@@ -546,7 +547,7 @@ class CoverageBoostTest extends TestCase
         // Should show "not logged in" message
         $this->assertStringContainsString('Nicht eingeloggt', $output);
         // Should show login page content
-        $this->assertStringContainsString('L O G I N', $output);
+        $this->assertStringContainsString('Login', $output);
         $this->assertStringContainsString('name="password"', $output);
     }
 
@@ -658,7 +659,7 @@ class CoverageBoostTest extends TestCase
         // Should show welcome message
         $this->assertStringContainsString('SuperAdmin', $output);
         // Should show home page content
-        $this->assertStringContainsString('W I L L K O M M E N', $output);
+        $this->assertStringContainsString('Willkommen', $output);
     }
 
     #[Test]
@@ -673,7 +674,7 @@ class CoverageBoostTest extends TestCase
         // Should show not logged in after logout
         $this->assertStringContainsString('Nicht eingeloggt', $output);
         // Should redirect to login page
-        $this->assertStringContainsString('L O G I N', $output);
+        $this->assertStringContainsString('Login', $output);
     }
 
     #[Test]
@@ -686,7 +687,7 @@ class CoverageBoostTest extends TestCase
         $output = $this->renderAdminIndex(['page' => 'nonexistent_page']);
 
         // Invalid page should fall back to home
-        $this->assertStringContainsString('W I L L K O M M E N', $output);
+        $this->assertStringContainsString('Willkommen', $output);
     }
 
     #[Test]
@@ -731,7 +732,8 @@ class CoverageBoostTest extends TestCase
         // Should have proper HTML structure
         $this->assertStringContainsString('<!DOCTYPE html>', $output);
         $this->assertStringContainsString('<html lang="de">', $output);
-        $this->assertStringContainsString('PowerBook - AdminCenter', $output);
+        // Bootstrap-Migration: Title vereinheitlicht auf "PowerBook AdminCenter".
+        $this->assertStringContainsString('PowerBook AdminCenter', $output);
         $this->assertStringContainsString('</html>', $output);
     }
 
@@ -766,11 +768,11 @@ class CoverageBoostTest extends TestCase
     {
         $output = $this->renderAdminsPage();
 
-        // Should show admin list header
-        $this->assertStringContainsString('A D M I N I S T R A T I O N', $output);
+        // Bootstrap-Migration: Headline ist nun "Administration: Admins".
+        $this->assertStringContainsString('Administration', $output);
         $this->assertStringContainsString('SuperAdmin', $output);
-        $this->assertStringContainsString('ADMINS BEARBEITEN', $output);
-        $this->assertStringContainsString('ADMIN HINZUF', $output);
+        $this->assertStringContainsString('Admins bearbeiten', $output);
+        $this->assertStringContainsString('Admin hinzuf', $output);
     }
 
     #[Test]
@@ -1229,7 +1231,7 @@ class CoverageBoostTest extends TestCase
         $output = $this->renderReleasePage();
 
         $this->assertStringContainsString('Keine Eintr', $output);
-        $this->assertStringContainsString('F R E I S C H A L T E N', $output);
+        $this->assertStringContainsString('freischalten', $output);
     }
 
     #[Test]

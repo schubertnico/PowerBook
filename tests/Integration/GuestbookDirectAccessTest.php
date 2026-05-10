@@ -38,7 +38,7 @@ final class GuestbookDirectAccessTest extends TestCase
 
     public function testDirectHttpAccessBlocked(): void
     {
-        $ch = curl_init('http://localhost:8080/pb_inc/guestbook.inc.php');
+        $ch = curl_init(POWERBOOK_TEST_BASE_URL . '/pb_inc/guestbook.inc.php');
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HEADER => false,

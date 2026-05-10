@@ -5,9 +5,9 @@
  * Admin Email Notifications (Legacy Support)
  *
  * @license MIT
- * @copyright Original: 2002 Axel Habermaier, Updates: 2025 Nico Schubert
+ * @copyright PowerScripts.org
  *
- * @see https://github.com/schubertnico/PowerBook.git
+ * @see https://www.powerscripts.org
  *
  * Note: This file is kept for backward compatibility.
  * The email functionality has been moved into the respective admin files.
@@ -58,8 +58,8 @@ if ($email === 'admin_added' && !empty($safe_add_email)) {
     }
     $body .= ".\n\n";
     $body .= "--------------------------------------------------------\n";
-    $body .= "PowerBook - PHP Guestbook System\n";
-    $body .= "https://github.com/schubertnico/PowerBook.git\n\n";
+    $body .= "PowerBook - Gaestebuch-System\n";
+    $body .= "https://www.powerscripts.org\n\n";
     $body .= 'DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!';
 
     sendEmail($safe_add_email, 'PowerBook: AdminCenter', $body, $headers, 'Admin Added');
@@ -86,8 +86,8 @@ if ($email === 'admin_added' && !empty($safe_add_email)) {
         $body .= 'Die URL zum AdminCenter ist: ' . e($config_admin_url) . "\n";
     }
     $body .= "\n--------------------------------------------------------\n";
-    $body .= "PowerBook - PHP Guestbook System\n";
-    $body .= "https://github.com/schubertnico/PowerBook.git\n\n";
+    $body .= "PowerBook - Gaestebuch-System\n";
+    $body .= "https://www.powerscripts.org\n\n";
     $body .= 'DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!';
 
     sendEmail($safe_edit_email, 'PowerBook: AdminCenter', $body, $headers, 'Admin Edited');
@@ -97,8 +97,8 @@ if ($email === 'admin_added' && !empty($safe_add_email)) {
     $body .= e($admin_name) . " hat Sie aus der Admin-Datenbank von PowerBook gelöscht.\n";
     $body .= "Sie sind nicht mehr berechtigt, mit PowerBook zu arbeiten.\n\n";
     $body .= "--------------------------------------------------------\n";
-    $body .= "PowerBook - PHP Guestbook System\n";
-    $body .= "https://github.com/schubertnico/PowerBook.git\n\n";
+    $body .= "PowerBook - Gaestebuch-System\n";
+    $body .= "https://www.powerscripts.org\n\n";
     $body .= 'DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!';
 
     sendEmail($safe_edit_email, 'PowerBook: AdminCenter', $body, $headers, 'Admin Deleted');

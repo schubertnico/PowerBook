@@ -20,6 +20,10 @@ if (session_status() === PHP_SESSION_NONE) {
 define('POWERBOOK_TEST_MODE', true);
 define('POWERBOOK_ROOT', dirname(__DIR__));
 
+// Base-URL des laufenden Apache-Containers fuer Integration-Tests.
+// Override via env var PB_TEST_BASE_URL (z. B. wenn der Compose-Port abweicht).
+define('POWERBOOK_TEST_BASE_URL', rtrim(getenv('PB_TEST_BASE_URL') ?: 'http://localhost:8081', '/'));
+
 // BUG-013: PB_ENTRY erlaubt Tests das Inkludieren von guestbook.inc.php ohne 403.
 if (!defined('PB_ENTRY')) {
     define('PB_ENTRY', true);

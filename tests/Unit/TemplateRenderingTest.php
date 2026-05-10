@@ -144,27 +144,18 @@ class TemplateRenderingTest extends TestCase
     }
 
     #[Test]
-    public function testEntryDisplayWithIcq(): void
+    public function testEntryDisplayNeverShowsIcq(): void
     {
+        // ICQ-Feature wurde komplett entfernt — auch wenn ein alter DB-Eintrag
+        // noch eine ICQ-Nummer enthaelt, darf sie NICHT mehr angezeigt werden.
         $vars = $this->makeEntryVars(
             ['icq' => '123456789'],
             ['config_icq' => 'Y']
         );
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/entry.inc.php', $vars);
 
-        $this->assertStringContainsString('ICQ: 123456789', $output);
-    }
-
-    #[Test]
-    public function testEntryDisplayNoIcq(): void
-    {
-        $vars = $this->makeEntryVars(
-            ['icq' => ''],
-            ['config_icq' => 'N']
-        );
-        $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/entry.inc.php', $vars);
-
-        $this->assertStringNotContainsString('ICQ:', $output);
+        $this->assertStringNotContainsString('ICQ', $output);
+        $this->assertStringNotContainsString('123456789', $output);
     }
 
     #[Test]
@@ -201,7 +192,8 @@ class TemplateRenderingTest extends TestCase
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/form.inc.php', $vars);
 
         $this->assertStringContainsString('name="name"', $output);
-        $this->assertStringContainsString('Name:', $output);
+        // Bootstrap-5-Migration: Label hat keinen Doppelpunkt mehr.
+        $this->assertStringContainsString('>Name', $output);
     }
 
     #[Test]
@@ -211,7 +203,8 @@ class TemplateRenderingTest extends TestCase
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/form.inc.php', $vars);
 
         $this->assertStringContainsString('name="email2"', $output);
-        $this->assertStringContainsString('eMail:', $output);
+        // Label wurde auf "E-Mail-Adresse" vereinheitlicht.
+        $this->assertStringContainsString('>E-Mail-Adresse', $output);
     }
 
     #[Test]
@@ -220,18 +213,23 @@ class TemplateRenderingTest extends TestCase
         $vars = $this->makeFormVars();
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/form.inc.php', $vars);
 
-        $this->assertStringContainsString('<textarea name="text"', $output);
+        // Bootstrap-Migration: textarea hat zusaetzliche Attribute (id, class, rows ...).
+        $this->assertStringContainsString('name="text"', $output);
+        $this->assertStringContainsString('<textarea', $output);
         $this->assertStringContainsString('</textarea>', $output);
     }
 
     #[Test]
-    public function testFormRendersIcqFieldWhenEnabled(): void
+    public function testFormDoesNotRenderIcqField(): void
     {
+        // ICQ-Feature wurde komplett entfernt — das Eingabefeld darf NICHT
+        // mehr im Formular auftauchen, auch wenn $config_icq aus alten DB-
+        // Konfigurationen noch auf 'Y' steht.
         $vars = $this->makeFormVars(['config_icq' => 'Y']);
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/form.inc.php', $vars);
 
-        $this->assertStringContainsString('name="icq2"', $output);
-        $this->assertStringContainsString('ICQ#:', $output);
+        $this->assertStringNotContainsString('name="icq2"', $output);
+        $this->assertStringNotContainsString('>ICQ', $output);
     }
 
     #[Test]
@@ -329,9 +327,11 @@ class TemplateRenderingTest extends TestCase
         ]);
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/pages.inc.php', $vars);
 
-        $this->assertStringContainsString('Seite', $output);
-        // Current page (2) should be shown as non-link with dashes
-        $this->assertStringContainsString('- 2 -', $output);
+        // Bootstrap-5-Migration: Pagination als <ul class="pagination">.
+        $this->assertStringContainsString('class="pagination', $output);
+        // Current page (2) is rendered with .active marker around span "2".
+        $this->assertStringContainsString('page-item active', $output);
+        $this->assertStringContainsString('>2</span>', $output);
         // Other pages should be links
         $this->assertStringContainsString('>1</a>', $output);
         $this->assertStringContainsString('>3</a>', $output);

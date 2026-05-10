@@ -24,14 +24,14 @@ cd PowerBook/.docker
 docker compose up -d --build
 
 # 3. Installation im Browser ausführen
-# → http://localhost:8080/install_deu.php
+# → http://localhost:8081/install_deu.php
 # Auf "Installation starten" klicken.
 # Das angezeigte Initial-Passwort SOFORT notieren — es wird nicht erneut angezeigt!
 
 # 4. Loslegen
-# Frontend (Gästebuch):  http://localhost:8080/pbook.php
-# Admin-Center:          http://localhost:8080/pb_inc/admincenter/
-# Mailpit (Test-Mails):  http://localhost:8031
+# Frontend (Gästebuch):  http://localhost:8081/pbook.php
+# Admin-Center:          http://localhost:8081/pb_inc/admincenter/
+# Mailpit (Test-Mails):  http://localhost:8035
 ```
 
 > **Hinweis zum Initial-Passwort:** Seit IMP-006 (April 2026) wird bei der Installation ein zufälliges 16-stelliges Hex-Passwort generiert (kein hardcoded `powerbook` mehr). Das Passwort erscheint **einmalig** auf der Erfolgsseite — bitte sofort notieren oder direkt im AdminCenter ändern.
@@ -93,9 +93,9 @@ Das Repository enthält ein vollständiges Docker-Compose-Setup unter `.docker/`
 
 | Service | Image | Port (Host) |
 |---------|-------|-------------|
-| `web` | Apache 2.4 + PHP 8.4 | **8080** |
+| `web` | Apache 2.4 + PHP 8.4 | **8081** |
 | `db` | MySQL 8.0 | 3314 |
-| `mail` | Axllent Mailpit | SMTP **1031**, Web-UI **8031** |
+| `mail` | Axllent Mailpit | SMTP **1035**, Web-UI **8035** |
 
 ```bash
 git clone https://github.com/schubertnico/PowerBook.git
@@ -103,7 +103,7 @@ cd PowerBook/.docker
 docker compose up -d --build
 ```
 
-Anschließend `http://localhost:8080/install_deu.php` aufrufen und auf **Installation starten** klicken. Die Installation:
+Anschließend `http://localhost:8081/install_deu.php` aufrufen und auf **Installation starten** klicken. Die Installation:
 
 1. legt die MySQL-Tabellen `pb_admins`, `pb_config`, `pb_entries` an (mit Spalten `reset_token` + `reset_token_expires` für den sicheren Recovery-Flow),
 2. erzeugt einen Standard-Admin **PowerBook** mit zufälligem 16-Hex-Passwort,
@@ -265,7 +265,7 @@ PowerBook/
 |---------|------------------|
 | `install_deu.php` zeigt **HTTP 403** | Lock-File `.installed` existiert. Bei gewünschter Re-Installation manuell löschen. |
 | Login schlägt fehl | Initial-Passwort vergessen? `?page=password` für Reset-Link nutzen. |
-| Reset-Link kommt nicht an | Mailpit-UI prüfen: http://localhost:8031 (Docker) bzw. SMTP-Konfiguration in `pb_inc/mysql.inc.php`. |
+| Reset-Link kommt nicht an | Mailpit-UI prüfen: http://localhost:8035 (Docker) bzw. SMTP-Konfiguration in `pb_inc/mysql.inc.php`. |
 | Admin-Add zeigt "E-Mail konnte NICHT versendet werden" + Passwort | SMTP nicht erreichbar — das angezeigte Passwort sofort sichern, dann SMTP konfigurieren. |
 | `?page=guestbook.inc` direkt → 403 | Erwünscht: Direktaufruf von Includes ist seit BUG-013 blockiert (`PB_ENTRY`-Guard). |
 | PHP Warnings in `logs/error.log` | Nur Warnungen, keine Fatals. Wenn Fatals: aktualisieren auf neueste Version. |
