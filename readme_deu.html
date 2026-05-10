@@ -96,7 +96,7 @@
 <table border="0" cellpadding="5" cellspacing="1" width="90%" bgcolor="#6078A0">
 <tr bgcolor="#001329"><td align="center">
     <div class="headline">PowerBook</div>
-    <span style="font-size: 11px;">Deutsche Readme &mdash; PHP 8.4 Edition (Stand: April 2026)</span>
+    <span style="font-size: 11px;">Deutsche Readme &mdash; v3.0.0 (Stand: Mai 2026)</span>
 </td></tr>
 
 <tr bgcolor="#001930"><td>
@@ -120,7 +120,7 @@
 <div class="subhead">I. &Uuml;ber PowerBook</div>
 [ <a href="#top">Top</a> ]<br><br>
 
-<b class="script">PowerBook</b> ist ein klassisches G&auml;stebuch-System auf PHP- und MySQL-Basis, urspr&uuml;nglich im Jahr 2002 von <b>Axel "Expandable" Habermaier</b> entwickelt. 2025 wurde das Script von <b>Nico Schubert / SchubertMedia</b> vollst&auml;ndig auf <b>PHP 8.4</b> portiert und im April 2026 einem ausf&uuml;hrlichen Sicherheits-Audit unterzogen (alle 14 gefundenen Bugs wurden behoben, dazu drei priorisierte Workflow-Verbesserungen umgesetzt).
+<b class="script">PowerBook</b> ist ein klassisches G&auml;stebuch-System auf PHP- und MySQL-Basis, urspr&uuml;nglich im Jahr 2002 von <b>Axel "Expandable" Habermaier</b> entwickelt. 2025 wurde das Script von <b>Nico Schubert / SchubertMedia</b> vollst&auml;ndig auf <b>PHP 8.4</b> portiert, im April 2026 einem Sicherheits-Audit unterzogen (alle 14 gefundenen Bugs behoben) und mit <b>v3.0.0</b> (Mai 2026) komplett auf <b>Bootstrap 5</b> umgestellt sowie ICQ-frei und information-disclosure-gesch&uuml;tzt ausgeliefert.
 <br><br>
 
 Das Projekt ist in aktiver Pflege:
@@ -317,7 +317,7 @@ vendor/bin/phpunit --testsuite Integration
 docker exec powerbook_web vendor/bin/phpunit</pre>
 
 <div class="ok">
-<b>Aktueller Stand:</b> 515 Tests / 950 Assertions / Coverage <b>87 %</b>.
+<b>Aktueller Stand:</b> 514 Tests / 953 Assertions / Coverage <b>87 %</b>.
 </div>
 
 <b>Statische Analyse &amp; Code-Qualit&auml;t:</b>
@@ -331,6 +331,22 @@ vendor/bin/php-cs-fixer fix --dry-run --diff</pre>
 <div class="subhead">VIII. Version-History</div>
 [ <a href="#top">Top</a> ]<br><br>
 
+<b>Mai 2026 &mdash; v3.0.0: Bootstrap-5-Migration &amp; Anonymisierung (SchubertMedia)</b><br>
+<ul>
+    <li>Komplettes Frontend (&ouml;ffentlich + Admin) auf <b>Bootstrap 5.3</b> umgestellt (CDN)</li>
+    <li>Neue Layout-Helper: <code>pb_layout_header/footer</code>, <code>pb_admin_card_open/close</code>, <code>pb_admin_alert</code></li>
+    <li>Eigenes minimales CSS unter <code>assets/powerbook.css</code> mit <code>filemtime()</code>-Cache-Bust</li>
+    <li>Default-Entry-Design als Bootstrap-Card; Legacy-Designs mit <code>bgcolor=</code> werden automatisch ersetzt</li>
+    <li>Einheitliche Schriftgr&ouml;&szlig;en (<code>legend.form-label</code> 24 px &rarr; 16 px)</li>
+    <li>Mobile-f&auml;hig dank Navbar-Collapse + Grid</li>
+    <li><b>Information-Disclosure-Schutz:</b> keine PHP-Versionsnummer, keine internen Repo-Links, keine Personennamen mehr im User-Output</li>
+    <li>Reset-Link in der Passwort-Mail nutzt jetzt Fallback auf <code>$_SERVER['HTTP_HOST']</code></li>
+    <li><b>ICQ komplett entfernt</b> (Service eingestellt) aus Forms, Anzeige, Konfig, Default-Designs und SQL-Statements; bestehende DB-Spalten bleiben unangetastet</li>
+    <li>E-Mail-Label durchg&auml;ngig zu <b>"E-Mail-Adresse"</b> ausgeschrieben</li>
+    <li>Testabdeckung: 514 Tests, 953 Assertions, 0 Failures</li>
+</ul>
+
+<br>
 <b>April 2026 &mdash; PHP 8.4 Security Update (Nico Schubert)</b><br>
 <ul>
     <li>Vollst&auml;ndiger Userbereichs-Audit: 78 Testf&auml;lle, 14 Bugs gefunden &amp; behoben</li>
@@ -339,7 +355,6 @@ vendor/bin/php-cs-fixer fix --dry-run --diff</pre>
     <li>Install-Lock-File gegen Re-Install (BUG-011)</li>
     <li>Session-Fixation-Schutz (BUG-014)</li>
     <li>Admin-Add Mail-Fail-Fallback (IMP-008)</li>
-    <li>Testabdeckung: 515 Tests, 87 %</li>
 </ul>
 
 <br>
