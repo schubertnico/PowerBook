@@ -173,10 +173,10 @@ if (!function_exists('pb_admin_message_type')) {
     {
         return match ($messageType) {
             'success' => 'success',
-            'error'   => 'danger',
+            'error' => 'danger',
             'warning' => 'warning',
-            'info'    => 'info',
-            default   => 'info',
+            'info' => 'info',
+            default => 'info',
         };
     }
 }

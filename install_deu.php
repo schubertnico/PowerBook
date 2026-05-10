@@ -34,8 +34,8 @@ if (file_exists($lockFile)) {
 require_once __DIR__ . '/pb_inc/layout.inc.php';
 
 pb_layout_header('PowerBook - Installation', [
-    'showNav'   => false,
-    'siteName'  => 'PowerBook Installation',
+    'showNav' => false,
+    'siteName' => 'PowerBook Installation',
 ]);
 ?>
 

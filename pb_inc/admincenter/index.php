@@ -193,11 +193,11 @@ if (empty($welcome_admin)) {
 $loggedIn = !empty($welcome_admin);
 
 pb_admin_layout_header('PowerBook AdminCenter', [
-    'headMessage'  => $head_message,
-    'publicCount'  => $head_count_entries,
-    'hiddenCount'  => $head_count_unreleased,
-    'showCounts'   => $loggedIn,
-    'showSubNav'   => $loggedIn,
+    'headMessage' => $head_message,
+    'publicCount' => $head_count_entries,
+    'hiddenCount' => $head_count_unreleased,
+    'showCounts' => $loggedIn,
+    'showSubNav' => $loggedIn,
     'guestbookUrl' => '../../' . ((string) ($config_guestbook_name ?? 'pbook.php')),
 ]);
 
