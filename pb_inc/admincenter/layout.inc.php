@@ -229,9 +229,9 @@ if (!function_exists('pb_admin_layout_menu')) {
             if (!$visible) {
                 continue;
             }
-            $isActive = $itemPage === $activePage;
-            echo '                <li class="nav-item"><a id="' . $itemId . '" class="nav-link' . ($isActive ? ' active' : '') . '"'
-                . ($isActive ? ' aria-current="page"' : '')
+            // Aktiver Punkt: Klasse active und aria-current in einem Zug.
+            $activeAttributes = $itemPage === $activePage ? ' active" aria-current="page' : '';
+            echo '                <li class="nav-item"><a id="' . $itemId . '" class="nav-link' . $activeAttributes . '"'
                 . ' href="?page=' . $itemPage . '">' . $itemLabel . '</a></li>' . "\n";
         }
     }
