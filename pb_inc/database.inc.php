@@ -28,9 +28,12 @@ function getDatabase(): PDO
     if ($pdo === null) {
         global $config_sql_server, $config_sql_port, $config_sql_user, $config_sql_password, $config_sql_database;
 
-        // Include MySQL configuration if not already loaded
-        if (!isset($config_sql_server) && is_file(__DIR__ . '/mysql.inc.php')) {
-            require_once __DIR__ . '/mysql.inc.php';
+        // Include MySQL configuration if not already loaded. Die Datei legt
+        // erst install.php an; im Repository gibt es sie nicht.
+        $configFile = __DIR__ . '/mysql.inc.php';
+        if (!isset($config_sql_server) && is_file($configFile)) {
+            /** @psalm-suppress MissingFile – entsteht erst bei der Installation */
+            require_once $configFile;
         }
 
         $dsn = sprintf(

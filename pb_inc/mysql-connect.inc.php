@@ -21,14 +21,15 @@ require_once __DIR__ . '/database.inc.php';
 
 // Ist $pdo schon gesetzt (z. B. in der Testumgebung), wird nichts verbunden.
 if (!isset($pdo) || !$pdo instanceof PDO) {
-    if (!is_file(__DIR__ . '/mysql.inc.php')) {
+    $pbConfigFile = __DIR__ . '/mysql.inc.php';
+    if (!is_file($pbConfigFile)) {
         require_once __DIR__ . '/setup.inc.php';
         pb_setup_send(pb_setup_not_installed_response());
 
         exit;
     }
 
-    require_once __DIR__ . '/mysql.inc.php';
+    require_once $pbConfigFile;
 
     try {
         $pdo = getDatabase();
