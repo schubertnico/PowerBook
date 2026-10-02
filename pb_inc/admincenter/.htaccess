@@ -23,8 +23,9 @@
 # Direkter Aufruf interner Includes/Helper blockieren
 # -------------------------------------------------------------
 # .inc.php-Dateien sind reine Includes (Variable aus Parent-Scope).
-# password_migrate.php ist Auto-Migration-Helper.
-<FilesMatch "(?i)(\.inc\.php|^password_migrate\.php|^admin_email_helpers\.inc\.php)$">
+# password_migrate.php gibt es seit 3.1 nicht mehr; eine alte Kopie, die
+# beim Hochladen liegen geblieben ist, bleibt trotzdem gesperrt.
+<FilesMatch "(?i)(\.inc\.php|^password_migrate\.php)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>

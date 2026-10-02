@@ -14,6 +14,8 @@
     <projectFiles>
         <directory name="pb_inc"/>
         <file name="pbook.php"/>
+        <file name="install.php"/>
+        <file name="update.php"/>
         <file name="install_deu.php"/>
         <ignoreFiles>
             <directory name="vendor"/>

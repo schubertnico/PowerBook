@@ -2,7 +2,10 @@
 
 /**
  * PowerBook - PHP Guestbook System
- * Entry Display Template
+ * Ausgabe eines Eintrags
+ *
+ * Wird von guestbook.inc.php für jeden Eintrag eingebunden ($entry mit den
+ * Rohwerten aus pb_entries). Die Arbeit macht pb_render_entry().
  *
  * @license MIT
  * @copyright PowerScripts.org
@@ -12,150 +15,15 @@
 
 declare(strict_types=1);
 
-// This file is included from guestbook.inc.php with $entry array available
+require_once __DIR__ . '/functions.inc.php';
 
-// Icon display
-$show_icon = '';
-if (!empty($entry['icon']) && $entry['icon'] !== 'no' && $entry['icon'] !== '0' && ($config_icons ?? 'N') === 'Y') {
-    $iconFile = basename($entry['icon']); // Security: Only filename, no path traversal
-    $show_icon = '<img src="pb_inc/smilies/' . e($iconFile) . '.gif" alt="" class="me-2">';
-}
-
-// Format entry text (escape and apply formatting)
-$entryText = e($entry['text'] ?? '');
-$entryText = preg_replace("/\n/", '<br>', $entryText) ?? $entryText;
-
-if (($config_text_format ?? 'N') === 'Y') {
-    $entryText = preg_replace('/\[b\]/i', '<b>', $entryText) ?? $entryText;
-    $entryText = preg_replace('/\[\/b\]/i', '</b>', $entryText) ?? $entryText;
-    $entryText = preg_replace('/\[u\]/i', '<u>', $entryText) ?? $entryText;
-    $entryText = preg_replace('/\[\/u\]/i', '</u>', $entryText) ?? $entryText;
-    $entryText = preg_replace('/\[i\]/i', '<i>', $entryText) ?? $entryText;
-    $entryText = preg_replace('/\[\/i\]/i', '</i>', $entryText) ?? $entryText;
-    $entryText = preg_replace('/\[small\]/i', '<small>', $entryText) ?? $entryText;
-    $entryText = preg_replace('/\[\/small\]/i', '</small>', $entryText) ?? $entryText;
-
-    // Auto-link URLs (safe: already escaped)
-    $entryText = preg_replace(
-        '/(https?:\/\/[-~a-z_A-Z0-9\/.+%&amp;?|=:]+)([^-~a-z_A-Z0-9\/.+%&amp;?|=:]|$)/i',
-        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>$2',
-        $entryText
-    ) ?? $entryText;
-
-    $entryText = preg_replace(
-        '/(ftp:\/\/[-~a-z_A-Z0-9\/.+%&amp;?|=:]+)([^-~a-z_A-Z0-9\/.+%&amp;?|=:]|$)/i',
-        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>$2',
-        $entryText
-    ) ?? $entryText;
-}
-
-// Smilies
-if (($entry['smilies'] ?? 'N') === 'Y' && ($config_smilies ?? 'N') === 'Y') {
-    $smilies = [
-        '?:)' => 'confused.gif',
-        '!:)' => 'shock.gif',
-        ';(' => 'sad1.gif',
-        ':(' => 'sad2.gif',
-        ':X' => 'sad3.gif',
-        ':)' => 'happy1.gif',
-        ':P' => 'happy2.gif',
-        ';)' => 'happy3.gif',
-        ':D' => 'happy4.gif',
-        ';o)' => 'happy5.gif',
-    ];
-
-    foreach ($smilies as $code => $image) {
-        $entryText = str_replace(e($code), '<img src="pb_inc/smilies/' . $image . '" alt="smiley">', $entryText);
-    }
-}
-
-// Homepage URL — BUG-001: eigene Variable $homepage_link, um nicht mit $url
-// des Formular-Input-Scope (guestbook.inc.php Preview) zu kollidieren.
-$homepage_link = '<small class="text-body-secondary">Keine Homepage</small>';
-if (!empty($entry['homepage']) && strlen($entry['homepage']) > 1) {
-    $homepage = $entry['homepage'];
-    // Add http:// if missing
-    if (!preg_match('/^https?:\/\//i', $homepage)) {
-        $homepage = 'http://' . $homepage;
-    }
-    $homepage_link = '<small><a href="' . e($homepage) . '" target="_blank" rel="noopener noreferrer">Homepage</a></small>';
-}
-// Backwards-compat Alias für Templates, die noch $url verwenden.
-$url = $homepage_link;
-
-// Email and name
-$email_name = e($entry['name'] ?? 'Anonym');
-if (!empty($entry['email']) && strlen($entry['email']) > 1) {
-    $email_name = '<a href="mailto:' . e($entry['email']) . '">' . e($entry['name'] ?? 'Anonym') . '</a>';
-}
-
-// ICQ wurde komplett entfernt (Legacy-Service eingestellt). Die Variable
-// $show_icq bleibt als leerer String, damit alte Designs mit (#ICQ#) im
-// Template nicht crashen — der Platzhalter wird einfach durch '' ersetzt.
-$show_icq = '';
-
-// Date and time
-$entryDate = (int) ($entry['date'] ?? 0);
-$date = germandate(date($config_date ?? 'd.m.Y', $entryDate));
-$time = date($config_time ?? 'H:i', $entryDate);
-
-// Statement (admin reply)
-if (($config_statements ?? 'N') === 'Y' && !empty($entry['statement']) && strlen($entry['statement']) > 1) {
-    $statement = e($entry['statement']);
-    $statement = preg_replace("/\n/", '<br>', $statement) ?? $statement;
-
-    // Format statement text
-    $statement = preg_replace('/\[b\]/i', '<b>', $statement) ?? $statement;
-    $statement = preg_replace('/\[\/b\]/i', '</b>', $statement) ?? $statement;
-    $statement = preg_replace('/\[u\]/i', '<u>', $statement) ?? $statement;
-    $statement = preg_replace('/\[\/u\]/i', '</u>', $statement) ?? $statement;
-    $statement = preg_replace('/\[i\]/i', '<i>', $statement) ?? $statement;
-    $statement = preg_replace('/\[\/i\]/i', '</i>', $statement) ?? $statement;
-    $statement = preg_replace('/\[small\]/i', '<small>', $statement) ?? $statement;
-    $statement = preg_replace('/\[\/small\]/i', '</small>', $statement) ?? $statement;
-
-    // Auto-link URLs in statement
-    $statement = preg_replace(
-        '/(https?:\/\/[-~a-z_A-Z0-9\/.+%&amp;?|=:]+)([^-~a-z_A-Z0-9\/.+%&amp;?|=:]|$)/i',
-        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>$2',
-        $statement
-    ) ?? $statement;
-
-    // Smilies in statement
-    foreach ($smilies ?? [] as $code => $image) {
-        $statement = str_replace(e($code), '<img src="pb_inc/smilies/' . $image . '" alt="smiley">', $statement);
-    }
-
-    $statementBy = e($entry['statement_by'] ?? 'Admin');
-    $entryText .= '<hr class="my-3"><div class="fst-italic"><b>' . $statementBy . '</b>\'s Statement:<br><br>' . $statement . '</div>';
-}
-
-// Apply design template
-$design = $config_design ?? '';
-
-// Bootstrap-Default für leere oder Legacy-Designs (alte Installationen mit
-// HTML4-Markup wie bgcolor=). Sobald in der Konfiguration ein eigenes Design
-// gepflegt wird, das KEIN bgcolor-Attribut enthaelt, wird es weiterverwendet.
-$isLegacyDesign = ($design === '' || stripos($design, 'bgcolor') !== false);
-if ($isLegacyDesign) {
-    $design = '<article class="card pb-entry-card shadow-sm">'
-        . '<header class="card-header d-flex flex-wrap justify-content-between align-items-center">'
-        . '<span>(#ICON#)<b>(#DATE#)</b>, <small class="text-body-secondary">(#TIME#)h</small></span>'
-        . '<span>(#EMAIL_NAME#)</span>'
-        . '</header>'
-        . '<div class="card-body">(#TEXT#)</div>'
-        . '<footer class="card-footer d-flex flex-wrap justify-content-end gap-3 align-items-center text-end">'
-        . '<span>(#URL#)</span>'
-        . '</footer>'
-        . '</article>';
-}
-
-$design = preg_replace('/\(#ICON#\)/', $show_icon, $design) ?? $design;
-$design = preg_replace('/\(#DATE#\)/', $date, $design) ?? $design;
-$design = preg_replace('/\(#TIME#\)/', $time, $design) ?? $design;
-$design = preg_replace('/\(#EMAIL_NAME#\)/', $email_name, $design) ?? $design;
-$design = preg_replace('/\(#TEXT#\)/', $entryText, $design) ?? $design;
-$design = preg_replace('/\(#URL#\)/', $url, $design) ?? $design;
-$design = preg_replace('/\(#ICQ#\)/', $show_icq, $design) ?? $design;
-
-echo $design;
+echo pb_render_entry(is_array($entry ?? null) ? $entry : [], [
+    'design' => $config_design ?? '',
+    'date' => $config_date ?? 'd.m.Y',
+    'time' => $config_time ?? 'H:i',
+    'icons' => $config_icons ?? 'N',
+    'smilies' => $config_smilies ?? 'N',
+    'text_format' => $config_text_format ?? 'N',
+    'statements' => $config_statements ?? 'N',
+    'smiley_base' => 'pb_inc/smilies/',
+]);

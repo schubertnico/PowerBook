@@ -2,7 +2,12 @@
 
 /**
  * PowerBook - PHP Guestbook System
- * Thank You Email to Entry Author
+ * Danke-Mail an den Gast
+ *
+ * Definiert nur Funktionen; guestbook.inc.php ruft sie nach dem Speichern
+ * auf. Schutz gegen Missbrauch: nur nach gespeichertem Eintrag, höchstens
+ * eine Danke-Mail je Adresse in 24 Stunden, Name ohne Links und
+ * Zeilenumbrüche, Absender ist die Absenderadresse des Gästebuchs.
  *
  * @license MIT
  * @copyright PowerScripts.org
@@ -12,37 +17,96 @@
 
 declare(strict_types=1);
 
-// This file is included from guestbook.inc.php when a new entry is added
-// Required variables: $email2, $name2, $text2, $url2, $time, $ip, $config_thanks, $config_thanks_title, $config_email
+require_once __DIR__ . '/functions.inc.php';
+require_once __DIR__ . '/mail.inc.php';
 
-// Format time for email
-$emailTime = date('d.m.Y, H:i', (int) $time);
+/** Mindestabstand zwischen zwei Danke-Mails an dieselbe Adresse (Sekunden). */
+if (!defined('PB_THANKS_INTERVAL')) {
+    define('PB_THANKS_INTERVAL', 86400);
+}
 
-// Get template content
-$content = $config_thanks ?? '';
+if (!function_exists('pb_thanks_safe_name')) {
+    /**
+     * Name für die Anrede: einzeilig, ohne Internetadressen.
+     */
+    function pb_thanks_safe_name(string $name): string
+    {
+        $name = preg_replace('/[\x00-\x1F\x7F]+/', ' ', $name) ?? '';
+        $name = preg_replace('~(?:(?:https?|ftp)://|www\.)\S*~i', '', $name) ?? '';
+        $name = trim(preg_replace('/\s{2,}/u', ' ', $name) ?? '');
 
-// Replace placeholders with actual values (using preg_replace instead of deprecated ereg_replace)
-$content = preg_replace('/\(#NAME#\)/', sanitizeEmailHeader($name2 ?? ''), $content) ?? $content;
-$content = preg_replace('/\(#EMAIL#\)/', sanitizeEmailHeader($email2 ?? ''), $content) ?? $content;
-$content = preg_replace('/\(#TEXT#\)/', $text2 ?? '', $content) ?? $content;
-$content = preg_replace('/\(#URL#\)/', 'http://' . ($url2 ?? ''), $content) ?? $content;
-// (#ICQ#)-Platzhalter wird durch leeren String ersetzt — Legacy-Feld entfernt,
-// aber alte Templates aus bestehenden DB-Konfigurationen sollen nicht crashen.
-$content = preg_replace('/\(#ICQ#\)/', '', $content) ?? $content;
-$content = preg_replace('/\(#TIME#\)/', $emailTime, $content) ?? $content;
-$content = preg_replace('/\(#IP#\)/', $ip ?? '', $content) ?? $content;
+        return $name !== '' ? $name : 'Gast';
+    }
+}
 
-// Sanitize recipient email
-$toEmail = sanitizeEmailHeader($email2 ?? '');
-$fromEmail = sanitizeEmailHeader($config_email ?? 'noreply@powerbook.local');
-$subject = sanitizeEmailHeader($config_thanks_title ?? 'Danke für Ihren Eintrag');
+if (!function_exists('pb_thanks_mail_text')) {
+    /**
+     * Setzt die Platzhalter der Danke-Vorlage in einem Durchgang ein
+     * (Werte werden nicht erneut ersetzt, $ und \ bleiben erhalten).
+     *
+     * Platzhalter: (#NAME#), (#EMAIL#), (#TEXT#), (#URL#), (#TIME#), (#IP#)
+     *
+     * @param array{name: string, email: string, url: string, text: string} $entry Rohwerte des Eintrags
+     */
+    function pb_thanks_mail_text(string $template, array $entry, int $timestamp, string $ip): string
+    {
+        $template = str_replace(["\r\n", "\r"], "\n", $template);
+        $homepage = $entry['url'] !== '' ? pb_normalize_url($entry['url']) : '';
 
-if (!empty($toEmail) && filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-    $headers = [
-        'From: ' . $fromEmail,
-        'X-Mailer: PowerBook/2.0',
-        'Content-Type: text/plain; charset=UTF-8',
-    ];
+        return strtr($template, [
+            '(#NAME#)' => pb_thanks_safe_name($entry['name']),
+            '(#EMAIL#)' => $entry['email'],
+            '(#TEXT#)' => $entry['text'],
+            '(#URL#)' => $homepage,
+            '(#TIME#)' => date('d.m.Y, H:i', $timestamp),
+            '(#IP#)' => $ip,
+            '(#ICQ#)' => '',
+        ]);
+    }
+}
 
-    sendEmail($toEmail, $subject, $content, implode("\r\n", $headers), 'Thank You Email');
+if (!function_exists('pb_send_thanks_mail')) {
+    /**
+     * Schickt die Danke-Mail, wenn sie eingeschaltet ist, der Gast eine gültige
+     * Adresse angegeben hat und an diese Adresse in den letzten 24 Stunden
+     * keine Danke-Mail ging (anderer Eintrag mit derselben Adresse).
+     *
+     * @param array{name: string, email: string, url: string, text: string} $entry Rohwerte des Eintrags
+     */
+    function pb_send_thanks_mail(PDO $pdo, string $table, array $entry, int $entryId, int $timestamp, string $ip): bool
+    {
+        if (($GLOBALS['config_use_thanks'] ?? 'N') !== 'Y') {
+            return false;
+        }
+        $to = $entry['email'];
+        if ($to === '' || filter_var($to, FILTER_VALIDATE_EMAIL) === false) {
+            return false;
+        }
+
+        try {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM {$table} WHERE LOWER(email) = LOWER(:email) AND id <> :id AND date > :since");
+            $stmt->execute([':email' => $to, ':id' => $entryId, ':since' => $timestamp - PB_THANKS_INTERVAL]);
+            if ((int) $stmt->fetchColumn() > 0) {
+                return false;
+            }
+        } catch (PDOException $e) {
+            if (function_exists('logDbError')) {
+                logDbError('Danke-Mail: ' . $e->getMessage());
+            }
+
+            return false;
+        }
+
+        $template = (string) ($GLOBALS['config_thanks'] ?? '');
+        if (trim($template) === '') {
+            $template = "Hallo (#NAME#),\n\nvielen Dank für Ihren Eintrag in unserem Gästebuch!\n\nMit freundlichen Grüßen";
+        }
+        $subject = trim((string) ($GLOBALS['config_thanks_title'] ?? ''));
+
+        return pb_mail(
+            $to,
+            $subject !== '' ? $subject : 'Danke für Ihren Eintrag',
+            pb_thanks_mail_text($template, $entry, $timestamp, $ip)
+        );
+    }
 }

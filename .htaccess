@@ -1,12 +1,12 @@
 # =============================================================
 # PowerBook - Root .htaccess
 # =============================================================
-# Schuetzt das oeffentliche Web-Root vor unerwuenschten Zugriffen.
+# Schützt das öffentliche Web-Root vor unerwünschten Zugriffen.
 # Greift nur, wenn AllowOverride im Apache-VirtualHost auf
 # "All" bzw. "FileInfo Indexes Limit AuthConfig" steht.
 # Im PowerBook-Docker-Setup ist das automatisch der Fall.
 # Auf Shared-Hosting (PlusServer, Strato, Hetzner Webhosting,
-# IONOS etc.) ist .htaccess standardmaessig aktiv.
+# IONOS etc.) ist .htaccess standardmäßig aktiv.
 # =============================================================
 
 
@@ -17,7 +17,7 @@
 # Verzeichnis-Listings deaktivieren (verhindert Information-Leak)
 Options -Indexes -MultiViews +FollowSymLinks
 
-# Apache-Signatur in Fehlerseiten unterdruecken
+# Apache-Signatur in Fehlerseiten unterdrücken
 ServerSignature Off
 
 # UTF-8 als Default-Charset
@@ -49,14 +49,14 @@ AddDefaultCharset UTF-8
     Header always unset X-Powered-By
     Header unset Server
 
-    # HSTS — nur aktivieren, wenn das Projekt durchgaengig per HTTPS
+    # HSTS — nur aktivieren, wenn das Projekt durchgängig per HTTPS
     # ausgeliefert wird. Default auskommentiert.
     # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 </IfModule>
 
 
 # -------------------------------------------------------------
-# HTTP-Methoden einschraenken
+# HTTP-Methoden einschränken
 # Nur GET, POST, HEAD sind sinnvoll — alle anderen blocken.
 # -------------------------------------------------------------
 <IfModule mod_rewrite.c>
@@ -82,7 +82,7 @@ RedirectMatch 403 (?i)/\.(?!well-known/)
 
 
 # -------------------------------------------------------------
-# Verzeichnisse, die nicht oeffentlich erreichbar sein sollen
+# Verzeichnisse, die nicht öffentlich erreichbar sein sollen
 # (auch falls sie versehentlich auf den Live-Server kommen)
 # -------------------------------------------------------------
 RedirectMatch 403 (?i)^/vendor(/.*)?$
@@ -124,7 +124,7 @@ RedirectMatch 403 (?i)^/var/(cache|log)(/.*)?$
 
 
 # -------------------------------------------------------------
-# pb_inc/admincenter/.htaccess uebernimmt die Feinabstimmung fuer
+# pb_inc/admincenter/.htaccess übernimmt die Feinabstimmung für
 # die include-Dateien dort. Hier auf Root-Level NUR sicherstellen,
 # dass *.inc.php (z.B. pb_inc/*.inc.php) nicht direkt aufrufbar ist.
 # -------------------------------------------------------------
@@ -140,7 +140,43 @@ RedirectMatch 403 (?i)^/var/(cache|log)(/.*)?$
 
 
 # -------------------------------------------------------------
-# Caching fuer statische Assets (Performance)
+# Installer nach der Installation sperren
+# -------------------------------------------------------------
+# install.php liefert selbst HTTP 403, sobald install.lock (bzw.
+# .installed aus PowerBook 3.0) existiert. Die Regel sperrt die Datei
+# zusätzlich, bevor PHP sie überhaupt ausführt. Ausnahme: die
+# Abschlussseite (step=4) direkt nach der Installation – install.lock
+# entsteht schon vorher, und PHP zeigt Schritt 4 nur in der Sitzung,
+# die gerade installiert hat. Die Sperrdatei wird im Ordner von
+# install.php gesucht, damit die Regel auch in einem Unterordner greift.
+# update.php bleibt erreichbar (Anmeldung als Administrator nötig).
+<IfModule mod_rewrite.c>
+    RewriteCond %{QUERY_STRING} !(^|&)step=4(&|$)
+    RewriteCond %{REQUEST_FILENAME} ^(.+/)install\.php$
+    RewriteCond %1install.lock -f
+    RewriteRule ^install\.php$ - [F,L]
+
+    RewriteCond %{REQUEST_FILENAME} ^(.+/)install\.php$
+    RewriteCond %1.installed -f
+    RewriteRule ^install\.php$ - [F,L]
+</IfModule>
+
+# Alter Installer bis PowerBook 3.0: Seit 3.1 nur noch ein Platzhalter,
+# der auf install.php weiterleitet. Gesperrt, falls beim Aktualisieren
+# nur geänderte Dateien hochgeladen wurden und der alte noch da ist.
+<Files "install_deu.php">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>
+
+
+# -------------------------------------------------------------
+# Caching für statische Assets (Performance)
 # -------------------------------------------------------------
 <IfModule mod_expires.c>
     ExpiresActive On
@@ -162,10 +198,16 @@ RedirectMatch 403 (?i)^/var/(cache|log)(/.*)?$
 
 
 # -------------------------------------------------------------
-# Custom Error-Pages (optional)
+# Deutsche Fehlerseiten
 # -------------------------------------------------------------
-# ErrorDocument 403 /pbook.php
-# ErrorDocument 404 /pbook.php
+# Als Text statt als Datei, damit sie auch greifen, wenn PowerBook in
+# einem Unterordner liegt (ErrorDocument mit Pfad zählt ab der Wurzel
+# der Domain). Der Server-Kopf mit Versionsnummer lässt sich nur in der
+# Serverkonfiguration abschalten (ServerTokens Prod), nicht hier.
+# Umlaute als HTML-Entitäten: Apache schickt eigene Fehlerseiten immer
+# mit charset=iso-8859-1, die Angabe im meta-Element zählt dann nicht.
+ErrorDocument 403 "<!DOCTYPE html><html lang='de'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><meta name='robots' content='noindex'><title>Zugriff verweigert</title></head><body style='font-family:system-ui,sans-serif;max-width:40rem;margin:3rem auto;padding:0 1rem'><h1>Zugriff verweigert</h1><p>Diese Datei oder dieses Verzeichnis ist nicht &ouml;ffentlich zug&auml;nglich.</p><p><a href='/'>Zur Startseite</a></p></body></html>"
+ErrorDocument 404 "<!DOCTYPE html><html lang='de'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><meta name='robots' content='noindex'><title>Seite nicht gefunden</title></head><body style='font-family:system-ui,sans-serif;max-width:40rem;margin:3rem auto;padding:0 1rem'><h1>Seite nicht gefunden</h1><p>Die aufgerufene Adresse gibt es hier nicht. Bitte pr&uuml;fen Sie die Schreibweise.</p><p><a href='/'>Zur Startseite</a></p></body></html>"
 
 
 # -------------------------------------------------------------
@@ -177,8 +219,11 @@ RedirectMatch 403 (?i)^/var/(cache|log)(/.*)?$
     php_flag log_errors On
     php_flag expose_php Off
     php_flag session.cookie_httponly On
-    php_flag session.cookie_secure Off
-    php_value session.cookie_samesite "Strict"
+    # session.cookie_secure wird nicht mehr fest abgeschaltet: PowerBook
+    # setzt Secure selbst, sobald die Seite per HTTPS aufgerufen wird.
+    # SameSite=Lax: Links aus Mails (z. B. zum AdminCenter) behalten die
+    # Anmeldung, Formulare von fremden Seiten schicken das Cookie nicht mit.
+    php_value session.cookie_samesite "Lax"
     php_flag session.use_only_cookies On
     php_value upload_max_filesize "2M"
     php_value post_max_size "4M"

@@ -8,38 +8,48 @@ use PHPUnit\Framework\TestCase;
 
 final class AdminAllowedPagesTest extends TestCase
 {
-    public function testPseudoPagesAreNotWhitelisted(): void
+    public function testHelperFilesAreNotWhitelisted(): void
     {
-        $source = file_get_contents(POWERBOOK_ROOT . '/pb_inc/admincenter/index.php');
-        self::assertNotFalse($source);
+        $pages = $this->allowedPages();
 
-        // Nur den Whitelist-Block pruefen, sonst triggern andere $_GET['page']-Vergleiche die Assertion.
-        $parts = explode('// Get request parameters', $source, 2);
-        $whitelistBlock = $parts[0];
-
-        $forbidden = ['emails', 'pages', 'empty'];
-        foreach ($forbidden as $page) {
-            self::assertDoesNotMatchRegularExpression(
-                "/'{$page}'/",
-                $whitelistBlock,
-                sprintf('"%s" darf nicht in $allowedPages stehen.', $page)
-            );
+        foreach (['emails', 'pages', 'empty', 'entry', 'layout', 'auth', 'config', 'admin_email_helpers', 'password_migrate'] as $page) {
+            self::assertNotContains($page, $pages, sprintf('"%s" darf nicht in $allowedPages stehen.', $page));
         }
     }
 
-    public function testRealPagesStillWhitelisted(): void
+    public function testRealPagesAreWhitelisted(): void
+    {
+        $pages = $this->allowedPages();
+
+        foreach (['home', 'login', 'logout', 'license', 'admins', 'entries', 'configuration', 'password', 'release', 'edit', 'statement', 'account'] as $page) {
+            self::assertContains($page, $pages, sprintf('"%s" muss in $allowedPages stehen.', $page));
+        }
+    }
+
+    public function testEveryWhitelistedPageExists(): void
+    {
+        foreach ($this->allowedPages() as $page) {
+            self::assertFileExists(POWERBOOK_ROOT . '/pb_inc/admincenter/' . $page . '.inc.php');
+        }
+    }
+
+    public function testPasswordMigrationIsNoLongerIncluded(): void
+    {
+        $source = (string) file_get_contents(POWERBOOK_ROOT . '/pb_inc/admincenter/index.php');
+
+        self::assertStringNotContainsString('password_migrate', $source);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function allowedPages(): array
     {
         $source = file_get_contents(POWERBOOK_ROOT . '/pb_inc/admincenter/index.php');
         self::assertNotFalse($source);
+        self::assertSame(1, preg_match('/\$allowedPages\s*=\s*\[(.*?)\];/s', $source, $match));
+        preg_match_all("/'([a-z_]+)'/", $match[1], $names);
 
-        $required = ['home', 'login', 'logout', 'license', 'admins', 'entries',
-            'configuration', 'password', 'release', 'entry', 'edit', 'statement'];
-        foreach ($required as $page) {
-            self::assertMatchesRegularExpression(
-                "/'{$page}'/",
-                $source,
-                sprintf('"%s" muss in $allowedPages stehen.', $page)
-            );
-        }
+        return $names[1];
     }
 }

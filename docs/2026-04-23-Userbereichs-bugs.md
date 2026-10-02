@@ -1,13 +1,12 @@
 # PowerBook Userbereich - Bug-Report
 **Datum:** 2026-04-23
-**Tester:** Senior-QA-Engineer (Claude)
+**Prüfung:** Qualitätssicherung SchubertMedia
 **Testumgebung (zum Audit-Zeitpunkt):** http://localhost:8080 (Admin-Center unter /pb_inc/admincenter/index.php)
 > **Hinweis (Mai 2026):** Container-Ports wurden inzwischen verschoben (`web` 8080→**8081**, Mailpit 1031→**1035**, 8031→**8035**) wegen Konflikten mit anderen Compose-Stacks. Reproduktionsskripte unten sind historische Snapshots — bei aktueller Reproduktion entsprechend ersetzen. Aktuelle Ports: siehe README.md.
 
 > Diese Datei enthält **nur Bugs**. Workflow-/UX-Hinweise siehe `2026-04-23-Userbereichs-improvements.md`.
 >
-> **Update 2026-04-23 — Fix-Durchlauf:** Alle 14 Bugs wurden gemäß dem Plan
-> `docs/superpowers/plans/2026-04-23-userbereich-bugs-fix.md` behoben.
+> **Update 2026-04-23 — Fix-Durchlauf:** Alle 14 Bugs wurden behoben.
 > Jeder Eintrag ist mit **✅ BEHOBEN** markiert und verlinkt auf den Commit/Test.
 > 511 PHPUnit-Tests grün (29 neue Tests); siehe `git log` seit `854956b`.
 

@@ -12,85 +12,83 @@
 
 declare(strict_types=1);
 
-// Start session for CSRF and authentication
-if (session_status() === PHP_SESSION_NONE) {
+require_once __DIR__ . '/csrf.inc.php';
+
+// Ohne date.timezone in der php.ini rechnet PHP in UTC – Uhrzeiten im
+// Gästebuch lägen dann zwei Stunden daneben.
+if (ini_get('date.timezone') === '' || ini_get('date.timezone') === false) {
+    date_default_timezone_set('Europe/Berlin');
+}
+
+// Start session for CSRF and authentication (HttpOnly, SameSite, Secure bei HTTPS)
+if (function_exists('pb_session_start')) {
+    pb_session_start();
+} elseif (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 // Include required files
-require_once __DIR__ . '/mysql.inc.php';
 require_once __DIR__ . '/mysql-connect.inc.php';
-require_once __DIR__ . '/csrf.inc.php';
+require_once __DIR__ . '/version.inc.php';
+require_once __DIR__ . '/mail.inc.php';
+
+// Vorgaben, falls die Konfigurationstabelle fehlt oder eine Spalte (noch)
+// nicht kennt – etwa vor update.php bei einer älteren Datenbank.
+$pbConfigDefaults = [
+    'title' => 'Gästebuch',
+    'release' => 'U',
+    'send_email' => 'N',
+    'email' => '',
+    'mail_from' => '',
+    'date' => 'd.m.Y',
+    'time' => 'H:i',
+    'spam_check' => 30,
+    'color' => '#FF0000',
+    'show_entries' => 10,
+    'guestbook_name' => 'pbook.php',
+    'admin_url' => '',
+    'text_format' => 'Y',
+    'icons' => 'Y',
+    'smilies' => 'Y',
+    'pages' => 'D',
+    'use_thanks' => 'N',
+    'language' => 'ger1',
+    'design' => '',
+    'thanks_title' => '',
+    'thanks' => '',
+    'statements' => 'Y',
+];
 
 // Load configuration from database
 try {
     $stmt = $pdo->query("SELECT * FROM {$pb_config} LIMIT 1");
-    $configRow = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($configRow) {
-        $config_release = $configRow['release'] ?? 'R';
-        $config_send_email = $configRow['send_email'] ?? 'N';
-        $config_email = $configRow['email'] ?? '';
-        $config_date = $configRow['date'] ?? 'd.m.Y';
-        $config_time = $configRow['time'] ?? 'H:i';
-        $config_spam_check = (int) ($configRow['spam_check'] ?? 60);
-        $config_color = $configRow['color'] ?? '#FF0000';
-        $config_show_entries = (int) ($configRow['show_entries'] ?? 10);
-        $config_guestbook_name = $configRow['guestbook_name'] ?? 'pbook.php';
-        $config_admin_url = $configRow['admin_url'] ?? '';
-        $config_text_format = $configRow['text_format'] ?? 'Y';
-        $config_icons = $configRow['icons'] ?? 'Y';
-        $config_smilies = $configRow['smilies'] ?? 'Y';
-        $config_pages = $configRow['pages'] ?? 'Y';
-        $config_use_thanks = $configRow['use_thanks'] ?? 'N';
-        $config_language = $configRow['language'] ?? 'D';
-        $config_design = $configRow['design'] ?? '';
-        $config_thanks_title = $configRow['thanks_title'] ?? '';
-        $config_thanks = $configRow['thanks'] ?? '';
-        $config_statements = $configRow['statements'] ?? 'Y';
-    } else {
-        // Default values if no configuration exists
-        $config_release = 'R';
-        $config_send_email = 'N';
-        $config_email = '';
-        $config_date = 'd.m.Y';
-        $config_time = 'H:i';
-        $config_spam_check = 60;
-        $config_color = '#FF0000';
-        $config_show_entries = 10;
-        $config_guestbook_name = 'pbook.php';
-        $config_admin_url = '';
-        $config_text_format = 'Y';
-        $config_icons = 'Y';
-        $config_smilies = 'Y';
-        $config_pages = 'Y';
-        $config_use_thanks = 'N';
-        $config_language = 'D';
-        $config_design = '';
-        $config_thanks_title = '';
-        $config_thanks = '';
-        $config_statements = 'Y';
-    }
+    $configRow = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 } catch (PDOException $e) {
     // Configuration table might not exist yet (during installation)
-    $config_release = 'R';
-    $config_send_email = 'N';
-    $config_email = '';
-    $config_date = 'd.m.Y';
-    $config_time = 'H:i';
-    $config_spam_check = 60;
-    $config_color = '#FF0000';
-    $config_show_entries = 10;
-    $config_guestbook_name = 'pbook.php';
-    $config_admin_url = '';
-    $config_text_format = 'Y';
-    $config_icons = 'Y';
-    $config_smilies = 'Y';
-    $config_pages = 'Y';
-    $config_use_thanks = 'N';
-    $config_language = 'D';
-    $config_design = '';
-    $config_thanks_title = '';
-    $config_thanks = '';
-    $config_statements = 'Y';
+    $configRow = [];
 }
+
+$configRow = array_merge($pbConfigDefaults, array_filter($configRow, static fn ($value) => $value !== null));
+
+$config_title = (string) $configRow['title'];
+$config_release = (string) $configRow['release'];
+$config_send_email = (string) $configRow['send_email'];
+$config_email = (string) $configRow['email'];
+$config_mail_from = (string) $configRow['mail_from'];
+$config_date = (string) $configRow['date'];
+$config_time = (string) $configRow['time'];
+$config_spam_check = (int) $configRow['spam_check'];
+$config_color = (string) $configRow['color'];
+$config_show_entries = max(1, (int) $configRow['show_entries']);
+$config_guestbook_name = (string) $configRow['guestbook_name'];
+$config_admin_url = (string) $configRow['admin_url'];
+$config_text_format = (string) $configRow['text_format'];
+$config_icons = (string) $configRow['icons'];
+$config_smilies = (string) $configRow['smilies'];
+$config_pages = (string) $configRow['pages'];
+$config_use_thanks = (string) $configRow['use_thanks'];
+$config_language = (string) $configRow['language'];
+$config_design = (string) $configRow['design'];
+$config_thanks_title = (string) $configRow['thanks_title'];
+$config_thanks = (string) $configRow['thanks'];
+$config_statements = (string) $configRow['statements'];

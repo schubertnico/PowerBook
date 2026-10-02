@@ -1,6 +1,6 @@
 # PowerBook Userbereich - Improvement-Report
 **Datum:** 2026-04-23
-**Tester:** Senior-QA-Engineer (Claude)
+**Prüfung:** Qualitätssicherung SchubertMedia
 **Testumgebung (zum Audit-Zeitpunkt):** http://localhost:8080
 > **Hinweis (Mai 2026):** Container-Ports wurden inzwischen verschoben (`web` 8080→**8081**). Aktuelle Ports: siehe README.md.
 

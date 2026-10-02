@@ -2,7 +2,11 @@
 
 /**
  * PowerBook - PHP Guestbook System
- * Error Handler Functions
+ * Protokolle (Logs) und Fehlerbehandlung
+ *
+ * Alle Protokolle liegen in logs/ (error.log, security.log) und werden ab
+ * 5 MB rotiert (höchstens fünf ältere Dateien). Meldungen für Besucher und
+ * Admins bleiben allgemein, Einzelheiten stehen nur im Protokoll.
  *
  * @license MIT
  * @copyright PowerScripts.org
@@ -13,63 +17,60 @@
 declare(strict_types=1);
 
 /**
- * Execute a database operation safely with error handling
- *
- * @param callable $operation The database operation to execute
- * @param string $errorMessage User-friendly error message on failure
- *
- * @throws RuntimeException If the operation fails and should be re-thrown
- *
- * @return mixed The result of the operation
+ * Verzeichnis der Protokolle.
  */
-function safeDbOperation(callable $operation, string $errorMessage = 'Datenbankfehler'): mixed
+function pb_log_dir(): string
 {
-    try {
-        return $operation();
-    } catch (PDOException $e) {
-        logDbError($e->getMessage());
-
-        // Check if it's a "table not found" error (installation required)
-        if (str_contains($e->getMessage(), 'doesn\'t exist') ||
-            str_contains($e->getMessage(), 'Base table or view not found')) {
-            throw new RuntimeException('Installation erforderlich: Datenbanktabellen nicht gefunden.');
-        }
-
-        throw new RuntimeException($errorMessage);
-    }
+    return dirname(__DIR__) . '/logs';
 }
 
 /**
- * Execute a database operation within a transaction
+ * Schreibt eine Zeile in ein Protokoll (rotiert vorher bei Bedarf).
  *
- * @param PDO $pdo The PDO connection
- * @param callable $operation The database operation to execute
- * @param string $errorMessage User-friendly error message on failure
+ * Zeilenumbrüche in der Meldung werden ersetzt, damit niemand über Eingaben
+ * falsche Protokollzeilen erzeugen kann. Fehler beim Schreiben sind still.
  *
- * @return mixed The result of the operation
+ * @param string $file Dateiname in logs/, z. B. "error.log"
  */
-function safeDbTransaction(PDO $pdo, callable $operation, string $errorMessage = 'Datenbankfehler'): mixed
+function pb_log_write(string $file, string $line): void
 {
-    try {
-        $pdo->beginTransaction();
-        $result = $operation();
-        $pdo->commit();
-
-        return $result;
-    } catch (PDOException $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
+    $dir = pb_log_dir();
+    if (!is_dir($dir)) {
+        if (!@mkdir($dir, 0o750, true) && !is_dir($dir)) {
+            return;
         }
-        logDbError($e->getMessage());
-
-        throw new RuntimeException($errorMessage);
-    } catch (Exception $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-
-        throw $e;
+        @file_put_contents(
+            $dir . '/.htaccess',
+            "<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>\n"
+            . "<IfModule !mod_authz_core.c>\n    Order allow,deny\n    Deny from all\n</IfModule>\n"
+        );
     }
+
+    $path = $dir . '/' . basename($file);
+    rotateLogIfNeeded($path);
+
+    $line = str_replace(["\r\n", "\r", "\n"], ' ', $line);
+    @file_put_contents($path, $line . "\n", FILE_APPEND | LOCK_EX);
+}
+
+/**
+ * Kürzt einen eingegebenen Namen fürs Protokoll.
+ *
+ * Wer sein Passwort versehentlich ins Namensfeld tippt, soll es nicht im
+ * Protokoll wiederfinden. Die ersten drei Zeichen plus ein kurzer Prüfwert
+ * reichen, um wiederholte Versuche desselben Namens zu erkennen.
+ */
+function pb_log_shorten_name(string $name): string
+{
+    $name = trim($name);
+    if ($name === '') {
+        return '';
+    }
+
+    $hash = substr(hash('sha256', mb_strtolower($name, 'UTF-8')), 0, 8);
+    $short = mb_strlen($name, 'UTF-8') > 3 ? mb_substr($name, 0, 3, 'UTF-8') . '…' : $name;
+
+    return $short . ' #' . $hash;
 }
 
 /**
@@ -77,12 +78,7 @@ function safeDbTransaction(PDO $pdo, callable $operation, string $errorMessage =
  */
 function logDbError(string $message): void
 {
-    $logEntry = sprintf(
-        "[%s] PowerBook DB Error: %s\n",
-        date('Y-m-d H:i:s'),
-        $message
-    );
-    error_log($logEntry, 3, dirname(__DIR__) . '/logs/error.log');
+    pb_log_write('error.log', sprintf('[%s] PowerBook DB Error: %s', date('Y-m-d H:i:s'), $message));
 }
 
 /**
@@ -93,18 +89,16 @@ function logDbError(string $message): void
 function logSecurityEvent(string $event, array $context = []): void
 {
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
-    $logEntry = sprintf(
-        "[%s] %s | IP: %s | UA: %s | Context: %s\n",
+    $userAgent = (string) ($_SERVER['HTTP_USER_AGENT'] ?? 'unknown');
+
+    pb_log_write('security.log', sprintf(
+        '[%s] %s | IP: %s | UA: %s | Context: %s',
         date('Y-m-d H:i:s'),
         $event,
-        $ip,
+        is_string($ip) ? $ip : 'unknown',
         substr($userAgent, 0, 100),
-        json_encode($context)
-    );
-    $logFile = dirname(__DIR__) . '/logs/security.log';
-    rotateLogIfNeeded($logFile);
-    error_log($logEntry, 3, $logFile);
+        (string) json_encode($context, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE)
+    ));
 }
 
 /**
@@ -119,12 +113,12 @@ function logCsrfFailure(string $formName): void
 }
 
 /**
- * Log a failed login attempt
+ * Log a failed login attempt (Name nur gekürzt, siehe pb_log_shorten_name()).
  */
 function logFailedLogin(string $username): void
 {
     logSecurityEvent('LOGIN_FAILED', [
-        'username' => $username,
+        'username' => pb_log_shorten_name($username),
     ]);
 }
 
@@ -139,93 +133,16 @@ function logSuccessfulLogin(string $username): void
 }
 
 /**
- * Log a form submission event.
- *
- * @param array<string, mixed> $data
- */
-function logFormSubmission(string $formName, bool $success, array $data = []): void
-{
-    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-
-    // Remove sensitive data
-    unset($data['password'], $data['password1'], $data['password2'], $data['csrf_token']);
-
-    $logEntry = sprintf(
-        "[%s] Form: %s | Success: %s | IP: %s | Data: %s\n",
-        date('Y-m-d H:i:s'),
-        $formName,
-        $success ? 'YES' : 'NO',
-        $ip,
-        json_encode($data)
-    );
-    error_log($logEntry, 3, dirname(__DIR__) . '/logs/forms.log');
-}
-
-/**
- * Display a user-friendly error message in admin style
- */
-function displayAdminError(string $message): void
-{
-    echo '<tr bgcolor="#001329"><td>';
-    echo '<div align="center" style="padding: 20px;">';
-    echo '<p style="color: #FF6666;"><b>Fehler:</b> ' . e($message) . '</p>';
-    echo '<p><a href="javascript:history.back()">Zurück</a></p>';
-    echo '</div>';
-    echo '</td></tr>';
-}
-
-/**
- * Handle an exception gracefully in admin context
- */
-function handleAdminException(Throwable $e, string $context = ''): void
-{
-    logDbError($context . ': ' . $e->getMessage());
-    displayAdminError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-}
-
-/**
- * Send email with logging
- *
- * @param string $to Recipient email address
- * @param string $subject Email subject
- * @param string $body Email body
- * @param string $headers Email headers
- * @param string $context Context for logging (e.g., 'Password Recovery', 'Admin Added')
- *
- * @return bool True if email was sent successfully
- */
-function sendEmail(string $to, string $subject, string $body, string $headers = '', string $context = ''): bool
-{
-    // Sanitize recipient
-    $to = sanitizeEmailHeader($to);
-
-    if (empty($to)) {
-        logEmailError('Empty recipient', $context);
-
-        return false;
-    }
-
-    $result = @mail($to, $subject, $body, $headers);
-
-    if (!$result) {
-        logEmailError("Failed to send to: {$to}", $context);
-    }
-
-    return $result;
-}
-
-/**
- * Log email sending errors
+ * Log email sending errors (genutzt von pb_mail()).
  */
 function logEmailError(string $message, string $context = ''): void
 {
-    $logEntry = sprintf(
-        "[%s] Email Error%s: %s\n",
+    pb_log_write('error.log', sprintf(
+        '[%s] Email Error%s: %s',
         date('Y-m-d H:i:s'),
-        !empty($context) ? " ({$context})" : '',
+        $context !== '' ? " ({$context})" : '',
         $message
-    );
-    error_log($logEntry, 3, dirname(__DIR__) . '/logs/error.log');
+    ));
 }
 
 /**
@@ -246,76 +163,17 @@ function rotateLogIfNeeded(string $logFile, int $maxSize = 5242880, int $keepFil
         return;
     }
 
-    // Rotate existing files
+    // Die älteste Datei entfällt, die übrigen rücken eine Nummer weiter.
+    if (file_exists("{$logFile}.{$keepFiles}")) {
+        @unlink("{$logFile}.{$keepFiles}");
+    }
     for ($i = $keepFiles - 1; $i >= 1; $i--) {
         $oldFile = "{$logFile}.{$i}";
-        $newFile = "{$logFile}." . ($i + 1);
         if (file_exists($oldFile)) {
-            if ($i + 1 > $keepFiles) {
-                @unlink($oldFile);
-            } else {
-                @rename($oldFile, $newFile);
-            }
+            @rename($oldFile, "{$logFile}." . ($i + 1));
         }
     }
 
     // Rotate current log
     @rename($logFile, "{$logFile}.1");
-}
-
-/**
- * Clean old log files (called periodically)
- *
- * @param int $maxAgeDays Maximum age in days for log files
- */
-function cleanOldLogs(int $maxAgeDays = 30): void
-{
-    $logsDir = dirname(__DIR__) . '/logs';
-    $maxAge = time() - ($maxAgeDays * 86400);
-
-    $files = glob("{$logsDir}/*.log.*");
-    if ($files === false) {
-        return;
-    }
-
-    foreach ($files as $file) {
-        $mtime = @filemtime($file);
-        if ($mtime !== false && $mtime < $maxAge) {
-            @unlink($file);
-        }
-    }
-}
-
-/**
- * Get log statistics
- *
- * @return array<string, array{size: int, lines: int, last_modified: int|false}>
- */
-function getLogStats(): array
-{
-    $logsDir = dirname(__DIR__) . '/logs';
-    $stats = [];
-
-    $logFiles = ['error.log', 'forms.log', 'security.log'];
-
-    foreach ($logFiles as $logFile) {
-        $path = "{$logsDir}/{$logFile}";
-        if (file_exists($path)) {
-            $size = @filesize($path) ?: 0;
-            $lines = @file($path);
-            $stats[$logFile] = [
-                'size' => $size,
-                'lines' => $lines !== false ? count($lines) : 0,
-                'last_modified' => @filemtime($path),
-            ];
-        } else {
-            $stats[$logFile] = [
-                'size' => 0,
-                'lines' => 0,
-                'last_modified' => false,
-            ];
-        }
-    }
-
-    return $stats;
 }

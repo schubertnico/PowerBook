@@ -15,220 +15,258 @@ use PHPUnit\Framework\Attributes\CoversFunction;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-#[CoversFunction('germandate')]
-#[CoversFunction('formatText')]
+#[CoversFunction('pb_format_date')]
+#[CoversFunction('pb_render_text')]
+#[CoversFunction('pb_render_help')]
+#[CoversFunction('pb_normalize_url')]
+#[CoversFunction('pb_sanitize_design')]
+#[CoversFunction('pb_prepare_design')]
+#[CoversFunction('pb_render_entry')]
 #[CoversFunction('getVisitorIp')]
 class FunctionsTest extends TestCase
 {
     // ========================================
-    // Tests for germandate() function
+    // pb_format_date(): deutsche Namen (A26)
     // ========================================
 
     #[Test]
-    public function germandateConvertsMonday(): void
+    public function formatDateTranslatesWeekdaysAndMonths(): void
     {
-        $this->assertSame('Montag', germandate('Monday'));
+        $sunday = mktime(21, 48, 0, 10, 4, 2026);
+
+        $this->assertSame('Sonntag, 4. Oktober 2026', pb_format_date('l, j. F Y', $sunday));
+        $this->assertSame('So, 04. Okt 2026', pb_format_date('D, d. M Y', $sunday));
+        $this->assertSame('04.10.2026', pb_format_date('d.m.Y', $sunday));
+        $this->assertSame('21:48', pb_format_date('H:i', $sunday));
     }
 
     #[Test]
-    public function germandateConvertsTuesday(): void
+    public function formatDateCoversAllNames(): void
     {
-        $this->assertSame('Dienstag', germandate('Tuesday'));
+        $days = [];
+        $months = [];
+        for ($i = 0; $i < 7; $i++) {
+            $days[] = pb_format_date('l D', mktime(12, 0, 0, 1, 5 + $i, 2026));
+        }
+        for ($m = 1; $m <= 12; $m++) {
+            $months[] = pb_format_date('F M', mktime(12, 0, 0, $m, 1, 2026));
+        }
+
+        $this->assertSame(['Montag Mo', 'Dienstag Di', 'Mittwoch Mi', 'Donnerstag Do', 'Freitag Fr', 'Samstag Sa', 'Sonntag So'], $days);
+        $this->assertSame('März Mär', $months[2]);
+        $this->assertSame('Mai Mai', $months[4]);
+        $this->assertSame('Dezember Dez', $months[11]);
     }
 
     #[Test]
-    public function germandateConvertsWednesday(): void
+    public function formatDateKeepsEscapedCharactersAndCase(): void
     {
-        $this->assertSame('Mittwoch', germandate('Wednesday'));
-    }
+        $t = mktime(9, 5, 0, 9, 20, 2026);
 
-    #[Test]
-    public function germandateConvertsThursday(): void
-    {
-        $this->assertSame('Donnerstag', germandate('Thursday'));
-    }
-
-    #[Test]
-    public function germandateConvertsFriday(): void
-    {
-        $this->assertSame('Freitag', germandate('Friday'));
-    }
-
-    #[Test]
-    public function germandateConvertsSaturday(): void
-    {
-        $this->assertSame('Samstag', germandate('Saturday'));
-    }
-
-    #[Test]
-    public function germandateConvertsSunday(): void
-    {
-        $this->assertSame('Sonntag', germandate('Sunday'));
-    }
-
-    #[Test]
-    public function germandateConvertsJanuary(): void
-    {
-        $this->assertSame('Januar', germandate('January'));
-    }
-
-    #[Test]
-    public function germandateConvertsMarch(): void
-    {
-        $this->assertSame('März', germandate('March'));
-    }
-
-    #[Test]
-    public function germandateConvertsOctober(): void
-    {
-        $this->assertSame('Oktober', germandate('October'));
-    }
-
-    #[Test]
-    public function germandateConvertsDecember(): void
-    {
-        $this->assertSame('Dezember', germandate('December'));
-    }
-
-    #[Test]
-    public function germandateConvertsAbbreviatedMon(): void
-    {
-        $this->assertSame('Mo', germandate('Mon'));
-    }
-
-    #[Test]
-    public function germandateConvertsAbbreviatedOct(): void
-    {
-        $this->assertSame('Okt', germandate('Oct'));
-    }
-
-    #[Test]
-    public function germandateConvertsAbbreviatedDec(): void
-    {
-        $this->assertSame('Dez', germandate('Dec'));
-    }
-
-    #[Test]
-    public function germandateHandlesMixedCase(): void
-    {
-        $this->assertSame('Montag', germandate('MONDAY'));
-    }
-
-    #[Test]
-    public function germandatePreservesUnknownText(): void
-    {
-        $this->assertSame('hello world', germandate('Hello World'));
+        $this->assertSame('KW 38, 20.09.26', pb_format_date('\K\W W, d.m.y', $t));
+        $this->assertSame('20. September 2026', pb_format_date('jS F Y', $t));
+        $this->assertSame('Uhr 09:05', pb_format_date('\U\h\r H:i', $t));
+        $this->assertSame('lDFM Sonntag', pb_format_date('\l\D\F\M l', $t));
     }
 
     // ========================================
-    // Tests for formatText() function
+    // pb_render_text(): BBCode, Links, Smileys (B04, B09, B10)
     // ========================================
 
     #[Test]
-    public function formatTextConvertsNewlinesToBr(): void
+    public function renderTextEscapesHtmlAndConvertsNewlines(): void
     {
-        $result = formatText("Line 1\nLine 2", false);
-        $this->assertStringContainsString('<br>', $result);
+        $result = pb_render_text("<script>alert(1)</script> & \"x\"\r\nZeile 2", false, false);
+
+        $this->assertSame("&lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;x&quot;<br>\nZeile 2", $result);
     }
 
     #[Test]
-    public function formatTextWithBBCodeDisabled(): void
+    public function renderTextBbcodeOnlyInPairs(): void
     {
-        $GLOBALS['config_text_format'] = 'N';
-        $result = formatText('[b]bold[/b]', false);
-        $this->assertStringContainsString('[b]', $result);
-        $this->assertStringNotContainsString('<b>', $result);
+        $this->assertSame('<b>fett</b> <i>k</i> <u>u</u> <small>s</small>', pb_render_text('[b]fett[/b] [i]k[/i] [u]u[/u] [small]s[/small]', true, false));
+        $this->assertSame('<b>a <i>b</i> c</b>', pb_render_text('[B]a [i]b[/I] c[/b]', true, false));
+        $this->assertSame('[b]offen [u]und weiter', pb_render_text('[b]offen [u]und weiter', true, false));
+        $this->assertSame('[b]x[i]y[/b]z[/i]', pb_render_text('[b]x[i]y[/b]z[/i]', true, false));
+        $this->assertSame('[b]fett[/b]', pb_render_text('[b]fett[/b]', false, false));
     }
 
     #[Test]
-    public function formatTextBBCodeBold(): void
+    public function renderTextKeepsDollarBackslashAndPlaceholders(): void
     {
-        $GLOBALS['config_text_format'] = 'Y';
-        $result = formatText('[b]bold text[/b]', false);
-        $this->assertStringContainsString('<b>bold text</b>', $result);
+        $text = 'Fähre: $10 hin, \1 zurück, $0 Ende (#URL#) (#TEXT#)';
+
+        $this->assertSame('Fähre: $10 hin, \1 zurück, $0 Ende (#URL#) (#TEXT#)', pb_render_text($text, true, true));
     }
 
     #[Test]
-    public function formatTextBBCodeItalic(): void
+    public function renderTextLinksWithoutTrailingPunctuation(): void
     {
-        $GLOBALS['config_text_format'] = 'Y';
-        $result = formatText('[i]italic text[/i]', false);
-        $this->assertStringContainsString('<i>italic text</i>', $result);
+        $result = pb_render_text('Siehe https://www.example.org/foehr. Oder (https://de.wikipedia.org/wiki/Föhr_(Insel)), ftp://files.example.com/a.zip', true, false);
+
+        $this->assertStringContainsString('<a href="https://www.example.org/foehr" target="_blank" rel="noopener noreferrer nofollow ugc">https://www.example.org/foehr</a>.', $result);
+        $this->assertStringContainsString('href="https://de.wikipedia.org/wiki/Föhr_(Insel)"', $result);
+        $this->assertStringContainsString('</a>),', $result);
+        $this->assertStringContainsString('href="ftp://files.example.com/a.zip"', $result);
     }
 
     #[Test]
-    public function formatTextBBCodeUnderline(): void
+    public function renderTextLinksCannotBreakOutOfAttribute(): void
     {
-        $GLOBALS['config_text_format'] = 'Y';
-        $result = formatText('[u]underline text[/u]', false);
-        $this->assertStringContainsString('<u>underline text</u>', $result);
+        $result = pb_render_text('https://example.org/"onmouseover="alert(1)" und https://example.org/\'x', true, true);
+
+        $this->assertStringNotContainsString('onmouseover="alert', $result);
+        $this->assertStringContainsString('href="https://example.org/"', $result);
     }
 
     #[Test]
-    public function formatTextBBCodeSmall(): void
+    public function renderTextSmileysNeedSpaceBefore(): void
     {
-        $GLOBALS['config_text_format'] = 'Y';
-        $result = formatText('[small]small text[/small]', false);
-        $this->assertStringContainsString('<small>small text</small>', $result);
+        $result = pb_render_text(':) (Haus "Möwe") (Zimmer \'Seeblick\') super:) Gut :-) ;o) :( ;(', false, true);
+
+        $this->assertSame(5, substr_count($result, 'class="pb-smiley"'));
+        $this->assertStringContainsString('super:)', $result);
+        $this->assertStringContainsString('(Haus &quot;Möwe&quot;)', $result);
+        $this->assertStringContainsString('src="pb_inc/smilies/sad1.gif" alt=":("', $result);
+        $this->assertStringContainsString('src="pb_inc/smilies/sad2.gif" alt=";("', $result);
+        $this->assertStringContainsString('alt=":-)" title="Lächeln"', $result);
     }
 
     #[Test]
-    public function formatTextAutoLinksHttpUrls(): void
+    public function renderTextSmileyNeverInsideLink(): void
     {
-        $GLOBALS['config_text_format'] = 'Y';
-        $result = formatText('Visit https://example.com today', false);
-        $this->assertStringContainsString('href="https://example.com"', $result);
-        $this->assertStringContainsString('target="_blank"', $result);
-        $this->assertStringContainsString('rel="noopener noreferrer"', $result);
+        $result = pb_render_text('Bild https://www.example.org/bild:Dx.jpg :D', true, true);
+
+        $this->assertStringContainsString('href="https://www.example.org/bild:Dx.jpg"', $result);
+        $this->assertSame(1, substr_count($result, 'pb-smiley'));
     }
 
     #[Test]
-    public function formatTextAutoLinksFtpUrls(): void
+    public function renderTextUsesSmileyBase(): void
     {
-        $GLOBALS['config_text_format'] = 'Y';
-        $result = formatText('Download from ftp://files.example.com/file.zip here', false);
-        $this->assertStringContainsString('href="ftp://files.example.com/file.zip"', $result);
+        $this->assertStringContainsString('src="../smilies/happy1.gif"', pb_render_text(':)', false, true, '../smilies/'));
     }
 
     #[Test]
-    public function formatTextSmiliesDisabledByDefault(): void
+    public function renderHelpListsCodesFromSameSource(): void
     {
-        $GLOBALS['config_smilies'] = 'N';
-        $result = formatText(':)', true);
-        $this->assertStringNotContainsString('happy1.gif', $result);
-        $this->assertStringContainsString(':)', $result);
+        $help = pb_render_help(true, true);
+
+        $this->assertStringContainsString('<code>[b]fett[/b]</code>', $help);
+        $this->assertSame(10, substr_count($help, 'class="pb-smiley"'));
+        $this->assertStringContainsString('<code>:(</code></td><td><img src="pb_inc/smilies/sad1.gif"', $help);
+        $this->assertStringNotContainsString('Smileys</h3>', pb_render_help(true, false));
+    }
+
+    // ========================================
+    // pb_normalize_url(), Design, Eintrag
+    // ========================================
+
+    #[Test]
+    public function normalizeUrlAddsHttpsAndRejectsJunk(): void
+    {
+        $this->assertSame('https://www.example.org', pb_normalize_url('www.example.org'));
+        $this->assertSame('http://example.org/x', pb_normalize_url('http://example.org/x'));
+        $this->assertSame('https://www.görlitz.de/über', pb_normalize_url('https://www.görlitz.de/über'));
+        foreach (['', 'kein link', 'javascript:alert(1)', 'data:text/html,x', 'https://example.org/"x', 'mailto:a@b.de', 'https://localhost'] as $url) {
+            $this->assertSame('', pb_normalize_url($url), $url);
+        }
     }
 
     #[Test]
-    public function formatTextSmiliesWhenEnabled(): void
+    public function sanitizeDesignRemovesScripts(): void
     {
-        $GLOBALS['config_smilies'] = 'Y';
-        $result = formatText(':)', true);
-        $this->assertStringContainsString('happy1.gif', $result);
+        $design = '<table bgcolor="#fff" onclick="x()"><tr><td>(#TEXT#)<script>alert(1)</script>'
+            . '<a href="jav&#x61;script:alert(2)">a</a><a href="https://ok.example/" title="a>b">ok</a>'
+            . '<img src=x onerror=alert(3)><iframe src="https://x"></iframe><svg onload=alert(4)></svg></td></tr></table>';
+        $result = pb_sanitize_design($design);
+
+        $this->assertStringNotContainsString('<script', $result);
+        $this->assertStringNotContainsString('onclick', $result);
+        $this->assertStringNotContainsString('onerror', $result);
+        $this->assertStringNotContainsString('javascript', $result);
+        $this->assertStringNotContainsString('<iframe', $result);
+        $this->assertStringNotContainsString('<svg', $result);
+        $this->assertStringContainsString('bgcolor="#fff"', $result);
+        $this->assertStringContainsString('href="https://ok.example/"', $result);
+        $this->assertStringContainsString('(#TEXT#)', $result);
     }
 
     #[Test]
-    public function formatTextSmiliesSadFace(): void
+    public function prepareDesignUsesDefaultOnlyWithoutPlaceholder(): void
     {
-        $GLOBALS['config_smilies'] = 'Y';
-        $result = formatText(':(', true);
-        $this->assertStringContainsString('sad2.gif', $result);
+        $this->assertSame(PB_DEFAULT_DESIGN, pb_prepare_design(''));
+        $this->assertSame(PB_DEFAULT_DESIGN, pb_prepare_design('<table bgcolor="#000"><tr><td>alt</td></tr></table>'));
+        $this->assertStringContainsString('bgcolor', pb_prepare_design('<table bgcolor="#000"><tbody><tr><td>(#TEXT#)</td></tr></tbody></table>'));
+        $this->assertStringContainsString('(#TIME#) Uhr', PB_DEFAULT_DESIGN);
     }
 
     #[Test]
-    public function formatTextSmiliesWink(): void
+    public function renderEntryUsesPlaceholdersOnce(): void
     {
-        $GLOBALS['config_smilies'] = 'Y';
-        $result = formatText(';)', true);
-        $this->assertStringContainsString('happy3.gif', $result);
+        $html = pb_render_entry([
+            'id' => 7,
+            'name' => 'Kai (#TEXT#) $1',
+            'email' => 'kai@example.org',
+            'text' => 'Preis $10 (#URL#)',
+            'homepage' => 'www.example.org',
+            'icon' => 'happy1',
+            'smilies' => 'Y',
+            'date' => mktime(20, 42, 0, 9, 20, 2026),
+            'statement' => 'Danke :)',
+            'statement_by' => 'Anke',
+        ], ['design' => '', 'date' => 'l, j. F Y', 'time' => 'H:i', 'icons' => 'Y', 'smilies' => 'Y', 'text_format' => 'Y', 'statements' => 'Y']);
+
+        $this->assertStringStartsWith('<article id="pbEntry7" data-pb-entry-id="7" class="card pb-entry-card', $html);
+        $this->assertStringContainsString('<span class="pb-entry-name">Kai (#TEXT#) $1</span>', $html);
+        $this->assertStringContainsString('Preis $10 (#URL#)', $html);
+        $this->assertStringContainsString('Sonntag, 20. September 2026', $html);
+        $this->assertStringContainsString('20:42 Uhr', $html);
+        $this->assertStringContainsString('href="https://www.example.org"', $html);
+        $this->assertStringContainsString('<div id="pbEntryAnswer7" class="pb-entry-statement', $html);
+        $this->assertStringContainsString('<b>Antwort von Anke:</b>', $html);
+        $this->assertStringContainsString('alt="Lächeln"', $html);
+        $this->assertStringNotContainsString('mailto:', $html);
+        $this->assertStringNotContainsString('kai@example.org', $html);
     }
 
     #[Test]
-    public function formatTextSmiliesDisabledByParameter(): void
+    public function renderEntryStatementSmileysFollowConfigOnly(): void
     {
-        $GLOBALS['config_smilies'] = 'Y';
-        $result = formatText(':)', false);
-        $this->assertStringNotContainsString('happy1.gif', $result);
+        $entry = ['id' => 3, 'name' => 'Henrik', 'text' => 'Hallo :)', 'smilies' => 'N', 'date' => 0, 'statement' => 'Danke :)', 'statement_by' => ''];
+        $html = pb_render_entry($entry, ['design' => '', 'smilies' => 'Y', 'statements' => 'Y']);
+
+        $this->assertSame(1, substr_count($html, 'pb-smiley'));
+        $this->assertStringContainsString('<b>Antwort:</b>', $html);
+        $this->assertStringNotContainsString('pb-smiley', pb_render_entry($entry, ['design' => '', 'smilies' => 'N', 'statements' => 'Y']));
+        $this->assertStringNotContainsString('Antwort', pb_render_entry($entry, ['design' => '', 'smilies' => 'Y', 'statements' => 'N']));
+    }
+
+    #[Test]
+    public function renderEntryWrapsCustomDesignWithId(): void
+    {
+        $html = pb_render_entry(['id' => 5, 'name' => 'A', 'text' => 'B', 'date' => 0], ['design' => '<p>(#EMAIL_NAME#): (#TEXT#) (#ICQ#)</p>']);
+
+        $this->assertSame('<div id="pbEntry5" data-pb-entry-id="5" class="pb-entry"><p><span class="pb-entry-name">A</span>: B </p></div>', $html);
+    }
+
+    #[Test]
+    public function renderEntryIgnoresUnknownIcon(): void
+    {
+        $html = pb_render_entry(['icon' => 'x" onerror="a', 'name' => 'A', 'text' => 'B'], ['design' => '', 'icons' => 'Y']);
+
+        $this->assertStringNotContainsString('pb-entry-icon', $html);
+        $this->assertStringNotContainsString('onerror', $html);
+    }
+
+    #[Test]
+    public function helpersForUrlsAndSearch(): void
+    {
+        $this->assertSame('pbook.php?tmp_start=10&tmp_search=M%C3%B6we', pb_url_with('pbook.php', ['tmp_start' => 10, 'tmp_where' => '', 'tmp_search' => 'Möwe']));
+        $this->assertSame('pbook.php', pb_url_with('pbook.php', ['tmp_start' => 0]));
+        $this->assertSame('index.php?page=gb&page=release', pb_url_with('index.php?page=gb', ['page' => 'release']));
+        $this->assertSame('100!% sicher!_ !!', pb_like_escape('100% sicher_ !'));
+        $this->assertSame('https://gb.example/admin/', pb_admin_url('https://gb.example/admin/'));
     }
 
     // ========================================
@@ -286,17 +324,11 @@ class FunctionsTest extends TestCase
 
     protected function setUp(): void
     {
-        // functions.inc.php is autoloaded via composer
-        // Reset globals for formatText tests
-        $GLOBALS['config_text_format'] = 'N';
-        $GLOBALS['config_smilies'] = 'N';
+        // functions.inc.php wird über Composer geladen.
     }
 
     protected function tearDown(): void
     {
-        // Reset globals
-        $GLOBALS['config_text_format'] = 'N';
-        $GLOBALS['config_smilies'] = 'N';
         unset($_SERVER['REMOTE_ADDR']);
     }
 }

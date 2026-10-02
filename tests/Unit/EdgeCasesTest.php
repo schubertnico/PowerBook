@@ -230,37 +230,47 @@ class EdgeCasesTest extends TestCase
     // ========================================
 
     #[Test]
-    public function validateGuestbookEntryWithWhitespaceOnlyName(): void
+    public function validateEntryWithWhitespaceOnlyName(): void
     {
-        $errors = validateGuestbookEntry('   ', 'Valid text', '');
+        $errors = pb_validate_entry(pb_normalize_entry(['name' => '   ', 'text' => 'Valid text']));
 
         $this->assertArrayHasKey('name', $errors);
     }
 
     #[Test]
-    public function validateGuestbookEntryWithWhitespaceOnlyText(): void
+    public function validateEntryWithWhitespaceOnlyText(): void
     {
-        $errors = validateGuestbookEntry('Valid Name', '   ', '');
+        $errors = pb_validate_entry(pb_normalize_entry(['name' => 'Valid Name', 'text' => '   ']));
 
         $this->assertArrayHasKey('text', $errors);
     }
 
     #[Test]
-    public function validateGuestbookEntryWithTabsOnly(): void
+    public function validateEntryWithTabsOnly(): void
     {
-        $errors = validateGuestbookEntry("\t\t", "\t\t", '');
+        $errors = pb_validate_entry(pb_normalize_entry(['name' => "\t\t", 'text' => "\t\t"]));
 
         $this->assertArrayHasKey('name', $errors);
         $this->assertArrayHasKey('text', $errors);
     }
 
     #[Test]
-    public function validateGuestbookEntryWithNewlinesOnly(): void
+    public function validateEntryWithNewlinesOnly(): void
     {
-        $errors = validateGuestbookEntry("\n\n", "\n\n", '');
+        $errors = pb_validate_entry(pb_normalize_entry(['name' => "\n\n", 'text' => "\r\n\r\n"]));
 
         $this->assertArrayHasKey('name', $errors);
         $this->assertArrayHasKey('text', $errors);
+    }
+
+    #[Test]
+    public function validateEntryWithInvalidUtf8(): void
+    {
+        $data = pb_normalize_entry(['name' => "Ole\xC3", 'text' => "Text\xFF"]);
+
+        $this->assertTrue(mb_check_encoding($data['name'], 'UTF-8'));
+        $this->assertTrue(mb_check_encoding($data['text'], 'UTF-8'));
+        $this->assertSame([], pb_validate_entry($data));
     }
 
     // ========================================

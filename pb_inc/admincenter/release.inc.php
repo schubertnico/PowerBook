@@ -1,7 +1,12 @@
 <?php
 /**
  * PowerBook - PHP Guestbook System
- * Entry Release/Approval
+ * AdminCenter: Einträge freischalten
+ *
+ * Liste der wartenden Einträge mit Auswahl. „Ausgewählte freischalten“
+ * veröffentlicht nur die ausgewählten Einträge, „Ausgewählte löschen“ fragt
+ * auf einer eigenen Seite nach und entfernt dann Spam und unerwünschte
+ * Einträge. Recht: Einträge freischalten.
  *
  * @license MIT
  * @copyright PowerScripts.org
@@ -16,141 +21,191 @@ require_once __DIR__ . '/layout.inc.php';
 // Variables from parent scope (index.php)
 /** @var PDO $pdo */
 /** @var string $pb_entries */
-/** @var array $admin_session */
-/** @var string $config_icons */
-/** @var string $config_text_format */
-/** @var string $config_smilies */
-/** @var string $db_statement */
+/** @var array<string, mixed> $admin_session */
+$admin_session ??= [];
 
-// Check permission
-if (($admin_session['release'] ?? 'N') !== 'Y') {
-    pb_admin_card_open('Einträge freischalten');
-    echo pb_admin_alert('Sie haben keine Berechtigung für die Eintrags-Freischaltung.', 'danger');
+if (!pb_admin_can($admin_session, 'release')) {
+    pb_admin_card_open('Einträge freischalten', 'pbRelease');
+    echo pb_admin_alert('Sie haben keine Berechtigung, Einträge freizuschalten.', 'danger');
     pb_admin_card_close();
 
     return;
 }
 
-$message = '';
-$messageType = '';
-$action = $_POST['action'] ?? '';
-
-// Release all entries
-if ($action === 'release_all' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
-    try {
-        $stmt = $pdo->prepare("UPDATE {$pb_entries} SET status = 'R' WHERE status = 'U'");
-        $stmt->execute();
-        $affected = $stmt->rowCount();
-        $message = "Alle Einträge ({$affected}) erfolgreich freigeschaltet.";
-        $messageType = 'success';
-    } catch (PDOException $e) {
-        logDbError('Release all entries: ' . $e->getMessage());
-        $message = 'Datenbankfehler beim Freischalten der Einträge.';
-        $messageType = 'error';
-    }
-    regenerateCsrfToken();
-}
-
-// Release single entry
-if ($action === 'release_one' && validateCsrfToken($_POST['csrf_token'] ?? '')) {
-    $entry_id = (int) ($_POST['entry_id'] ?? 0);
-    if ($entry_id > 0) {
-        try {
-            $stmt = $pdo->prepare("UPDATE {$pb_entries} SET status = 'R' WHERE id = ?");
-            $stmt->execute([$entry_id]);
-            $message = 'Eintrag erfolgreich freigeschaltet.';
-            $messageType = 'success';
-        } catch (PDOException $e) {
-            logDbError('Release single entry: ' . $e->getMessage());
-            $message = 'Datenbankfehler beim Freischalten des Eintrags.';
-            $messageType = 'error';
+$canEdit = pb_admin_can($admin_session, 'entries');
+$action = is_string($_POST['action'] ?? null) ? $_POST['action'] : '';
+$selectedIds = [];
+if (isset($_POST['ids']) && is_array($_POST['ids'])) {
+    foreach ($_POST['ids'] as $rawId) {
+        $selectedId = is_scalar($rawId) ? (int) $rawId : 0;
+        if ($selectedId > 0) {
+            $selectedIds[$selectedId] = $selectedId;
         }
-    } else {
-        $message = 'Bitte wählen Sie einen Eintrag aus.';
-        $messageType = 'error';
-    }
-    regenerateCsrfToken();
-}
-
-// Get unreleased entries
-try {
-    $stmt = $pdo->prepare("SELECT * FROM {$pb_entries} WHERE status = 'U' ORDER BY id DESC");
-    $stmt->execute();
-    $unreleasedEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $count_unreleased = count($unreleasedEntries);
-} catch (PDOException $e) {
-    logDbError('Load unreleased entries: ' . $e->getMessage());
-    $unreleasedEntries = [];
-    $count_unreleased = 0;
-    if (empty($message)) {
-        $message = 'Datenbankfehler beim Laden der Einträge.';
-        $messageType = 'error';
     }
 }
+$selectedIds = array_values($selectedIds);
+$confirmEntries = [];
 
-pb_admin_card_open('Einträge freischalten');
-
-if (!empty($message)) {
-    echo pb_admin_alert(e($message), pb_admin_message_type($messageType));
+if ($action !== '' && !validateCsrfToken(is_string($_POST['csrf_token'] ?? null) ? $_POST['csrf_token'] : '')) {
+    logCsrfFailure('admin_release');
+    pb_admin_flash('danger', pb_admin_csrf_message());
+    $action = '';
 }
 
-if ($count_unreleased === 0) { ?>
-<div class="alert alert-info text-center" role="status"><b>Keine Einträge zum Freischalten vorhanden!</b></div>
-<?php } else { ?>
+if (in_array($action, ['release', 'delete_confirm', 'delete'], true) && $selectedIds === []) {
+    pb_admin_flash('danger', 'Bitte wählen Sie mindestens einen Eintrag aus.');
+    $action = '';
+}
+
+if ($action !== '') {
+    $placeholders = implode(',', array_fill(0, count($selectedIds), '?'));
+
+    try {
+        if ($action === 'release') {
+            $stmt = $pdo->prepare("UPDATE {$pb_entries} SET status = 'R' WHERE status = 'U' AND id IN ({$placeholders})");
+            $stmt->execute($selectedIds);
+            $done = $stmt->rowCount();
+            if ($done === 0) {
+                pb_admin_flash('info', 'Die ausgewählten Einträge waren schon freigeschaltet oder gelöscht.');
+            } elseif ($done === 1) {
+                pb_admin_flash('success', 'Ein Eintrag wurde freigeschaltet. Er steht jetzt im Gästebuch.');
+            } else {
+                pb_admin_flash('success', $done . ' Einträge wurden freigeschaltet. Sie stehen jetzt im Gästebuch.');
+            }
+            pb_admin_redirect('?page=release');
+        }
+
+        if ($action === 'delete') {
+            $stmt = $pdo->prepare("DELETE FROM {$pb_entries} WHERE status = 'U' AND id IN ({$placeholders})");
+            $stmt->execute($selectedIds);
+            $done = $stmt->rowCount();
+            if ($done === 0) {
+                pb_admin_flash('info', 'Die ausgewählten Einträge gibt es nicht mehr oder sie sind schon freigeschaltet.');
+            } elseif ($done === 1) {
+                pb_admin_flash('success', 'Ein Eintrag wurde gelöscht.');
+            } else {
+                pb_admin_flash('success', $done . ' Einträge wurden gelöscht.');
+            }
+            pb_admin_redirect('?page=release');
+        }
+
+        if ($action === 'delete_confirm') {
+            $stmt = $pdo->prepare("SELECT * FROM {$pb_entries} WHERE status = 'U' AND id IN ({$placeholders}) ORDER BY date DESC, id DESC");
+            $stmt->execute($selectedIds);
+            $confirmEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if ($confirmEntries === []) {
+                pb_admin_flash('info', 'Die ausgewählten Einträge gibt es nicht mehr oder sie sind schon freigeschaltet.');
+            }
+        }
+    } catch (PDOException $e) {
+        logDbError('Release ' . $action . ': ' . $e->getMessage());
+        pb_admin_flash('danger', 'Die Aktion ist fehlgeschlagen (Datenbankfehler).');
+        $confirmEntries = [];
+    }
+}
+
+pb_admin_card_open('Einträge freischalten', 'pbRelease');
+
+// --- Rückfrage vor dem Löschen ---------------------------------------------
+if ($confirmEntries !== []) {
+    $confirmCount = count($confirmEntries);
+    ?>
+<div id="pbDeleteQuestion" class="alert alert-danger" role="alert">
+    <h3 class="h6 mb-2"><?= $confirmCount === 1 ? 'Diesen Eintrag wirklich löschen?' : 'Diese ' . $confirmCount . ' Einträge wirklich löschen?' ?></h3>
+    <p class="mb-2"><?= $confirmCount === 1
+        ? 'Der Eintrag wird endgültig gelöscht und erscheint nie im Gästebuch.'
+        : 'Die Einträge werden endgültig gelöscht und erscheinen nie im Gästebuch.' ?> Das lässt sich nicht rückgängig machen.</p>
+    <ul class="mb-3">
+        <?php foreach ($confirmEntries as $entry) {
+            $excerpt = trim(preg_replace('/\s+/u', ' ', (string) ($entry['text'] ?? '')) ?? '');
+            if (mb_strlen($excerpt) > 80) {
+                $excerpt = rtrim(mb_substr($excerpt, 0, 80)) . ' …';
+            }
+            include __DIR__ . '/entry.inc.php';
+            ?>
+        <li><b><?= $entryName ?></b>, <?= $date ?>: <i><?= e($excerpt) ?></i></li>
+        <?php } ?>
+    </ul>
+    <div class="d-flex flex-wrap gap-2">
+        <form action="?page=release" method="post" class="d-inline">
+            <?= csrfField() ?>
+            <input type="hidden" name="action" value="delete">
+            <?php foreach ($confirmEntries as $confirmEntry) { ?>
+            <input type="hidden" name="ids[]" value="<?= (int) $confirmEntry['id'] ?>">
+            <?php } ?>
+            <button type="submit" id="pbDeleteConfirm" class="btn btn-danger">Ja, endgültig löschen</button>
+        </form>
+        <a id="pbDeleteCancel" class="btn btn-outline-secondary" href="?page=release">Abbrechen</a>
+    </div>
+</div>
+    <?php
+    pb_admin_card_close();
+
+    return;
+}
+
+// --- Liste der wartenden Einträge -------------------------------------------
+$stmt = $pdo->query("SELECT * FROM {$pb_entries} WHERE status = 'U' ORDER BY date DESC, id DESC");
+$pendingEntries = $stmt !== false ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+$pendingCount = count($pendingEntries);
+
+if ($pendingCount === 0) { ?>
+<div id="pbReleaseEmpty" class="alert alert-info" role="status">Keine Einträge warten auf Freischaltung.</div>
+<?php
+    pb_admin_card_close();
+
+    return;
+}
+?>
 
 <p>
-Um einen Eintrag freizuschalten (d.h., ihn allen Besuchern sichtbar zu machen),
-wählen Sie einen Eintrag aus und klicken Sie auf "Eintrag freischalten".
-Um alle Einträge auf einmal freizuschalten, klicken Sie auf "Alle freischalten".
+Diese Einträge sind im Gästebuch noch nicht zu sehen. Wählen Sie Einträge aus und klicken Sie auf
+„Ausgewählte freischalten“. Spam und unerwünschte Einträge entfernen Sie mit „Ausgewählte löschen“.
 </p>
 
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-    <div>
-        <?php if ($count_unreleased === 1) { ?>
-            Es gibt <span class="badge bg-warning text-dark fs-6">1</span> nicht freigegebenen Eintrag.
-        <?php } else { ?>
-            Es gibt <span class="badge bg-warning text-dark fs-6"><?= $count_unreleased ?></span> nicht freigegebene Einträge.
-        <?php } ?>
-    </div>
-    <form action="?page=release" method="post" class="mb-0">
-        <?= csrfField() ?>
-        <input type="hidden" name="action" value="release_all">
-        <button type="submit" class="btn btn-success">Alle freischalten</button>
-    </form>
-</div>
+<p id="pbReleaseCount">
+    <?= $pendingCount === 1 ? 'Es wartet' : 'Es warten' ?>
+    <span class="badge text-bg-warning fs-6"><?= $pendingCount ?></span>
+    <?= $pendingCount === 1 ? 'Eintrag' : 'Einträge' ?> auf Freischaltung.
+</p>
 
-<form action="?page=release" method="post">
+<form id="pbReleaseForm" action="?page=release" method="post">
 <?= csrfField() ?>
-<input type="hidden" name="action" value="release_one">
 
-<?php foreach ($unreleasedEntries as $entry) {
-    // Process entry for display
+<?php foreach ($pendingEntries as $entry) {
     include __DIR__ . '/entry.inc.php';
+    $isChecked = in_array($entryId, $selectedIds, true);
     ?>
-<article class="card pb-entry-card shadow-sm mb-3">
+<article id="pbEntry<?= $entryId ?>" class="card pb-entry-card shadow-sm mb-3 border-warning" data-status="U">
     <header class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <div class="d-flex align-items-center">
-            <div class="form-check me-3 mb-0">
-                <input id="entry_<?= (int) $entry['id'] ?>" class="form-check-input" type="radio" name="entry_id" value="<?= (int) $entry['id'] ?>">
-                <label for="entry_<?= (int) $entry['id'] ?>" class="form-check-label visually-hidden">Eintrag <?= (int) $entry['id'] ?> auswählen</label>
-            </div>
+        <span class="d-flex flex-wrap align-items-center gap-3">
+            <span class="form-check mb-0">
+                <input id="pbReleaseCheck<?= $entryId ?>" class="form-check-input" type="checkbox" name="ids[]" value="<?= $entryId ?>"<?= $isChecked ? ' checked' : '' ?>>
+                <label for="pbReleaseCheck<?= $entryId ?>" class="form-check-label">Auswählen</label>
+            </span>
             <span><?= $show_icon ?><b><?= $date ?></b>, <small class="text-body-secondary"><?= $time ?></small></span>
-        </div>
-        <span class="text-end"><?= $email_name ?></span>
+        </span>
+        <span class="d-flex flex-wrap align-items-center gap-2 text-end">
+            <b class="pb-entry-name"><?= $entryName ?></b>
+            <?= $entryEmailLink ?>
+            <?= $statusBadge ?>
+        </span>
     </header>
-    <div class="card-body"><?= $entry['text'] ?></div>
+    <div class="card-body"><?= $entryText ?><?= $answerHtml ?></div>
     <footer class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <a class="btn btn-outline-primary btn-sm" href="?page=edit&amp;edit_id=<?= (int) $entry['id'] ?>">Bearbeiten/Löschen</a>
-        <div class="d-flex flex-wrap gap-2"><?= $url ?> <?= $show_icq ?></div>
+        <small class="text-body-secondary">IP-Adresse: <code><?= $ip ?></code> &middot; Homepage: <?= $homepage_link ?></small>
+        <?php if ($canEdit) { ?>
+        <a id="pbEntryEdit<?= $entryId ?>" class="btn btn-outline-primary btn-sm" href="?page=edit&amp;edit_id=<?= $entryId ?>&amp;return=release">Bearbeiten</a>
+        <?php } ?>
     </footer>
 </article>
 <?php } ?>
 
-<div class="d-flex justify-content-center">
-    <button type="submit" class="btn btn-primary">Ausgewählten Eintrag freischalten</button>
+<div class="d-flex flex-wrap gap-2 mt-3">
+    <button type="submit" id="pbReleaseSelected" name="action" value="release" class="btn btn-success">Ausgewählte freischalten</button>
+    <button type="submit" id="pbDeleteSelected" name="action" value="delete_confirm" class="btn btn-outline-danger">Ausgewählte löschen</button>
 </div>
 </form>
 
-<?php }
-
+<?php
 pb_admin_card_close();

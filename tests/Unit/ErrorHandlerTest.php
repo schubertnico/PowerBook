@@ -11,250 +11,24 @@ declare(strict_types=1);
 
 namespace PowerBook\Tests\Unit;
 
-use PDO;
-use PDOException;
 use PHPUnit\Framework\Attributes\CoversFunction;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
-#[CoversFunction('safeDbOperation')]
-#[CoversFunction('safeDbTransaction')]
+#[CoversFunction('pb_log_dir')]
+#[CoversFunction('pb_log_write')]
+#[CoversFunction('pb_log_shorten_name')]
 #[CoversFunction('logDbError')]
 #[CoversFunction('logSecurityEvent')]
 #[CoversFunction('logCsrfFailure')]
 #[CoversFunction('logFailedLogin')]
 #[CoversFunction('logSuccessfulLogin')]
-#[CoversFunction('logFormSubmission')]
-#[CoversFunction('displayAdminError')]
-#[CoversFunction('handleAdminException')]
-#[CoversFunction('sendEmail')]
 #[CoversFunction('logEmailError')]
 #[CoversFunction('rotateLogIfNeeded')]
-#[CoversFunction('cleanOldLogs')]
-#[CoversFunction('getLogStats')]
 class ErrorHandlerTest extends TestCase
 {
     /** @var array<string, string|null> */
     private array $originalServer = [];
-
-    // ========================================
-    // Tests for safeDbOperation()
-    // ========================================
-
-    #[Test]
-    public function safeDbOperationReturnsResultOnSuccess(): void
-    {
-        $result = safeDbOperation(function () {
-            return 'success';
-        });
-
-        $this->assertSame('success', $result);
-    }
-
-    #[Test]
-    public function safeDbOperationReturnsNullFromCallable(): void
-    {
-        $result = safeDbOperation(function () {});
-
-        $this->assertNull($result);
-    }
-
-    #[Test]
-    public function safeDbOperationReturnsArrayFromCallable(): void
-    {
-        $result = safeDbOperation(function () {
-            return ['id' => 1, 'name' => 'test'];
-        });
-
-        $this->assertSame(['id' => 1, 'name' => 'test'], $result);
-    }
-
-    #[Test]
-    public function safeDbOperationThrowsRuntimeExceptionOnPdoException(): void
-    {
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Datenbankfehler');
-
-        safeDbOperation(function () {
-            throw new PDOException('Some DB error');
-        });
-    }
-
-    #[Test]
-    public function safeDbOperationUsesCustomErrorMessage(): void
-    {
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Custom error message');
-
-        safeDbOperation(function () {
-            throw new PDOException('Some DB error');
-        }, 'Custom error message');
-    }
-
-    #[Test]
-    public function safeDbOperationThrowsInstallationRequiredForTableNotFound(): void
-    {
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Installation erforderlich');
-
-        safeDbOperation(function () {
-            throw new PDOException("Table 'powerbook.entries' doesn't exist");
-        });
-    }
-
-    #[Test]
-    public function safeDbOperationThrowsInstallationRequiredForBaseTableNotFound(): void
-    {
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Installation erforderlich');
-
-        safeDbOperation(function () {
-            throw new PDOException('Base table or view not found: 1146');
-        });
-    }
-
-    #[Test]
-    public function safeDbOperationWorksWithRealPdoQuery(): void
-    {
-        $pdo = new PDO('sqlite::memory:');
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->exec('CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)');
-        $pdo->exec("INSERT INTO test (name) VALUES ('hello')");
-
-        $result = safeDbOperation(function () use ($pdo) {
-            $stmt = $pdo->query('SELECT name FROM test WHERE id = 1');
-
-            return $stmt->fetchColumn();
-        });
-
-        $this->assertSame('hello', $result);
-    }
-
-    // ========================================
-    // Tests for safeDbTransaction()
-    // ========================================
-
-    #[Test]
-    public function safeDbTransactionCommitsOnSuccess(): void
-    {
-        $pdo = new PDO('sqlite::memory:');
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->exec('CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)');
-
-        $result = safeDbTransaction($pdo, function () use ($pdo) {
-            $pdo->exec("INSERT INTO test (name) VALUES ('txn_test')");
-
-            return 'committed';
-        });
-
-        $this->assertSame('committed', $result);
-
-        // Verify the data was actually committed
-        $stmt = $pdo->query('SELECT name FROM test WHERE name = \'txn_test\'');
-        $this->assertSame('txn_test', $stmt->fetchColumn());
-    }
-
-    #[Test]
-    public function safeDbTransactionRollsBackOnPdoException(): void
-    {
-        $pdo = new PDO('sqlite::memory:');
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->exec('CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)');
-
-        try {
-            safeDbTransaction($pdo, function () use ($pdo) {
-                $pdo->exec("INSERT INTO test (name) VALUES ('should_rollback')");
-
-                throw new PDOException('Transaction failed');
-            });
-        } catch (RuntimeException) {
-            // Expected
-        }
-
-        // Verify the data was rolled back
-        $stmt = $pdo->query("SELECT COUNT(*) FROM test WHERE name = 'should_rollback'");
-        $this->assertSame(0, (int) $stmt->fetchColumn());
-    }
-
-    #[Test]
-    public function safeDbTransactionThrowsRuntimeExceptionOnPdoException(): void
-    {
-        $pdo = new PDO('sqlite::memory:');
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Datenbankfehler');
-
-        safeDbTransaction($pdo, function () {
-            throw new PDOException('DB error');
-        });
-    }
-
-    #[Test]
-    public function safeDbTransactionUsesCustomErrorMessage(): void
-    {
-        $pdo = new PDO('sqlite::memory:');
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Transaction failed badly');
-
-        safeDbTransaction($pdo, function () {
-            throw new PDOException('DB error');
-        }, 'Transaction failed badly');
-    }
-
-    #[Test]
-    public function safeDbTransactionRethrowsGenericException(): void
-    {
-        $pdo = new PDO('sqlite::memory:');
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->exec('CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)');
-
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Bad argument');
-
-        safeDbTransaction($pdo, function () use ($pdo) {
-            $pdo->exec("INSERT INTO test (name) VALUES ('should_rollback')");
-
-            throw new \InvalidArgumentException('Bad argument');
-        });
-    }
-
-    #[Test]
-    public function safeDbTransactionRollsBackOnGenericException(): void
-    {
-        $pdo = new PDO('sqlite::memory:');
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $pdo->exec('CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)');
-
-        try {
-            safeDbTransaction($pdo, function () use ($pdo) {
-                $pdo->exec("INSERT INTO test (name) VALUES ('generic_rollback')");
-
-                throw new \LogicException('Logic error');
-            });
-        } catch (\LogicException) {
-            // Expected
-        }
-
-        $stmt = $pdo->query("SELECT COUNT(*) FROM test WHERE name = 'generic_rollback'");
-        $this->assertSame(0, (int) $stmt->fetchColumn());
-    }
-
-    #[Test]
-    public function safeDbTransactionReturnsResultOnSuccess(): void
-    {
-        $pdo = new PDO('sqlite::memory:');
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        $result = safeDbTransaction($pdo, function () {
-            return 42;
-        });
-
-        $this->assertSame(42, $result);
-    }
 
     // ========================================
     // Tests for logDbError()
@@ -455,223 +229,6 @@ class ErrorHandlerTest extends TestCase
     }
 
     // ========================================
-    // Tests for logFormSubmission()
-    // ========================================
-
-    #[Test]
-    public function logFormSubmissionWithSuccessDoesNotThrow(): void
-    {
-        logFormSubmission('contact_form', true, ['name' => 'John']);
-
-        $this->assertTrue(true);
-    }
-
-    #[Test]
-    public function logFormSubmissionWithFailureDoesNotThrow(): void
-    {
-        logFormSubmission('contact_form', false, ['name' => 'John']);
-
-        $this->assertTrue(true);
-    }
-
-    #[Test]
-    public function logFormSubmissionStripesSensitiveData(): void
-    {
-        // This should not throw and should remove sensitive keys internally
-        logFormSubmission('login_form', true, [
-            'username' => 'admin',
-            'password' => 'secret123',
-            'password1' => 'secret123',
-            'password2' => 'secret123',
-            'csrf_token' => 'abc123token',
-        ]);
-
-        $this->assertTrue(true);
-    }
-
-    #[Test]
-    public function logFormSubmissionWithEmptyData(): void
-    {
-        logFormSubmission('empty_form', true);
-
-        $this->assertTrue(true);
-    }
-
-    #[Test]
-    public function logFormSubmissionWithMissingRemoteAddr(): void
-    {
-        unset($_SERVER['REMOTE_ADDR']);
-
-        logFormSubmission('test_form', false, ['field' => 'value']);
-
-        $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
-
-        $this->assertTrue(true);
-    }
-
-    // ========================================
-    // Tests for displayAdminError()
-    // ========================================
-
-    #[Test]
-    public function displayAdminErrorOutputsHtml(): void
-    {
-        ob_start();
-        displayAdminError('Test error message');
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString('Fehler:', $output);
-        $this->assertStringContainsString('Test error message', $output);
-        $this->assertStringContainsString('<tr bgcolor="#001329">', $output);
-    }
-
-    #[Test]
-    public function displayAdminErrorEscapesHtmlInMessage(): void
-    {
-        ob_start();
-        displayAdminError('<script>alert("xss")</script>');
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString('&lt;script&gt;', $output);
-        $this->assertStringNotContainsString('<script>alert', $output);
-    }
-
-    #[Test]
-    public function displayAdminErrorContainsBackLink(): void
-    {
-        ob_start();
-        displayAdminError('Some error');
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString('javascript:history.back()', $output);
-        $this->assertStringContainsString('Zurück', $output);
-    }
-
-    #[Test]
-    public function displayAdminErrorHandlesEmptyMessage(): void
-    {
-        ob_start();
-        displayAdminError('');
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString('Fehler:', $output);
-    }
-
-    #[Test]
-    public function displayAdminErrorHandlesSpecialCharacters(): void
-    {
-        ob_start();
-        displayAdminError('Error with "quotes" & <tags>');
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString('&amp;', $output);
-        $this->assertStringContainsString('&quot;', $output);
-        $this->assertStringContainsString('&lt;tags&gt;', $output);
-    }
-
-    // ========================================
-    // Tests for handleAdminException()
-    // ========================================
-
-    #[Test]
-    public function handleAdminExceptionOutputsGenericError(): void
-    {
-        $exception = new \Exception('Internal details');
-
-        ob_start();
-        handleAdminException($exception, 'test_context');
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString('Ein Fehler ist aufgetreten', $output);
-        // Internal details should NOT be shown to user
-        $this->assertStringNotContainsString('Internal details', $output);
-    }
-
-    #[Test]
-    public function handleAdminExceptionWithEmptyContext(): void
-    {
-        $exception = new \RuntimeException('DB connection lost');
-
-        ob_start();
-        handleAdminException($exception);
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString('Ein Fehler ist aufgetreten', $output);
-    }
-
-    #[Test]
-    public function handleAdminExceptionHandlesThrowableInterface(): void
-    {
-        $error = new \Error('Fatal error');
-
-        ob_start();
-        handleAdminException($error, 'fatal');
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString('Fehler:', $output);
-    }
-
-    #[Test]
-    public function handleAdminExceptionOutputsHtmlStructure(): void
-    {
-        $exception = new \Exception('test');
-
-        ob_start();
-        handleAdminException($exception, 'admin_panel');
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString('<tr bgcolor="#001329">', $output);
-        $this->assertStringContainsString('</td></tr>', $output);
-    }
-
-    // ========================================
-    // Tests for sendEmail()
-    // ========================================
-
-    #[Test]
-    public function sendEmailReturnsFalseForEmptyRecipient(): void
-    {
-        $result = sendEmail('', 'Subject', 'Body');
-
-        $this->assertFalse($result);
-    }
-
-    #[Test]
-    public function sendEmailReturnsFalseForNewlineOnlyRecipient(): void
-    {
-        $result = sendEmail("\r\n", 'Subject', 'Body');
-
-        $this->assertFalse($result);
-    }
-
-    #[Test]
-    public function sendEmailReturnsFalseForInjectionAttempt(): void
-    {
-        // After sanitization, if the result is non-empty, mail() will be called
-        // but with newlines stripped. We test with only newlines which becomes empty.
-        $result = sendEmail("\n\r\n\r", 'Subject', 'Body', '', 'test');
-
-        $this->assertFalse($result);
-    }
-
-    #[Test]
-    public function sendEmailWithContextDoesNotThrow(): void
-    {
-        // Empty recipient to avoid actually calling mail()
-        $result = sendEmail('', 'Subject', 'Body', '', 'Password Recovery');
-
-        $this->assertFalse($result);
-    }
-
-    #[Test]
-    public function sendEmailWithEmptyContextDoesNotThrow(): void
-    {
-        $result = sendEmail('', 'Subject', 'Body', '', '');
-
-        $this->assertFalse($result);
-    }
-
-    // ========================================
     // Tests for logEmailError()
     // ========================================
 
@@ -834,140 +391,87 @@ class ErrorHandlerTest extends TestCase
     }
 
     // ========================================
-    // Tests for cleanOldLogs()
+    // Tests for pb_log_write() / pb_log_shorten_name() (A31)
     // ========================================
 
     #[Test]
-    public function cleanOldLogsDoesNotThrow(): void
+    public function pbLogWriteAppendsLineAndReplacesNewlines(): void
     {
-        // Uses the actual logs directory. Just test it doesn't throw.
-        cleanOldLogs(30);
+        $file = 'test_write_' . uniqid() . '.log';
+        $path = pb_log_dir() . '/' . $file;
 
-        $this->assertTrue(true);
+        pb_log_write($file, "Zeile eins\nGefälschte Zeile\r\nEnde");
+
+        $this->assertFileExists($path);
+        $content = (string) file_get_contents($path);
+        $this->assertSame("Zeile eins Gefälschte Zeile Ende\n", $content);
+
+        @unlink($path);
     }
 
     #[Test]
-    public function cleanOldLogsWithZeroDaysDoesNotThrow(): void
+    public function pbLogWriteStripsDirectoryFromFileName(): void
     {
-        cleanOldLogs(0);
+        $file = 'test_base_' . uniqid() . '.log';
 
-        $this->assertTrue(true);
+        pb_log_write('../' . $file, 'x');
+
+        $this->assertFileExists(pb_log_dir() . '/' . $file);
+        $this->assertFileDoesNotExist(dirname(pb_log_dir()) . '/' . $file);
+
+        @unlink(pb_log_dir() . '/' . $file);
     }
 
     #[Test]
-    public function cleanOldLogsWithLargeMaxAgeDoesNotThrow(): void
+    public function pbLogWriteRotatesEveryLog(): void
     {
-        cleanOldLogs(365);
+        $file = 'test_rotate_' . uniqid() . '.log';
+        $path = pb_log_dir() . '/' . $file;
+        file_put_contents($path, str_repeat('X', 5242880));
 
-        $this->assertTrue(true);
+        pb_log_write($file, 'neu');
+
+        $this->assertFileExists($path . '.1');
+        $this->assertSame("neu\n", file_get_contents($path));
+
+        @unlink($path);
+        @unlink($path . '.1');
     }
 
     #[Test]
-    public function cleanOldLogsRemovesOldRotatedFiles(): void
+    public function pbLogShortenNameKeepsThreeCharactersAndHash(): void
     {
-        $logsDir = POWERBOOK_ROOT . '/logs';
-        $testFile = $logsDir . '/test_cleanup.log.1';
+        $short = pb_log_shorten_name('Moewenblick2026');
 
-        // Create a rotated log file with an old modification time
-        file_put_contents($testFile, 'old log data');
-        // Set modification time to 60 days ago
-        touch($testFile, time() - (60 * 86400));
-
-        cleanOldLogs(30);
-
-        $this->assertFileDoesNotExist($testFile);
+        $this->assertStringStartsWith('Moe…', $short);
+        $this->assertStringNotContainsString('wenblick', $short);
+        $this->assertMatchesRegularExpression('/ #[a-f0-9]{8}$/', $short);
     }
 
     #[Test]
-    public function cleanOldLogsKeepsRecentRotatedFiles(): void
+    public function pbLogShortenNameIsStableAndCaseInsensitive(): void
     {
-        $logsDir = POWERBOOK_ROOT . '/logs';
-        $testFile = $logsDir . '/test_keep.log.1';
-
-        // Create a rotated log file with a recent modification time
-        file_put_contents($testFile, 'recent log data');
-        // Modification time is now (recent)
-
-        cleanOldLogs(30);
-
-        $this->assertFileExists($testFile);
-
-        @unlink($testFile);
-    }
-
-    // ========================================
-    // Tests for getLogStats()
-    // ========================================
-
-    #[Test]
-    public function getLogStatsReturnsArrayWithExpectedKeys(): void
-    {
-        $stats = getLogStats();
-
-        $this->assertIsArray($stats);
-        $this->assertArrayHasKey('error.log', $stats);
-        $this->assertArrayHasKey('forms.log', $stats);
-        $this->assertArrayHasKey('security.log', $stats);
+        $this->assertSame(
+            substr(pb_log_shorten_name('Anke'), -9),
+            substr(pb_log_shorten_name('ANKE'), -9)
+        );
+        $this->assertSame('', pb_log_shorten_name('   '));
+        $this->assertStringStartsWith('Ole #', pb_log_shorten_name('Ole'));
     }
 
     #[Test]
-    public function getLogStatsContainsSizeAndLinesForEachFile(): void
+    public function logFailedLoginDoesNotWriteFullName(): void
     {
-        $stats = getLogStats();
+        $path = pb_log_dir() . '/security.log';
+        $before = is_file($path) ? (int) filesize($path) : 0;
 
-        foreach (['error.log', 'forms.log', 'security.log'] as $logFile) {
-            $this->assertArrayHasKey('size', $stats[$logFile]);
-            $this->assertArrayHasKey('lines', $stats[$logFile]);
-            $this->assertArrayHasKey('last_modified', $stats[$logFile]);
-        }
-    }
+        logFailedLogin('GeheimesPasswort123');
 
-    #[Test]
-    public function getLogStatsSizeIsNonNegative(): void
-    {
-        $stats = getLogStats();
-
-        foreach ($stats as $logFile => $info) {
-            $this->assertGreaterThanOrEqual(0, $info['size'], "Size for {$logFile} should be non-negative");
-        }
-    }
-
-    #[Test]
-    public function getLogStatsLinesIsNonNegative(): void
-    {
-        $stats = getLogStats();
-
-        foreach ($stats as $logFile => $info) {
-            $this->assertGreaterThanOrEqual(0, $info['lines'], "Lines for {$logFile} should be non-negative");
-        }
-    }
-
-    #[Test]
-    public function getLogStatsReturnsZerosForMissingFile(): void
-    {
-        $stats = getLogStats();
-
-        // forms.log may not exist; if so, it should have zero values
-        if (!file_exists(POWERBOOK_ROOT . '/logs/forms.log')) {
-            $this->assertSame(0, $stats['forms.log']['size']);
-            $this->assertSame(0, $stats['forms.log']['lines']);
-            $this->assertFalse($stats['forms.log']['last_modified']);
-        } else {
-            // If it exists, size should be positive
-            $this->assertGreaterThan(0, $stats['forms.log']['size']);
-        }
-    }
-
-    #[Test]
-    public function getLogStatsExistingFileHasValidLastModified(): void
-    {
-        $stats = getLogStats();
-
-        // error.log is known to exist (we wrote to it during tests)
-        if (file_exists(POWERBOOK_ROOT . '/logs/error.log')) {
-            $this->assertIsInt($stats['error.log']['last_modified']);
-            $this->assertGreaterThan(0, $stats['error.log']['last_modified']);
-        }
+        clearstatcache();
+        $added = (string) file_get_contents($path, false, null, $before);
+        $this->assertStringContainsString('LOGIN_FAILED', $added);
+        $this->assertStringNotContainsString('GeheimesPasswort123', $added);
+        $this->assertStringContainsString('Geh…', $added);
     }
 
     protected function setUp(): void

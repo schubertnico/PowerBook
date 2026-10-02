@@ -9,7 +9,6 @@
  * - pb_inc/database.inc.php (verifyAndMigratePassword)
  * - pb_inc/config.inc.php (config loading)
  * - pb_inc/admincenter/index.php (admin login flow, session, page routing)
- * - pb_inc/admincenter/admins.inc.php (add/edit/delete admin)
  * - pb_inc/admincenter/release.inc.php (release entries)
  * - pbook.php (main entry point)
  *
@@ -223,10 +222,11 @@ class CoverageBoostTest extends TestCase
         // Preview should show the entry content
         $this->assertStringContainsString('PreviewUser', $output);
         $this->assertStringContainsString('preview test entry', $output);
-        // Should show the submit form with hidden fields
-        $this->assertStringContainsString('name="add_entry"', $output);
-        $this->assertStringContainsString('value="yes"', $output);
-        $this->assertStringContainsString('Eintragen!', $output);
+        // Vorschau mit Knöpfen „Eintragen“ und „Ändern“ (3.1)
+        $this->assertStringContainsString('id="pbEntryPreview"', $output);
+        $this->assertStringContainsString('name="action" value="save"', $output);
+        $this->assertStringContainsString('>Eintragen</button>', $output);
+        $this->assertStringContainsString('>Ändern</button>', $output);
     }
 
     #[Test]
@@ -322,8 +322,9 @@ class CoverageBoostTest extends TestCase
             ]
         );
 
-        // Should show CSRF error
-        $this->assertStringContainsString('CSRF', $output);
+        // Abgelaufenes Formular: Meldung, Eingaben bleiben
+        $this->assertStringContainsString('abgelaufen', $output);
+        $this->assertStringContainsString('value="SomeUser"', $output);
     }
 
     // =========================================================================
@@ -335,9 +336,7 @@ class CoverageBoostTest extends TestCase
     {
         $csrfToken = generateCsrfToken();
 
-        // The add_entry path uses FOR UPDATE which SQLite doesn't support.
-        // This hits the catch block which shows a DB error message.
-        // We test that the catch path is exercised and produces output.
+        // Altes Vorschau-Formular (3.0-Feldnamen) wird weiter angenommen.
         $output = $this->renderGuestbook(
             ['show_gb' => 'no', 'show_form' => 'no'],
             [
@@ -356,8 +355,11 @@ class CoverageBoostTest extends TestCase
             ]
         );
 
-        // SQLite doesn't support FOR UPDATE, so the catch block fires and shows error message
-        $this->assertStringContainsString('Datenbankfehler', $output);
+        // Ohne Umleitung (CLI) folgt die Liste mit der Erfolgsmeldung.
+        $this->assertStringContainsString('id="pbEntryMessage"', $output);
+        $this->assertStringContainsString('Vielen Dank! Ihr Eintrag ist jetzt im Gästebuch.', $output);
+        $row = self::$pdo->query("SELECT name, homepage, icon FROM pb_entries WHERE name = 'NewEntryUser'")->fetch();
+        $this->assertSame(['name' => 'NewEntryUser', 'homepage' => 'https://www.test.com', 'icon' => 'no'], $row);
     }
 
     #[Test]
@@ -381,8 +383,8 @@ class CoverageBoostTest extends TestCase
             ]
         );
 
-        // Should show CSRF error
-        $this->assertStringContainsString('CSRF', $output);
+        // Abgelaufenes Formular
+        $this->assertStringContainsString('abgelaufen', $output);
 
         // Should NOT have inserted entry
         $count = (int) self::$pdo->query('SELECT COUNT(*) FROM pb_entries')->fetchColumn();
@@ -412,8 +414,8 @@ class CoverageBoostTest extends TestCase
             ]
         );
 
-        // Should show CSRF error
-        $this->assertStringContainsString('CSRF', $output);
+        // Abgelaufenes Formular
+        $this->assertStringContainsString('abgelaufen', $output);
     }
 
     // =========================================================================
@@ -429,12 +431,12 @@ class CoverageBoostTest extends TestCase
         );
 
         // Should show search form elements
-        $this->assertStringContainsString('Suchen nach', $output);
+        $this->assertStringContainsString('Suchbegriff', $output);
         $this->assertStringContainsString('name="tmp_search"', $output);
         $this->assertStringContainsString('name="tmp_where"', $output);
         $this->assertStringContainsString('value="name"', $output);
         $this->assertStringContainsString('value="text"', $output);
-        $this->assertStringContainsString('Suchen!', $output);
+        $this->assertStringContainsString('>Suchen</button>', $output);
     }
 
     #[Test]
@@ -449,7 +451,8 @@ class CoverageBoostTest extends TestCase
         ]);
 
         // Should show "no results" with search indicator
-        $this->assertStringContainsString('Keine passenden', $output);
+        $this->assertStringContainsString('Keine Einträge mit „NonExistentTerm“ im Eintragstext', $output);
+        $this->assertStringContainsString('id="pbSearchEmpty"', $output);
     }
 
     #[Test]
@@ -466,7 +469,7 @@ class CoverageBoostTest extends TestCase
 
         $this->assertStringContainsString('SearchableAlice', $output);
         $this->assertStringContainsString('<b>1</b>', $output);
-        $this->assertStringContainsString('gefunden', $output);
+        $this->assertStringContainsString('Eintrag mit „SearchableAlice“ im Namen', $output);
     }
 
     #[Test]
@@ -483,7 +486,7 @@ class CoverageBoostTest extends TestCase
 
         $this->assertStringContainsString('User1', $output);
         $this->assertStringContainsString('<b>1</b>', $output);
-        $this->assertStringContainsString('gefunden', $output);
+        $this->assertStringContainsString('Eintrag mit „PowerBook“ im Eintragstext', $output);
     }
 
     // =========================================================================
@@ -501,7 +504,9 @@ class CoverageBoostTest extends TestCase
 
         $output = $this->renderGuestbook(['show_gb' => 'yes']);
 
-        $this->assertStringContainsString('mailto:user@example.com', $output);
+        // B07: E-Mail-Adressen der Gäste sind nie öffentlich.
+        $this->assertStringNotContainsString('mailto:', $output);
+        $this->assertStringNotContainsString('user@example.com', $output);
         $this->assertStringContainsString('EmailUser', $output);
     }
 
@@ -533,100 +538,72 @@ class CoverageBoostTest extends TestCase
     }
 
     // =========================================================================
-    // admincenter/index.php: Login flow
+    // admincenter/index.php: Anmeldung, Sitzung, Seitenaufbau (3.1)
     // =========================================================================
 
     #[Test]
-    public function testAdminIndexNoLoginShowsLoginLink(): void
+    public function testAdminIndexLoginPageWhenLoggedOut(): void
     {
-        $_GET = ['page' => 'login'];
-        $_POST = [];
-
         $output = $this->renderAdminIndex(['page' => 'login']);
 
-        // Should show "not logged in" message
-        $this->assertStringContainsString('Nicht eingeloggt', $output);
-        // Should show login page content
-        $this->assertStringContainsString('Login', $output);
+        $this->assertStringContainsString('Anmelden', $output);
         $this->assertStringContainsString('name="password"', $output);
+        $this->assertStringContainsString('id="pbLoginSubmit"', $output);
+        $this->assertStringNotContainsString('id="pbStatusLine"', $output);
     }
 
     #[Test]
-    public function testAdminIndexSuccessfulLogin(): void
+    public function testAdminIndexSuccessfulLoginRedirectsHome(): void
     {
-        $csrfToken = generateCsrfToken();
-
         $output = $this->renderAdminIndex(
             ['page' => 'login'],
-            [
-                'login' => 'yes',
-                'name' => 'SuperAdmin',
-                'password' => 'test123',
-                'csrf_token' => $csrfToken,
-            ]
+            ['login' => 'yes', 'name' => 'SuperAdmin', 'password' => 'test123', 'csrf_token' => generateCsrfToken()]
         );
 
-        // Should show success message
-        $this->assertStringContainsString('Login erfolgreich', $output);
-        $this->assertStringContainsString('SuperAdmin', $output);
+        $this->assertSame('Location: ?page=home', $output);
+        $this->assertSame(1, $_SESSION['admin_id'] ?? null);
+        $this->assertSame('Hallo SuperAdmin, Sie sind jetzt angemeldet.', $_SESSION['pb_flash']['text'] ?? '');
     }
 
     #[Test]
-    public function testAdminIndexFailedLoginWrongPassword(): void
+    public function testAdminIndexLoginWithEmailAddress(): void
     {
-        $csrfToken = generateCsrfToken();
-
         $output = $this->renderAdminIndex(
             ['page' => 'login'],
-            [
-                'login' => 'yes',
-                'name' => 'SuperAdmin',
-                'password' => 'wrongpassword',
-                'csrf_token' => $csrfToken,
-            ]
+            ['login' => 'yes', 'name' => 'admin@test.com', 'password' => 'test123', 'csrf_token' => generateCsrfToken()]
         );
 
-        // Should show wrong password error
-        $this->assertStringContainsString('falsches Passwort', $output);
+        $this->assertSame('Location: ?page=home', $output);
     }
 
     #[Test]
-    public function testAdminIndexFailedLoginUnknownUser(): void
+    public function testAdminIndexFailedLoginSameMessageForWrongPasswordAndUnknownUser(): void
     {
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminIndex(
+        $wrongPassword = $this->renderAdminIndex(
             ['page' => 'login'],
-            [
-                'login' => 'yes',
-                'name' => 'UnknownAdmin',
-                'password' => 'anypass',
-                'csrf_token' => $csrfToken,
-            ]
+            ['login' => 'yes', 'name' => 'SuperAdmin', 'password' => 'falsch', 'csrf_token' => generateCsrfToken()]
+        );
+        $unknownUser = $this->renderAdminIndex(
+            ['page' => 'login'],
+            ['login' => 'yes', 'name' => 'Gibtsnicht', 'password' => 'falsch', 'csrf_token' => generateCsrfToken()]
         );
 
-        // Should show user not found error
-        $this->assertStringContainsString('nicht in der Datenbank', $output);
+        $message = 'Anmeldung fehlgeschlagen: Name oder Passwort stimmt nicht.';
+        $this->assertStringContainsString($message, $wrongPassword);
+        $this->assertStringContainsString($message, $unknownUser);
+        $this->assertStringContainsString('value="Gibtsnicht"', $unknownUser);
+        $this->assertArrayNotHasKey('admin_id', $_SESSION);
     }
 
     #[Test]
     public function testAdminIndexLoginEmptyCredentials(): void
     {
-        $csrfToken = generateCsrfToken();
-
         $output = $this->renderAdminIndex(
             ['page' => 'login'],
-            [
-                'login' => 'yes',
-                'name' => '',
-                'password' => '',
-                'csrf_token' => $csrfToken,
-            ]
+            ['login' => 'yes', 'name' => '', 'password' => '', 'csrf_token' => generateCsrfToken()]
         );
 
-        // Should show empty credentials error
-        $this->assertStringContainsString('Name', $output);
-        $this->assertStringContainsString('Passwort', $output);
+        $this->assertStringContainsString('Bitte geben Sie Ihren Namen und Ihr Passwort ein.', $output);
     }
 
     #[Test]
@@ -634,94 +611,77 @@ class CoverageBoostTest extends TestCase
     {
         $output = $this->renderAdminIndex(
             ['page' => 'login'],
-            [
-                'login' => 'yes',
-                'name' => 'SuperAdmin',
-                'password' => 'test123',
-                'csrf_token' => 'bad_token',
-            ]
+            ['login' => 'yes', 'name' => 'SuperAdmin', 'password' => 'test123', 'csrf_token' => 'bad_token']
         );
 
-        // Should show CSRF error
-        $this->assertStringContainsString('CSRF', $output);
+        $this->assertStringContainsString('Das Formular war abgelaufen. Bitte senden Sie es erneut ab.', $output);
+        $this->assertArrayNotHasKey('admin_id', $_SESSION);
     }
 
     #[Test]
     public function testAdminIndexHomePage(): void
     {
-        // Set up session as logged in
-        $_SESSION['admin_id'] = 1;
-        $_SESSION['admin_name'] = 'SuperAdmin';
-        $_SESSION['admin_logged_in'] = true;
+        $this->loginAsSuperAdmin();
 
         $output = $this->renderAdminIndex(['page' => 'home']);
 
-        // Should show welcome message
-        $this->assertStringContainsString('SuperAdmin', $output);
-        // Should show home page content
-        $this->assertStringContainsString('Willkommen', $output);
+        $this->assertStringContainsString('Willkommen im AdminCenter', $output);
+        $this->assertStringContainsString('Angemeldet als <b id="pbStatusName">SuperAdmin</b>', $output);
+        $this->assertStringContainsString('id="pbMenuHome" class="nav-link active" aria-current="page"', $output);
     }
 
     #[Test]
-    public function testAdminIndexLogout(): void
+    public function testAdminIndexProtectedPageRedirectsToLogin(): void
     {
-        $_SESSION['admin_id'] = 1;
-        $_SESSION['admin_name'] = 'SuperAdmin';
-        $_SESSION['admin_logged_in'] = true;
+        $output = $this->renderAdminIndex(['page' => 'entries']);
 
-        $output = $this->renderAdminIndex(['page' => 'logout']);
+        $this->assertSame('Location: ?page=login', $output);
+        $this->assertSame('Bitte melden Sie sich an.', $_SESSION['pb_flash']['text'] ?? '');
+    }
 
-        // Should show not logged in after logout
-        $this->assertStringContainsString('Nicht eingeloggt', $output);
-        // Should redirect to login page
-        $this->assertStringContainsString('Login', $output);
+    #[Test]
+    public function testAdminIndexLogoutNeedsPostAndToken(): void
+    {
+        $this->loginAsSuperAdmin();
+
+        $confirm = $this->renderAdminIndex(['page' => 'logout']);
+        $this->assertStringContainsString('id="pbLogoutConfirm"', $confirm);
+        $this->assertSame(1, $_SESSION['admin_id'] ?? null);
+
+        $output = $this->renderAdminIndex(['page' => 'logout'], ['csrf_token' => generateCsrfToken()]);
+        $this->assertSame('Location: ?page=login', $output);
+        $this->assertArrayNotHasKey('admin_id', $_SESSION);
+        $this->assertSame('Sie sind abgemeldet.', $_SESSION['pb_flash']['text'] ?? '');
     }
 
     #[Test]
     public function testAdminIndexInvalidPageFallsBackToHome(): void
     {
-        $_SESSION['admin_id'] = 1;
-        $_SESSION['admin_name'] = 'SuperAdmin';
-        $_SESSION['admin_logged_in'] = true;
+        $this->loginAsSuperAdmin();
 
         $output = $this->renderAdminIndex(['page' => 'nonexistent_page']);
 
-        // Invalid page should fall back to home
-        $this->assertStringContainsString('Willkommen', $output);
+        $this->assertStringContainsString('Willkommen im AdminCenter', $output);
     }
 
     #[Test]
-    public function testAdminIndexSessionRestore(): void
+    public function testAdminIndexEntryCountsAfterAction(): void
     {
-        $_SESSION['admin_id'] = 1;
-        $_SESSION['admin_name'] = 'SuperAdmin';
-        $_SESSION['admin_logged_in'] = true;
-
-        $output = $this->renderAdminIndex(['page' => 'home']);
-
-        // Should show logged in state from session
-        $this->assertStringContainsString('Hallo', $output);
-        $this->assertStringContainsString('SuperAdmin', $output);
-        $this->assertStringContainsString('Logout', $output);
-    }
-
-    #[Test]
-    public function testAdminIndexEntryCountsDisplay(): void
-    {
-        // Insert some entries
         $this->insertEntry(['name' => 'Released1', 'text' => 'Released', 'status' => 'R']);
-        $this->insertEntry(['name' => 'Released2', 'text' => 'Released', 'status' => 'R']);
-        $this->insertEntry(['name' => 'Unreleased1', 'text' => 'Unreleased', 'status' => 'U']);
+        $pending = $this->insertEntry(['name' => 'Pending1', 'text' => 'Pending', 'status' => 'U']);
+        $this->loginAsSuperAdmin();
 
-        $_SESSION['admin_id'] = 1;
-        $_SESSION['admin_name'] = 'SuperAdmin';
-        $_SESSION['admin_logged_in'] = true;
+        $output = $this->renderAdminIndex(['page' => 'release']);
+        $this->assertMatchesRegularExpression('~id="pbCountPublic"[^>]*>1<~', $output);
+        $this->assertMatchesRegularExpression('~id="pbCountPending"[^>]*>1<~', $output);
 
-        $output = $this->renderAdminIndex(['page' => 'home']);
+        $redirect = $this->renderAdminIndex(['page' => 'release'], ['action' => 'release', 'ids' => [(string) $pending], 'csrf_token' => generateCsrfToken()]);
+        $this->assertSame('Location: ?page=release', $redirect);
 
-        // Should show entry counts
-        $this->assertStringContainsString('2', $output); // released
-        $this->assertStringContainsString('1', $output); // unreleased
+        $output = $this->renderAdminIndex(['page' => 'release']);
+        $this->assertMatchesRegularExpression('~id="pbCountPublic"[^>]*>2<~', $output);
+        $this->assertMatchesRegularExpression('~id="pbCountPending"[^>]*>0<~', $output);
+        $this->assertStringContainsString('Ein Eintrag wurde freigeschaltet.', $output);
     }
 
     #[Test]
@@ -729,492 +689,27 @@ class CoverageBoostTest extends TestCase
     {
         $output = $this->renderAdminIndex(['page' => 'login']);
 
-        // Should have proper HTML structure
         $this->assertStringContainsString('<!DOCTYPE html>', $output);
         $this->assertStringContainsString('<html lang="de">', $output);
-        // Bootstrap-Migration: Title vereinheitlicht auf "PowerBook AdminCenter".
-        $this->assertStringContainsString('PowerBook AdminCenter', $output);
+        $this->assertStringContainsString('<title>Anmelden · PowerBook AdminCenter</title>', $output);
         $this->assertStringContainsString('</html>', $output);
     }
 
     #[Test]
-    public function testAdminIndexInvalidSessionCleared(): void
+    public function testAdminIndexDeletedAccountIsLoggedOut(): void
     {
-        // Set session with non-existent admin ID
         $_SESSION['admin_id'] = 9999;
         $_SESSION['admin_name'] = 'GhostAdmin';
         $_SESSION['admin_logged_in'] = true;
 
         $output = $this->renderAdminIndex(['page' => 'home']);
 
-        // Should show not logged in because admin ID 9999 doesn't exist
-        $this->assertStringContainsString('Nicht eingeloggt', $output);
+        $this->assertSame('Location: ?page=login', $output);
+        $this->assertSame('Sie wurden abgemeldet, weil es Ihr Konto nicht mehr gibt.', $_SESSION['pb_flash']['text'] ?? '');
     }
 
     // =========================================================================
-    // admincenter/admins.inc.php: Admin management
-    // =========================================================================
-
-    #[Test]
-    public function testAdminsPageDeniedWithoutPermission(): void
-    {
-        $output = $this->renderAdminsPage([], ['admins' => 'N']);
-
-        $this->assertStringContainsString('keine Berechtigung', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageListsAdmins(): void
-    {
-        $output = $this->renderAdminsPage();
-
-        // Bootstrap-Migration: Headline ist nun "Administration: Admins".
-        $this->assertStringContainsString('Administration', $output);
-        $this->assertStringContainsString('SuperAdmin', $output);
-        $this->assertStringContainsString('Admins bearbeiten', $output);
-        $this->assertStringContainsString('Admin hinzuf', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageAddAdminSuccess(): void
-    {
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'add',
-            'add_name' => 'NewAdmin',
-            'add_email' => 'newadmin@example.com',
-            'add_config' => 'Y',
-            'add_admins' => 'N',
-            'add_entries' => 'Y',
-            'add_release' => 'N',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        // Should show success message
-        $this->assertStringContainsString('erfolgreich', $output);
-
-        // Verify admin was added
-        $stmt = self::$pdo->query("SELECT * FROM pb_admins WHERE name = 'NewAdmin'");
-        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
-        $this->assertNotFalse($admin);
-        $this->assertSame('newadmin@example.com', $admin['email']);
-        $this->assertSame('Y', $admin['config']);
-        $this->assertSame('N', $admin['admins']);
-    }
-
-    #[Test]
-    public function testAdminsPageAddAdminEmptyFields(): void
-    {
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'add',
-            'add_name' => '',
-            'add_email' => '',
-            'add_config' => 'N',
-            'add_admins' => 'N',
-            'add_entries' => 'N',
-            'add_release' => 'N',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        // Should show error about empty fields
-        $this->assertStringContainsString('Namen', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageAddAdminInvalidEmail(): void
-    {
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'add',
-            'add_name' => 'TestAdmin',
-            'add_email' => 'not-an-email',
-            'add_config' => 'Y',
-            'add_admins' => 'N',
-            'add_entries' => 'N',
-            'add_release' => 'N',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('E-Mail', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageAddAdminDuplicateName(): void
-    {
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'add',
-            'add_name' => 'SuperAdmin',
-            'add_email' => 'another@example.com',
-            'add_config' => 'Y',
-            'add_admins' => 'N',
-            'add_entries' => 'N',
-            'add_release' => 'N',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('bereits einen Admin', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageAddAdminDuplicateEmail(): void
-    {
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'add',
-            'add_name' => 'UniqueAdmin',
-            'add_email' => 'admin@test.com',
-            'add_config' => 'Y',
-            'add_admins' => 'N',
-            'add_entries' => 'N',
-            'add_release' => 'N',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('E-Mail', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageAddAdminNoPermissions(): void
-    {
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'add',
-            'add_name' => 'NoPermsAdmin',
-            'add_email' => 'noperms@example.com',
-            'add_config' => 'N',
-            'add_admins' => 'N',
-            'add_entries' => 'N',
-            'add_release' => 'N',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('mindestens eine Berechtigung', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageEditAdminUpdateName(): void
-    {
-        // Add a second admin to edit
-        $hash = password_hash('admin2pass', PASSWORD_DEFAULT);
-        self::$pdo->exec("INSERT INTO pb_admins (name, email, password, config, admins, entries, \"release\")
-            VALUES ('Admin2', 'admin2@test.com', '{$hash}', 'Y', 'N', 'Y', 'N')");
-        $admin2Id = (int) self::$pdo->lastInsertId();
-
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'edit',
-            'edit_id' => (string) $admin2Id,
-            'edit_name' => 'Admin2Renamed',
-            'edit_email' => 'admin2@test.com',
-            'edit_password1' => '',
-            'edit_password2' => '',
-            'edit_config' => 'Y',
-            'edit_admins' => 'N',
-            'edit_entries' => 'Y',
-            'edit_release' => 'N',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('erfolgreich aktualisiert', $output);
-
-        // Verify rename
-        $stmt = self::$pdo->prepare('SELECT name FROM pb_admins WHERE id = ?');
-        $stmt->execute([$admin2Id]);
-        $this->assertSame('Admin2Renamed', $stmt->fetchColumn());
-    }
-
-    #[Test]
-    public function testAdminsPageDeleteAdmin(): void
-    {
-        // Add a second admin to delete
-        $hash = password_hash('deleteMe', PASSWORD_DEFAULT);
-        self::$pdo->exec("INSERT INTO pb_admins (name, email, password, config, admins, entries, \"release\")
-            VALUES ('ToDelete', 'delete@test.com', '{$hash}', 'Y', 'N', 'Y', 'N')");
-        $deleteId = (int) self::$pdo->lastInsertId();
-
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'edit',
-            'edit_id' => (string) $deleteId,
-            'edit_name' => 'ToDelete',
-            'edit_email' => 'delete@test.com',
-            'edit_password1' => '',
-            'edit_password2' => '',
-            'delete' => 'yes',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('erfolgreich gel', $output);
-
-        // Verify deleted
-        $stmt = self::$pdo->prepare('SELECT COUNT(*) FROM pb_admins WHERE id = ?');
-        $stmt->execute([$deleteId]);
-        $this->assertSame(0, (int) $stmt->fetchColumn());
-    }
-
-    #[Test]
-    public function testAdminsPageCannotDeleteSelf(): void
-    {
-        $csrfToken = generateCsrfToken();
-
-        // admin_session['id'] = 1 and edit_id = 1 => self-delete check fires first
-        $output = $this->renderAdminsPage([
-            'action' => 'edit',
-            'edit_id' => '1',
-            'edit_name' => 'SuperAdmin',
-            'edit_email' => 'admin@test.com',
-            'edit_password1' => '',
-            'edit_password2' => '',
-            'delete' => 'yes',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        // Cannot delete yourself
-        $this->assertStringContainsString('sich selbst nicht l', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageCannotDeleteSuperAdmin(): void
-    {
-        // Use a different session ID so self-delete check doesn't fire first
-        $hash = password_hash('admin2', PASSWORD_DEFAULT);
-        self::$pdo->exec("INSERT INTO pb_admins (name, email, password, config, admins, entries, \"release\")
-            VALUES ('Admin2ForDelete', 'admin2del@test.com', '{$hash}', 'Y', 'Y', 'Y', 'Y')");
-        $admin2Id = (int) self::$pdo->lastInsertId();
-
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'edit',
-            'edit_id' => '1',
-            'edit_name' => 'SuperAdmin',
-            'edit_email' => 'admin@test.com',
-            'edit_password1' => '',
-            'edit_password2' => '',
-            'delete' => 'yes',
-            'csrf_token' => $csrfToken,
-        ], ['id' => $admin2Id, 'name' => 'Admin2ForDelete']);
-
-        // SuperAdmin (id=1) cannot be deleted
-        $this->assertStringContainsString('SuperAdmin kann nicht gel', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageEditNonExistentAdmin(): void
-    {
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'edit',
-            'edit_id' => '9999',
-            'edit_name' => 'Ghost',
-            'edit_email' => 'ghost@test.com',
-            'edit_password1' => '',
-            'edit_password2' => '',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('nicht gefunden', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageEditEmptyNameEmail(): void
-    {
-        // Add admin to edit
-        $hash = password_hash('pass', PASSWORD_DEFAULT);
-        self::$pdo->exec("INSERT INTO pb_admins (name, email, password, config, admins, entries, \"release\")
-            VALUES ('EditMe', 'editme@test.com', '{$hash}', 'Y', 'N', 'Y', 'N')");
-        $editId = (int) self::$pdo->lastInsertId();
-
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'edit',
-            'edit_id' => (string) $editId,
-            'edit_name' => '',
-            'edit_email' => '',
-            'edit_password1' => '',
-            'edit_password2' => '',
-            'edit_config' => 'Y',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('Namen', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageEditInvalidEmail(): void
-    {
-        $hash = password_hash('pass', PASSWORD_DEFAULT);
-        self::$pdo->exec("INSERT INTO pb_admins (name, email, password, config, admins, entries, \"release\")
-            VALUES ('EditMe2', 'editme2@test.com', '{$hash}', 'Y', 'N', 'Y', 'N')");
-        $editId = (int) self::$pdo->lastInsertId();
-
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'edit',
-            'edit_id' => (string) $editId,
-            'edit_name' => 'EditMe2',
-            'edit_email' => 'bad-email',
-            'edit_password1' => '',
-            'edit_password2' => '',
-            'edit_config' => 'Y',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('E-Mail', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageEditWithPasswordChange(): void
-    {
-        $hash = password_hash('oldpass', PASSWORD_DEFAULT);
-        self::$pdo->exec("INSERT INTO pb_admins (name, email, password, config, admins, entries, \"release\")
-            VALUES ('PassChangeAdmin', 'passchange@test.com', '{$hash}', 'Y', 'N', 'Y', 'N')");
-        $editId = (int) self::$pdo->lastInsertId();
-
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'edit',
-            'edit_id' => (string) $editId,
-            'edit_name' => 'PassChangeAdmin',
-            'edit_email' => 'passchange@test.com',
-            'edit_password1' => 'newpassword123',
-            'edit_password2' => 'newpassword123',
-            'edit_config' => 'Y',
-            'edit_admins' => 'N',
-            'edit_entries' => 'Y',
-            'edit_release' => 'N',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('erfolgreich aktualisiert', $output);
-
-        // Verify new password works
-        $stmt = self::$pdo->prepare('SELECT password FROM pb_admins WHERE id = ?');
-        $stmt->execute([$editId]);
-        $newHash = $stmt->fetchColumn();
-        $this->assertTrue(password_verify('newpassword123', $newHash));
-    }
-
-    #[Test]
-    public function testAdminsPageEditPasswordMismatch(): void
-    {
-        $hash = password_hash('oldpass', PASSWORD_DEFAULT);
-        self::$pdo->exec("INSERT INTO pb_admins (name, email, password, config, admins, entries, \"release\")
-            VALUES ('MismatchAdmin', 'mismatch@test.com', '{$hash}', 'Y', 'N', 'Y', 'N')");
-        $editId = (int) self::$pdo->lastInsertId();
-
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'edit',
-            'edit_id' => (string) $editId,
-            'edit_name' => 'MismatchAdmin',
-            'edit_email' => 'mismatch@test.com',
-            'edit_password1' => 'password1',
-            'edit_password2' => 'password2',
-            'edit_config' => 'Y',
-            'edit_admins' => 'N',
-            'edit_entries' => 'N',
-            'edit_release' => 'N',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('stimmen nicht', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageEditNoPermissions(): void
-    {
-        $hash = password_hash('pass', PASSWORD_DEFAULT);
-        self::$pdo->exec("INSERT INTO pb_admins (name, email, password, config, admins, entries, \"release\")
-            VALUES ('NoPermsEdit', 'noperms@test.com', '{$hash}', 'Y', 'N', 'Y', 'N')");
-        $editId = (int) self::$pdo->lastInsertId();
-
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderAdminsPage([
-            'action' => 'edit',
-            'edit_id' => (string) $editId,
-            'edit_name' => 'NoPermsEdit',
-            'edit_email' => 'noperms@test.com',
-            'edit_password1' => '',
-            'edit_password2' => '',
-            'edit_config' => 'N',
-            'edit_admins' => 'N',
-            'edit_entries' => 'N',
-            'edit_release' => 'N',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('mindestens eine Berechtigung', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageEditDuplicateName(): void
-    {
-        $hash = password_hash('pass', PASSWORD_DEFAULT);
-        self::$pdo->exec("INSERT INTO pb_admins (name, email, password, config, admins, entries, \"release\")
-            VALUES ('DupNameAdmin', 'dupname@test.com', '{$hash}', 'Y', 'N', 'Y', 'N')");
-        $editId = (int) self::$pdo->lastInsertId();
-
-        $csrfToken = generateCsrfToken();
-
-        // Try to rename to SuperAdmin (already exists)
-        $output = $this->renderAdminsPage([
-            'action' => 'edit',
-            'edit_id' => (string) $editId,
-            'edit_name' => 'SuperAdmin',
-            'edit_email' => 'dupname@test.com',
-            'edit_password1' => '',
-            'edit_password2' => '',
-            'edit_config' => 'Y',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('bereits einen Admin', $output);
-    }
-
-    #[Test]
-    public function testAdminsPageEditDuplicateEmail(): void
-    {
-        $hash = password_hash('pass', PASSWORD_DEFAULT);
-        self::$pdo->exec("INSERT INTO pb_admins (name, email, password, config, admins, entries, \"release\")
-            VALUES ('DupEmailAdmin', 'dupemail@test.com', '{$hash}', 'Y', 'N', 'Y', 'N')");
-        $editId = (int) self::$pdo->lastInsertId();
-
-        $csrfToken = generateCsrfToken();
-
-        // Try to change email to SuperAdmin's email
-        $output = $this->renderAdminsPage([
-            'action' => 'edit',
-            'edit_id' => (string) $editId,
-            'edit_name' => 'DupEmailAdmin',
-            'edit_email' => 'admin@test.com',
-            'edit_password1' => '',
-            'edit_password2' => '',
-            'edit_config' => 'Y',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('E-Mail', $output);
-    }
-
-    // =========================================================================
-    // admincenter/release.inc.php: Entry release
+    // admincenter/release.inc.php: Einträge freischalten (3.1)
     // =========================================================================
 
     #[Test]
@@ -1230,91 +725,59 @@ class CoverageBoostTest extends TestCase
     {
         $output = $this->renderReleasePage();
 
-        $this->assertStringContainsString('Keine Eintr', $output);
-        $this->assertStringContainsString('freischalten', $output);
+        $this->assertStringContainsString('Keine Einträge warten auf Freischaltung.', $output);
     }
 
     #[Test]
     public function testReleasePageShowsUnreleasedEntries(): void
     {
-        $this->insertEntry(['name' => 'PendingUser', 'text' => 'Pending text', 'status' => 'U']);
+        $id = $this->insertEntry(['name' => 'PendingUser', 'text' => 'Pending text', 'status' => 'U']);
 
         $output = $this->renderReleasePage();
 
         $this->assertStringContainsString('PendingUser', $output);
-        $this->assertStringContainsString('einen', $output); // "einen nicht freigegebenen Eintrag"
-        $this->assertStringContainsString('Alle freischalten', $output);
+        $this->assertStringContainsString('id="pbReleaseCheck' . $id . '"', $output);
+        $this->assertStringContainsString('Ausgewählte freischalten', $output);
+        $this->assertStringNotContainsString('Alle freischalten', $output);
     }
 
     #[Test]
-    public function testReleasePageMultipleUnreleasedEntries(): void
+    public function testReleasePageReleasesSelectedEntries(): void
     {
-        $this->insertEntry(['name' => 'Pending1', 'text' => 'Text 1', 'status' => 'U']);
-        $this->insertEntry(['name' => 'Pending2', 'text' => 'Text 2', 'status' => 'U']);
+        $keep = $this->insertEntry(['name' => 'Keep', 'text' => 'Keep pending', 'status' => 'U']);
+        $release = $this->insertEntry(['name' => 'Release', 'text' => 'Release me', 'status' => 'U']);
 
-        $output = $this->renderReleasePage();
+        $output = $this->renderReleasePage(['action' => 'release', 'ids' => [(string) $release], 'csrf_token' => generateCsrfToken()]);
 
-        $this->assertStringContainsString('2', $output);
-        $this->assertStringContainsString('nicht freigegebene Eintr', $output);
-    }
-
-    #[Test]
-    public function testReleasePageReleaseAllEntries(): void
-    {
-        $this->insertEntry(['name' => 'ToRelease1', 'text' => 'Text 1', 'status' => 'U']);
-        $this->insertEntry(['name' => 'ToRelease2', 'text' => 'Text 2', 'status' => 'U']);
-
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderReleasePage([
-            'action' => 'release_all',
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('erfolgreich freigeschaltet', $output);
-
-        // Verify all entries are now released
-        $count = (int) self::$pdo->query("SELECT COUNT(*) FROM pb_entries WHERE status = 'U'")->fetchColumn();
-        $this->assertSame(0, $count);
-    }
-
-    #[Test]
-    public function testReleasePageReleaseSingleEntry(): void
-    {
-        $id1 = $this->insertEntry(['name' => 'Keep', 'text' => 'Keep pending', 'status' => 'U']);
-        $id2 = $this->insertEntry(['name' => 'Release', 'text' => 'Release me', 'status' => 'U']);
-
-        $csrfToken = generateCsrfToken();
-
-        $output = $this->renderReleasePage([
-            'action' => 'release_one',
-            'entry_id' => (string) $id2,
-            'csrf_token' => $csrfToken,
-        ]);
-
-        $this->assertStringContainsString('erfolgreich freigeschaltet', $output);
-
-        // Verify only one entry released
+        $this->assertSame('Location: ?page=release', $output);
         $stmt = self::$pdo->prepare('SELECT status FROM pb_entries WHERE id = ?');
-        $stmt->execute([$id1]);
+        $stmt->execute([$keep]);
         $this->assertSame('U', $stmt->fetchColumn());
-
-        $stmt->execute([$id2]);
+        $stmt->execute([$release]);
         $this->assertSame('R', $stmt->fetchColumn());
     }
 
     #[Test]
-    public function testReleasePageReleaseSingleNoEntrySelected(): void
+    public function testReleasePageNoEntrySelected(): void
     {
-        $csrfToken = generateCsrfToken();
+        $this->insertEntry(['status' => 'U']);
 
-        $output = $this->renderReleasePage([
-            'action' => 'release_one',
-            'entry_id' => '0',
-            'csrf_token' => $csrfToken,
-        ]);
+        $this->renderReleasePage(['action' => 'release', 'csrf_token' => generateCsrfToken()]);
 
-        $this->assertStringContainsString('einen Eintrag aus', $output);
+        $this->assertSame('Bitte wählen Sie mindestens einen Eintrag aus.', $_SESSION['pb_flash']['text'] ?? '');
+    }
+
+    #[Test]
+    public function testReleasePageDeletesSpamAfterConfirmation(): void
+    {
+        $spam = $this->insertEntry(['name' => 'Kredit-Express', 'status' => 'U']);
+
+        $question = $this->renderReleasePage(['action' => 'delete_confirm', 'ids' => [(string) $spam], 'csrf_token' => generateCsrfToken()]);
+        $this->assertStringContainsString('Diesen Eintrag wirklich löschen?', $question);
+
+        $output = $this->renderReleasePage(['action' => 'delete', 'ids' => [(string) $spam], 'csrf_token' => generateCsrfToken()]);
+        $this->assertSame('Location: ?page=release', $output);
+        $this->assertSame(0, (int) self::$pdo->query("SELECT COUNT(*) FROM pb_entries WHERE id = {$spam}")->fetchColumn());
     }
 
     // =========================================================================
@@ -1356,29 +819,28 @@ class CoverageBoostTest extends TestCase
     public function testGuestbookAddEntryDbErrorPath(): void
     {
         $csrfToken = generateCsrfToken();
+        self::$pdo->exec("CREATE TRIGGER pb_test_fail BEFORE INSERT ON pb_entries BEGIN SELECT RAISE(ABORT, 'Testfehler'); END");
 
-        // The add_entry path uses FOR UPDATE which SQLite doesn't support.
-        // This exercises the catch(PDOException) block in the add_entry flow.
-        $output = $this->renderGuestbook(
-            ['show_gb' => 'no', 'show_form' => 'no'],
-            [
-                'add_entry' => 'yes',
-                'name2' => 'DbErrorUser',
-                'text2' => 'Entry that triggers DB error',
-                'email2' => '',
-                'url2' => '',
-                'icq2' => '',
-                'icon2' => 'no',
-                'smilies2' => 'N',
-                'show_form' => 'no',
-                'show_gb' => 'no',
-                'preview' => 'no',
-                'csrf_token' => $csrfToken,
-            ]
-        );
+        try {
+            $output = $this->renderGuestbook(
+                [],
+                [
+                    'action' => 'save',
+                    'name' => 'DbErrorUser',
+                    'text' => 'Entry that triggers DB error',
+                    'email2' => '',
+                    'url' => '',
+                    'icon' => 'no',
+                    'csrf_token' => $csrfToken,
+                ]
+            );
+        } finally {
+            self::$pdo->exec('DROP TRIGGER pb_test_fail');
+        }
 
-        // Should show database error message from the catch block
-        $this->assertStringContainsString('Datenbankfehler', $output);
+        // Freundliche Meldung, Formular mit dem Text bleibt stehen
+        $this->assertStringContainsString('Datenbankfehlers', $output);
+        $this->assertStringContainsString('Entry that triggers DB error</textarea>', $output);
     }
 
     // =========================================================================
@@ -1410,9 +872,9 @@ class CoverageBoostTest extends TestCase
         // Preview should be shown
         $this->assertStringContainsString('IconUser', $output);
         $this->assertStringContainsString('Entry with icon', $output);
-        $this->assertStringContainsString('Eintragen!', $output);
+        $this->assertStringContainsString('>Eintragen</button>', $output);
         // Hidden fields should contain the icon value
-        $this->assertStringContainsString('name="icon2"', $output);
+        $this->assertStringContainsString('name="icon" value="happy1"', $output);
     }
 
     // =========================================================================
@@ -1436,121 +898,6 @@ class CoverageBoostTest extends TestCase
     }
 
     // =========================================================================
-    // admincenter/admins.inc.php: Helper functions
-    // =========================================================================
-
-    #[Test]
-    public function testFormatPermissionHelper(): void
-    {
-        $this->assertSame('Ja', formatPermission('Y'));
-        $this->assertSame('Nein', formatPermission('N'));
-    }
-
-    #[Test]
-    public function testFormatAdminPermissionsHelper(): void
-    {
-        $data = [
-            'config' => 'Y',
-            'admins' => 'N',
-            'entries' => 'Y',
-            'release' => 'N',
-        ];
-        $result = formatAdminPermissions($data);
-
-        $this->assertStringContainsString('Konfiguration: Ja', $result);
-        $this->assertStringContainsString('Admin-Verwaltung: Nein', $result);
-        $this->assertStringContainsString('Eintrag-Verwaltung: Ja', $result);
-        $this->assertStringContainsString('Eintr', $result);
-    }
-
-    #[Test]
-    public function testGetEmailFooterHelper(): void
-    {
-        $footer = getEmailFooter();
-
-        $this->assertStringContainsString('PowerBook', $footer);
-        $this->assertStringContainsString('AUTOMATISCH GENERIERT', $footer);
-    }
-
-    #[Test]
-    public function testBuildAddedEmailBody(): void
-    {
-        $data = [
-            'by' => 'TestAdmin',
-            'name' => 'NewUser',
-            'email' => 'new@example.com',
-            'password' => 'tempPass123',
-            'config' => 'Y',
-            'admins' => 'N',
-            'entries' => 'Y',
-            'release' => 'N',
-            'admin_url' => 'http://admin.example.com',
-        ];
-        $body = buildAddedEmailBody($data);
-
-        $this->assertStringContainsString('TestAdmin', $body);
-        $this->assertStringContainsString('NewUser', $body);
-        $this->assertStringContainsString('tempPass123', $body);
-        $this->assertStringContainsString('http://admin.example.com', $body);
-    }
-
-    #[Test]
-    public function testBuildEditedEmailBody(): void
-    {
-        $data = [
-            'by' => 'Admin',
-            'name' => 'EditedUser',
-            'email' => 'edited@example.com',
-            'password' => 'newPass',
-            'config' => 'Y',
-            'admins' => 'Y',
-            'entries' => 'Y',
-            'release' => 'Y',
-            'admin_url' => 'http://admin.test.com',
-        ];
-        $body = buildEditedEmailBody($data);
-
-        $this->assertStringContainsString('Admin', $body);
-        $this->assertStringContainsString('EditedUser', $body);
-        $this->assertStringContainsString('newPass', $body);
-        $this->assertStringContainsString('http://admin.test.com', $body);
-    }
-
-    #[Test]
-    public function testBuildEditedEmailBodyWithoutPassword(): void
-    {
-        $data = [
-            'by' => 'Admin',
-            'name' => 'User',
-            'email' => 'user@example.com',
-            'password' => null,
-            'config' => 'N',
-            'admins' => 'N',
-            'entries' => 'Y',
-            'release' => 'N',
-            'admin_url' => '',
-        ];
-        $body = buildEditedEmailBody($data);
-
-        // Should NOT contain password line
-        $this->assertStringNotContainsString('Passwort:', $body);
-    }
-
-    #[Test]
-    public function testBuildDeletedEmailBody(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'DeletedUser',
-        ];
-        $body = buildDeletedEmailBody($data);
-
-        $this->assertStringContainsString('SuperAdmin', $body);
-        $this->assertStringContainsString('gel', $body);
-        $this->assertStringContainsString('nicht mehr berechtigt', $body);
-    }
-
-    // =========================================================================
     // Additional edge cases for guestbook
     // =========================================================================
 
@@ -1567,7 +914,7 @@ class CoverageBoostTest extends TestCase
         $output = $this->renderGuestbook(['show_gb' => 'yes']);
 
         $this->assertStringContainsString('StatementUser', $output);
-        $this->assertStringContainsString('Statement', $output);
+        $this->assertStringContainsString('Antwort von AdminReply:', $output);
         $this->assertStringContainsString('AdminReply', $output);
     }
 
@@ -1609,8 +956,10 @@ class CoverageBoostTest extends TestCase
 
         // Should show preview with all fields
         $this->assertStringContainsString('ValidEmailUser', $output);
-        $this->assertStringContainsString('valid@example.com', $output);
-        $this->assertStringContainsString('Eintragen!', $output);
+        // E-Mail nur im versteckten Feld, nicht in der Karte (B07)
+        $this->assertStringContainsString('name="email2" value="valid@example.com"', $output);
+        $this->assertStringNotContainsString('mailto:', $output);
+        $this->assertStringContainsString('>Eintragen</button>', $output);
         // Hidden fields
         $this->assertStringContainsString('name="smilies2"', $output);
     }
@@ -1785,47 +1134,35 @@ class CoverageBoostTest extends TestCase
         $pb_entries = $GLOBALS['pb_entries'] ?? 'pb_entries';
         $config_guestbook_name = 'pbook.php';
 
+        // Weiterleitungen (Post/Redirect/Get) kommen im Testmodus als
+        // PbAdminRedirect an und werden hier als "Location: …" zurückgegeben.
         ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/index.php';
-        $output = ob_get_clean();
 
-        $_GET = $savedGet;
-        $_POST = $savedPost;
+        try {
+            include POWERBOOK_ROOT . '/pb_inc/admincenter/index.php';
+            $output = (string) ob_get_clean();
+        } catch (\PbAdminRedirect $redirect) {
+            ob_end_clean();
+            $output = 'Location: ' . $redirect->location;
+        } finally {
+            $_GET = $savedGet;
+            $_POST = $savedPost;
+        }
 
-        return $output ?: '';
+        return $output;
     }
 
     // =========================================================================
-    // Helper: Render admins.inc.php with controlled scope
+    // Helper: Anmeldung für index.php-Tests
     // =========================================================================
 
-    private function renderAdminsPage(array $post = [], array $sessionOverrides = []): string
+    private function loginAsSuperAdmin(): void
     {
-        $savedPost = $_POST;
-        $_POST = $post;
-
-        $pdo = $GLOBALS['pdo'];
-        $pb_admin = $GLOBALS['pb_admin'] ?? 'pb_admins';
-        $pb_entries = $GLOBALS['pb_entries'] ?? 'pb_entries';
-        $config_admin_url = '';
-
-        $admin_session = array_merge([
-            'id' => 1,
-            'name' => 'SuperAdmin',
-            'email' => 'admin@test.com',
-            'config' => 'Y',
-            'release' => 'Y',
-            'entries' => 'Y',
-            'admins' => 'Y',
-        ], $sessionOverrides);
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/admins.inc.php';
-        $output = ob_get_clean();
-
-        $_POST = $savedPost;
-
-        return $output ?: '';
+        $_SESSION['admin_id'] = 1;
+        $_SESSION['admin_name'] = 'SuperAdmin';
+        $_SESSION['admin_logged_in'] = true;
+        $_SESSION['pb_login_time'] = time();
+        $_SESSION['pb_last_activity'] = time();
     }
 
     // =========================================================================
@@ -1842,11 +1179,9 @@ class CoverageBoostTest extends TestCase
         $config_icons = 'Y';
         $config_text_format = 'Y';
         $config_smilies = 'Y';
-        $config_icq = 'N';
         $config_date = 'd.m.Y';
         $config_time = 'H:i';
         $config_statements = 'Y';
-        $db_statement = 'N';
 
         $admin_session = array_merge([
             'id' => 1,
@@ -1859,12 +1194,18 @@ class CoverageBoostTest extends TestCase
         ], $sessionOverrides);
 
         ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/release.inc.php';
-        $output = ob_get_clean();
 
-        $_POST = $savedPost;
+        try {
+            include POWERBOOK_ROOT . '/pb_inc/admincenter/release.inc.php';
+            $output = (string) ob_get_clean();
+        } catch (\PbAdminRedirect $redirect) {
+            ob_end_clean();
+            $output = 'Location: ' . $redirect->location;
+        } finally {
+            $_POST = $savedPost;
+        }
 
-        return $output ?: '';
+        return $output;
     }
 
     // =========================================================================

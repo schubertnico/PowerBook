@@ -3,10 +3,10 @@
 # =============================================================
 # Default: Alles in pb_inc/ ist Include-Code und darf nicht
 # direkt per HTTP geladen werden.
-# Subdirectories (admincenter/, smilies/) ueberschreiben diese
-# Regel ueber ihre eigene .htaccess.
-# Spezifische oeffentliche Hilfsseiten (smilies-help.html,
-# text-help.html) werden hier explizit erlaubt.
+# Unterordner (admincenter/, smilies/) überschreiben diese
+# Regel über ihre eigene .htaccess.
+# Die öffentlichen Hilfeseiten (smilies-help.html,
+# text-help.html) werden hier ausdrücklich erlaubt.
 # =============================================================
 
 # Default: alles blockieren
@@ -18,7 +18,8 @@
     Deny from all
 </IfModule>
 
-# Hilfe-Popups (vom Gaestebuch-Frontend per window.open() aufgerufen)
+# Hilfeseiten zu Smileys und Formatierung (seit 3.1 steht dieselbe Hilfe
+# ausklappbar im Formular; die Seiten bleiben für alte Links erreichbar)
 <FilesMatch "^(smilies-help|text-help)\.html$">
     <IfModule mod_authz_core.c>
         Require all granted

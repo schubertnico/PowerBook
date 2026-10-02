@@ -37,6 +37,8 @@ $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 // Create all required tables
 $pdo->exec('CREATE TABLE pb_config (
     id INTEGER PRIMARY KEY,
+    title TEXT DEFAULT "Gästebuch",
+    mail_from TEXT DEFAULT "",
     "release" TEXT DEFAULT "R",
     send_email TEXT DEFAULT "N",
     email TEXT DEFAULT "admin@test.com",
@@ -70,7 +72,8 @@ $pdo->exec('CREATE TABLE pb_admins (
     entries TEXT DEFAULT "N",
     "release" TEXT DEFAULT "N",
     reset_token TEXT DEFAULT NULL,
-    reset_token_expires INTEGER DEFAULT NULL
+    reset_token_expires INTEGER DEFAULT NULL,
+    pw_changed INTEGER DEFAULT 0
 )');
 
 $pdo->exec('CREATE TABLE pb_entries (
@@ -87,6 +90,13 @@ $pdo->exec('CREATE TABLE pb_entries (
     smilies TEXT DEFAULT "N",
     statement TEXT DEFAULT "",
     statement_by TEXT DEFAULT ""
+)');
+
+$pdo->exec('CREATE TABLE pb_login_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip TEXT DEFAULT "",
+    name TEXT DEFAULT "",
+    time INTEGER DEFAULT 0
 )');
 
 // Insert default config
@@ -108,6 +118,8 @@ $config_sql_password = 'test';
 $config_sql_database = 'test';
 
 // Load core function files
+require_once POWERBOOK_ROOT . '/pb_inc/version.inc.php';
+require_once POWERBOOK_ROOT . '/pb_inc/mail.inc.php';
 require_once POWERBOOK_ROOT . '/pb_inc/database.inc.php';
 require_once POWERBOOK_ROOT . '/pb_inc/csrf.inc.php';
 require_once POWERBOOK_ROOT . '/pb_inc/error-handler.inc.php';

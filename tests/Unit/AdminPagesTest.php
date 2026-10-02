@@ -2,10 +2,15 @@
 
 /**
  * PowerBook - PHPUnit Tests
- * Admin Center Pages Integration Tests
+ * Seiten des AdminCenters: Start, Anmelden, Abmelden, Lizenz, Datums-Hilfe,
+ * Einträge, Bearbeiten, Antwort, Freischalten und Blätterleiste.
  *
- * Tests ALL admin center pages by including them with proper global state
- * and an SQLite test database.
+ * Die Seiten werden mit eigener SQLite-Datenbank (Schema 3.1) eingebunden.
+ * Weiterleitungen (pb_admin_redirect()) und Meldungen (pb_admin_flash())
+ * fängt der Helfer render() ab.
+ *
+ * Die Seiten von Agent D (Admins, Konfiguration, Passwort, Mein Konto) testet
+ * tests/Unit/AdminAccountPagesTest.php.
  *
  * @license MIT
  */
@@ -20,24 +25,25 @@ use PHPUnit\Framework\TestCase;
 
 class AdminPagesTest extends TestCase
 {
+    private const FULL_RIGHTS = ['id' => 1, 'name' => 'Anke', 'email' => 'anke@example.org', 'config' => 'Y', 'release' => 'Y', 'entries' => 'Y', 'admins' => 'Y'];
+
+    private const MODERATOR = ['id' => 2, 'name' => 'Jannik', 'email' => 'jannik@example.org', 'config' => 'N', 'release' => 'Y', 'entries' => 'Y', 'admins' => 'N'];
+
     private static PDO $pdo;
 
-    private static string $pbAdmin;
-
-    private static string $pbEntries;
-
-    private static string $pbConfig;
+    private ?string $redirect = null;
 
     public static function setUpBeforeClass(): void
     {
-        // Create a fresh SQLite in-memory database for this test class
         $pdo = new PDO('sqlite::memory:');
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
         $pdo->exec('CREATE TABLE pb_config (
             id INTEGER PRIMARY KEY,
-            "release" TEXT DEFAULT "R",
+            title TEXT DEFAULT "Gästebuch",
+            mail_from TEXT DEFAULT "",
+            "release" TEXT DEFAULT "U",
             send_email TEXT DEFAULT "N",
             email TEXT DEFAULT "admin@test.com",
             date TEXT DEFAULT "d.m.Y",
@@ -50,16 +56,14 @@ class AdminPagesTest extends TestCase
             text_format TEXT DEFAULT "Y",
             icons TEXT DEFAULT "Y",
             smilies TEXT DEFAULT "Y",
-            icq TEXT DEFAULT "N",
             pages TEXT DEFAULT "D",
             use_thanks TEXT DEFAULT "N",
-            language TEXT DEFAULT "D",
-            design TEXT DEFAULT "(#ICON#)(#DATE#)(#TIME#)(#EMAIL_NAME#)(#TEXT#)(#URL#)(#ICQ#)",
+            language TEXT DEFAULT "ger1",
+            design TEXT DEFAULT "",
             thanks_title TEXT DEFAULT "",
             thanks TEXT DEFAULT "",
             statements TEXT DEFAULT "Y"
         )');
-
         $pdo->exec('CREATE TABLE pb_admins (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -67,12 +71,12 @@ class AdminPagesTest extends TestCase
             password TEXT NOT NULL,
             config TEXT DEFAULT "N",
             admins TEXT DEFAULT "N",
-            entries TEXT DEFAULT "N",
-            "release" TEXT DEFAULT "N",
+            entries TEXT DEFAULT "Y",
+            "release" TEXT DEFAULT "Y",
             reset_token TEXT DEFAULT NULL,
-            reset_token_expires INTEGER DEFAULT NULL
+            reset_token_expires INTEGER DEFAULT NULL,
+            pw_changed INTEGER DEFAULT 0
         )');
-
         $pdo->exec('CREATE TABLE pb_entries (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
@@ -80,1561 +84,987 @@ class AdminPagesTest extends TestCase
             text TEXT NOT NULL,
             date INTEGER DEFAULT 0,
             homepage TEXT DEFAULT "",
-            icq TEXT DEFAULT "",
             ip TEXT DEFAULT "",
             status TEXT DEFAULT "R",
             icon TEXT DEFAULT "",
-            smilies TEXT DEFAULT "N",
+            smilies TEXT DEFAULT "Y",
             statement TEXT DEFAULT "",
             statement_by TEXT DEFAULT ""
         )');
-
-        // Insert default config
+        $pdo->exec('CREATE TABLE pb_login_attempts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip TEXT DEFAULT "",
+            name TEXT DEFAULT "",
+            time INTEGER DEFAULT 0
+        )');
         $pdo->exec('INSERT INTO pb_config (id) VALUES (1)');
-
-        // Insert test admin
         $pdo->exec("INSERT INTO pb_admins (id, name, email, password, config, admins, entries, \"release\")
-            VALUES (1, 'SuperAdmin', 'admin@test.com', '" . password_hash('test123', PASSWORD_DEFAULT) . "', 'Y', 'Y', 'Y', 'Y')");
+            VALUES (1, 'Anke', 'anke@example.org', '" . password_hash('test123', PASSWORD_DEFAULT) . "', 'Y', 'Y', 'Y', 'Y')");
 
         self::$pdo = $pdo;
-        self::$pbConfig = 'pb_config';
-        self::$pbAdmin = 'pb_admins';
-        self::$pbEntries = 'pb_entries';
 
-        // Make accessible via $GLOBALS for included files
-        $GLOBALS['pdo'] = $pdo;
-        $GLOBALS['pb_config'] = 'pb_config';
-        $GLOBALS['pb_admin'] = 'pb_admins';
-        $GLOBALS['pb_entries'] = 'pb_entries';
+        require_once POWERBOOK_ROOT . '/pb_inc/admincenter/layout.inc.php';
     }
 
     // ========================================================================
-    // 1. home.inc.php
+    // Startseite
     // ========================================================================
 
     #[Test]
-    public function homePageOutputsWelcomeHeadline(): void
+    public function homeShowsWelcomeCountsAndPendingHint(): void
     {
-        $output = $this->renderAdminPage('home.inc.php', [
-            'head_count_entries' => 42,
-            'head_count_unreleased' => 5,
-        ]);
+        $this->insertEntry(['status' => 'R']);
+        $this->insertEntry(['status' => 'R']);
+        $this->insertEntry(['status' => 'U']);
 
-        $this->assertStringContainsString('Willkommen', $output);
-        $this->assertStringContainsString('Willkommen im AdminCenter', $output);
+        $html = $this->render('home.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertStringContainsString('Willkommen im AdminCenter', $html);
+        $this->assertStringContainsString('Hallo Anke, hier verwalten Sie Ihr Gästebuch.', $html);
+        $this->assertMatchesRegularExpression('~id="pbOverviewPublic"[^>]*>2<~', $html);
+        $this->assertMatchesRegularExpression('~id="pbOverviewPending"[^>]*>1<~', $html);
+        $this->assertStringContainsString('id="pbHomePending"', $html);
+        $this->assertStringContainsString('1 Eintrag wartet auf Freischaltung.', $html);
+        $this->assertStringContainsString('Superadmin – Sie haben immer alle Rechte.', $html);
     }
 
     #[Test]
-    public function homePageDoesNotLeakPhpVersion(): void
+    public function homeQuickLinksFollowRights(): void
     {
-        // Sicherheitsanforderung: Konkrete PHP- und PowerBook-Versionsnummern
-        // sind ein Information-Disclosure-Vektor und werden auf der Home-Seite
-        // bewusst NICHT mehr angezeigt.
-        $output = $this->renderAdminPage('home.inc.php', [
-            'head_count_entries' => 10,
-            'head_count_unreleased' => 0,
-        ]);
+        $html = $this->render('home.inc.php', ['admin_session' => self::MODERATOR]);
 
-        $this->assertStringNotContainsString(PHP_VERSION, $output);
-        $this->assertStringNotContainsString('PHP 8.4 Update', $output);
+        $this->assertStringContainsString('id="pbQuickEntries"', $html);
+        $this->assertStringContainsString('id="pbQuickRelease"', $html);
+        $this->assertStringContainsString('id="pbQuickAccount"', $html);
+        $this->assertStringNotContainsString('id="pbQuickAdmins"', $html);
+        $this->assertStringNotContainsString('id="pbQuickConfig"', $html);
+        $this->assertStringContainsString('&#10003; Einträge freischalten', $html);
+        $this->assertStringContainsString('&ndash; Konfiguration ändern', $html);
     }
 
     #[Test]
-    public function homePageShowsEntryCounts(): void
+    public function homeDoesNotLeakVersions(): void
     {
-        $output = $this->renderAdminPage('home.inc.php', [
-            'head_count_entries' => 99,
-            'head_count_unreleased' => 7,
-        ]);
+        $html = $this->render('home.inc.php', ['admin_session' => self::FULL_RIGHTS]);
 
-        $this->assertStringContainsString('99', $output);
-        $this->assertStringContainsString('7', $output);
-    }
-
-    // ========================================================================
-    // 2. login.inc.php
-    // ========================================================================
-
-    #[Test]
-    public function loginPageShowsFormWhenNotLoggedIn(): void
-    {
-        $output = $this->renderAdminPage('login.inc.php', [
-            'welcome_admin' => '',
-            'login_message' => '',
-            'name' => '',
-        ]);
-
-        $this->assertStringContainsString('Login', $output);
-        $this->assertStringContainsString('<form', $output);
-        $this->assertStringContainsString('name="password"', $output);
-        $this->assertStringContainsString('Ein Login ist erforderlich', $output);
-    }
-
-    #[Test]
-    public function loginPageShowsAlreadyLoggedIn(): void
-    {
-        $output = $this->renderAdminPage('login.inc.php', [
-            'welcome_admin' => 'SuperAdmin',
-            'login_message' => '',
-            'name' => '',
-        ]);
-
-        $this->assertStringContainsString('bereits eingeloggt', $output);
-        $this->assertStringContainsString('SuperAdmin', $output);
-        $this->assertStringNotContainsString('<form', $output);
-    }
-
-    #[Test]
-    public function loginPageShowsLoginMessage(): void
-    {
-        $output = $this->renderAdminPage('login.inc.php', [
-            'welcome_admin' => '',
-            'login_message' => 'Falsches Passwort!',
-            'name' => 'TestUser',
-        ]);
-
-        $this->assertStringContainsString('Falsches Passwort!', $output);
-        $this->assertStringContainsString('TestUser', $output);
+        $this->assertStringNotContainsString(PHP_VERSION, $html);
+        $this->assertStringNotContainsString(PB_VERSION, $html);
     }
 
     // ========================================================================
-    // 3. logout.inc.php
+    // Anmelden / Abmelden / Lizenz
     // ========================================================================
 
     #[Test]
-    public function logoutPageShowsNotLoggedInMessage(): void
+    public function loginFormHasStableIdsAndKeepsName(): void
     {
-        $output = $this->renderAdminPage('logout.inc.php', [
-            'admin_session' => [],
-        ]);
+        $html = $this->render('login.inc.php', ['loggedIn' => false, 'loginName' => 'Anke']);
 
-        $this->assertStringContainsString('Logout', $output);
-        $this->assertStringContainsString('nicht eingeloggt', $output);
-    }
-
-    #[Test]
-    public function logoutPageShowsConfirmation(): void
-    {
-        $output = $this->renderAdminPage('logout.inc.php', [
-            'admin_session' => ['name' => 'TestAdmin'],
-        ]);
-
-        $this->assertStringContainsString('Sind Sie sicher', $output);
-        $this->assertStringContainsString('TestAdmin', $output);
-        $this->assertStringContainsString('logout=yes', $output);
-    }
-
-    #[Test]
-    public function logoutPagePerformsLogout(): void
-    {
-        // Ensure session is active for the logout test
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+        foreach (['pb_login_name', 'pb_login_password', 'pbLoginSubmit', 'pbForgotLink'] as $id) {
+            $this->assertStringContainsString('id="' . $id . '"', $html);
         }
-
-        $_GET['logout'] = 'yes';
-        $output = $this->renderAdminPage('logout.inc.php', [
-            'admin_session' => ['name' => 'TestAdmin'],
-        ]);
-
-        $this->assertStringContainsString('Logout erfolgreich', $output);
-
-        // Restart session for subsequent tests
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        $this->assertStringContainsString('value="Anke"', $html);
+        $this->assertStringContainsString('Name oder E-Mail-Adresse', $html);
+        $this->assertStringContainsString('name="csrf_token"', $html);
+        $this->assertStringContainsString('60 Minuten ohne Aktivität', $html);
+        $this->assertStringNotContainsString('>Login<', $html);
     }
 
-    // ========================================================================
-    // 4. license.inc.php
-    // ========================================================================
+    #[Test]
+    public function loginPageWhenAlreadyLoggedIn(): void
+    {
+        $html = $this->render('login.inc.php', ['loggedIn' => true, 'loginName' => '']);
+
+        $this->assertStringContainsString('Sie sind bereits angemeldet.', $html);
+        $this->assertStringNotContainsString('<form', $html);
+    }
+
+    #[Test]
+    public function logoutPageOffersPostButton(): void
+    {
+        $html = $this->render('logout.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertStringContainsString('Möchten Sie sich abmelden, Anke?', $html);
+        $this->assertStringContainsString('method="post"', $html);
+        $this->assertStringContainsString('name="csrf_token"', $html);
+        $this->assertStringContainsString('id="pbLogoutConfirm"', $html);
+        $this->assertStringNotContainsString('logout=yes', $html);
+    }
 
     #[Test]
     public function licensePageShowsMitLicense(): void
     {
-        $output = $this->renderAdminPage('license.inc.php');
+        $html = $this->render('license.inc.php');
 
-        $this->assertStringContainsString('MIT-Lizenz', $output);
-        $this->assertStringContainsString('MIT License', $output);
-        $this->assertStringContainsString('Permission is hereby granted', $output);
-    }
-
-    #[Test]
-    public function licensePageShowsCopyrightHolders(): void
-    {
-        $output = $this->renderAdminPage('license.inc.php');
-
-        $this->assertStringContainsString('Axel', $output);
-        $this->assertStringContainsString('Nico Schubert', $output);
-    }
-
-    #[Test]
-    public function licensePageContainsRepositoryLink(): void
-    {
-        $output = $this->renderAdminPage('license.inc.php');
-
-        // Anonymisierter Projekt-Link statt internem Repo-Verweis.
-        $this->assertStringContainsString('powerscripts.org', $output);
+        $this->assertStringContainsString('Lizenz', $html);
+        $this->assertStringContainsString('MIT License', $html);
+        $this->assertStringContainsString('Permission is hereby granted', $html);
+        $this->assertStringContainsString('Axel', $html);
+        $this->assertStringContainsString('Nico Schubert', $html);
+        $this->assertStringContainsString('powerscripts.org', $html);
     }
 
     // ========================================================================
-    // 5. empty.inc.php
+    // Datums-Hilfe
     // ========================================================================
 
     #[Test]
-    public function emptyPageOutputsTableRows(): void
-    {
-        $output = $this->renderAdminPage('empty.inc.php');
-
-        // Bootstrap-Migration: empty.inc.php nutzt jetzt pb_admin_card_open()/close().
-        $this->assertStringContainsString('<section class="card', $output);
-        $this->assertStringContainsString('&nbsp;', $output);
-    }
-
-    #[Test]
-    public function emptyPageHasMinimalContent(): void
-    {
-        $output = $this->renderAdminPage('empty.inc.php');
-
-        $this->assertStringNotContainsString('Willkommen', $output);
-        $this->assertStringNotContainsString('Login', $output);
-    }
-
-    // ========================================================================
-    // 6. date-help.php
-    // ========================================================================
-
-    #[Test]
-    public function dateHelpShowsDateFormats(): void
+    public function dateHelpShowsGermanNamesForDateSection(): void
     {
         $_GET['section'] = 'date';
+        $html = $this->render('date-help.php');
 
-        $output = $this->renderAdminPage('date-help.php');
-
-        $this->assertStringContainsString('Datumsformate', $output);
-        $this->assertStringContainsString('Tag des Monats', $output);
-        $this->assertStringContainsString('Monat', $output);
-        $this->assertStringContainsString('Jahr', $output);
+        $this->assertStringContainsString('id="pbHelpDate"', $html);
+        $this->assertStringNotContainsString('id="pbHelpTime"', $html);
+        $this->assertStringContainsString(PB_MONTHS[(int) date('n')], $html);
+        $this->assertStringContainsString(PB_WEEKDAYS[(int) date('w')], $html);
+        $this->assertStringContainsString('bootstrap', $html);
+        $this->assertStringNotContainsString('1st', $html);
+        $this->assertStringNotContainsString('Montag, 1. Januar 2025', $html);
     }
 
     #[Test]
-    public function dateHelpShowsTimeFormats(): void
+    public function dateHelpShowsTimeSection(): void
     {
         $_GET['section'] = 'time';
+        $html = $this->render('date-help.php');
 
-        $output = $this->renderAdminPage('date-help.php');
-
-        $this->assertStringContainsString('Zeitformate', $output);
-        $this->assertStringContainsString('Stunden', $output);
-        $this->assertStringContainsString('Minuten', $output);
-        $this->assertStringContainsString('Sekunden', $output);
+        $this->assertStringContainsString('id="pbHelpTime"', $html);
+        $this->assertStringNotContainsString('id="pbHelpDate"', $html);
+        $this->assertStringContainsString('Stunde', $html);
+        $this->assertStringContainsString('Minute', $html);
     }
 
     #[Test]
-    public function dateHelpShowsNoSectionMessage(): void
+    public function dateHelpWithoutSectionShowsBoth(): void
     {
-        $_GET['section'] = '';
+        $html = $this->render('date-help.php');
 
-        $output = $this->renderAdminPage('date-help.php');
-
-        $this->assertStringContainsString('Kein Abschnitt', $output);
+        $this->assertStringContainsString('id="pbHelpDate"', $html);
+        $this->assertStringContainsString('id="pbHelpTime"', $html);
     }
 
     // ========================================================================
-    // 7. entries.inc.php
+    // Einträge (Liste)
     // ========================================================================
 
     #[Test]
     public function entriesPageDeniesWithoutPermission(): void
     {
-        $output = $this->renderAdminPage('entries.inc.php', [
-            'admin_session' => ['entries' => 'N'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-            'db_statement' => 'N',
-        ]);
+        $html = $this->render('entries.inc.php', ['admin_session' => ['entries' => 'N']]);
 
-        $this->assertStringContainsString('keine Berechtigung', $output);
+        $this->assertStringContainsString('keine Berechtigung', $html);
     }
 
     #[Test]
-    public function entriesPageShowsNoEntriesMessage(): void
+    public function entriesPageShowsEmptyMessage(): void
     {
-        $this->db()->exec('DELETE FROM pb_entries');
+        $html = $this->render('entries.inc.php', ['admin_session' => self::FULL_RIGHTS]);
 
-        $output = $this->renderAdminPage('entries.inc.php', [
-            'admin_session' => ['entries' => 'Y'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-            'db_statement' => 'N',
-        ]);
-
-        $this->assertStringContainsString('Keine Eintr', $output);
+        $this->assertStringContainsString('Es gibt noch keine Einträge.', $html);
     }
 
     #[Test]
-    public function entriesPageListsEntries(): void
+    public function entriesPageShowsStatusAnswerDateAndMail(): void
     {
-        $this->db()->exec('DELETE FROM pb_entries');
-        $this->db()->exec("INSERT INTO pb_entries (name, text, date, email, ip, status) VALUES ('TestUser', 'Hello World', " . time() . ", 'test@test.com', '127.0.0.1', 'R')");
-        $this->db()->exec("INSERT INTO pb_entries (name, text, date, email, ip, status) VALUES ('AnotherUser', 'Second entry', " . time() . ", 'other@test.com', '192.168.1.1', 'R')");
-
-        $output = $this->renderAdminPage('entries.inc.php', [
-            'admin_session' => ['entries' => 'Y'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-            'db_statement' => 'N',
+        $ts = mktime(18, 42, 0, 8, 16, 2026);
+        $released = $this->insertEntry([
+            'name' => 'Familie Brandt', 'email' => 'brandt@example.org', 'date' => $ts,
+            'statement' => 'Vielen Dank!', 'statement_by' => 'Anke',
         ]);
+        $pending = $this->insertEntry(['name' => 'Kredit-Express', 'status' => 'U', 'date' => $ts + 3600]);
 
-        $this->assertStringContainsString('Hello World', $output);
-        $this->assertStringContainsString('Second entry', $output);
-        $this->assertStringContainsString('Bearbeiten/', $output);
-        $this->assertStringContainsString('Statement', $output);
+        $html = $this->render('entries.inc.php', ['admin_session' => self::FULL_RIGHTS]);
 
-        $this->db()->exec('DELETE FROM pb_entries');
+        $this->assertStringContainsString('id="pbEntry' . $released . '"', $html);
+        $this->assertMatchesRegularExpression('~id="pbEntryStatus' . $pending . '"[^>]*>Wartet auf Freischaltung<~', $html);
+        $this->assertMatchesRegularExpression('~id="pbEntryStatus' . $released . '"[^>]*>Freigeschaltet<~', $html);
+        $this->assertStringContainsString('Antwort von Anke:', $html);
+        $this->assertStringContainsString('href="mailto:brandt@example.org"', $html);
+        $this->assertStringContainsString('16.08.2026', $html);
+        $this->assertStringContainsString('18:42 Uhr', $html);
+        $this->assertStringContainsString('id="pbEntryEdit' . $released . '"', $html);
+        $this->assertMatchesRegularExpression('~id="pbEntryAnswer' . $released . '"[^>]*>Antwort bearbeiten<~', $html);
+        $this->assertMatchesRegularExpression('~id="pbEntryAnswer' . $pending . '"[^>]*>Antworten<~', $html);
+        $this->assertStringContainsString('id="pbEntriesPendingHint"', $html);
+        $this->assertStringContainsString('href="?page=release"', $html);
+        // Neueste zuerst
+        $this->assertLessThan(strpos($html, 'id="pbEntry' . $released . '"'), strpos($html, 'id="pbEntry' . $pending . '"'));
+        $this->assertStringNotContainsString('Statement', $html);
+    }
+
+    #[Test]
+    public function entriesPageUsesConfiguredGermanDate(): void
+    {
+        $this->insertEntry(['date' => mktime(12, 0, 0, 9, 20, 2026)]);
+
+        $html = $this->render('entries.inc.php', ['admin_session' => self::FULL_RIGHTS, 'config_date' => 'l, j. F Y']);
+
+        $this->assertStringContainsString('Sonntag, 20. September 2026', $html);
+    }
+
+    #[Test]
+    public function entriesPageWithoutReleaseRightHasNoReleaseLink(): void
+    {
+        $this->insertEntry(['status' => 'U']);
+
+        $html = $this->render('entries.inc.php', ['admin_session' => ['entries' => 'Y', 'release' => 'N']]);
+
+        $this->assertStringContainsString('id="pbEntriesPendingHint"', $html);
+        $this->assertStringNotContainsString('href="?page=release"', $html);
+    }
+
+    #[Test]
+    public function entriesPageBeyondLastPageShowsHint(): void
+    {
+        $this->insertEntry();
+        $_GET['tmp_start'] = '99999';
+
+        $html = $this->render('entries.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertStringContainsString('Auf dieser Seite stehen keine Einträge.', $html);
+    }
+
+    #[Test]
+    public function entriesPagePaginatesWithPageNumbers(): void
+    {
+        for ($i = 0; $i < 16; $i++) {
+            $this->insertEntry(['date' => 1_700_000_000 + $i]);
+        }
+
+        $html = $this->render('entries.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertSame(15, substr_count($html, 'class="card pb-entry-card'));
+        $this->assertStringContainsString('id="pbEntriesPagerTop"', $html);
+        $this->assertStringContainsString('id="pbEntriesPagerBottom"', $html);
+        $this->assertStringContainsString('href="?page=entries&amp;tmp_start=15">2</a>', $html);
+    }
+
+    #[Test]
+    public function entriesPageNotesHiddenAnswers(): void
+    {
+        $this->insertEntry();
+
+        $html = $this->render('entries.inc.php', ['admin_session' => self::FULL_RIGHTS, 'config_statements' => 'N']);
+
+        $this->assertStringContainsString('Antworten sind im Gästebuch zurzeit ausgeblendet', $html);
     }
 
     // ========================================================================
-    // 8. entry.inc.php
+    // entry.inc.php (Aufbereitung eines Eintrags)
     // ========================================================================
 
     #[Test]
-    public function entryPageProcessesBasicEntry(): void
+    public function entryHelperBuildsBasicValues(): void
     {
-        $entry = [
-            'id' => 1,
-            'name' => 'TestUser',
-            'email' => 'test@test.com',
-            'text' => 'Hello entry text',
-            'date' => 1700000000,
-            'homepage' => 'https://example.com',
-            'icq' => '',
-            'ip' => '10.0.0.1',
-            'status' => 'R',
-            'icon' => 'no',
-            'smilies' => 'N',
-            'statement' => '',
-            'statement_by' => '',
-        ];
+        $vars = $this->entryVars(['name' => '<b>Gast</b>', 'ip' => '', 'date' => mktime(9, 5, 0, 1, 2, 2026)]);
 
-        $config_icons = 'N';
-        $config_text_format = 'N';
-        $config_smilies = 'N';
-        $config_icq = 'N';
-        $db_statement = 'N';
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/entry.inc.php';
-        ob_get_clean();
-
-        $this->assertSame('10.0.0.1', $ip);
-        $this->assertSame('', $show_icon);
-        $this->assertStringContainsString('Homepage', $url);
-        $this->assertStringContainsString('test@test.com', $email_name);
-        $this->assertNotEmpty($date);
-        $this->assertNotEmpty($time);
+        $this->assertSame('&lt;b&gt;Gast&lt;/b&gt;', $vars['email_name']);
+        $this->assertSame('unbekannt', $vars['ip']);
+        $this->assertSame('02.01.2026', $vars['date']);
+        $this->assertSame('09:05 Uhr', $vars['time']);
+        $this->assertStringContainsString('Freigeschaltet', $vars['statusBadge']);
+        $this->assertSame('', $vars['show_icq']);
+        $this->assertSame('', $vars['answerHtml']);
     }
 
     #[Test]
-    public function entryPageShowsIconWhenEnabled(): void
+    public function entryHelperOnlyShowsKnownIcons(): void
     {
-        $entry = [
-            'id' => 2,
-            'name' => 'IconUser',
-            'email' => '',
-            'text' => 'Icon test',
-            'date' => 1700000000,
-            'homepage' => '',
-            'icq' => '',
-            'ip' => '',
-            'status' => 'R',
-            'icon' => 'happy1',
-            'smilies' => 'N',
-            'statement' => '',
-            'statement_by' => '',
-        ];
-
-        $config_icons = 'Y';
-        $config_text_format = 'N';
-        $config_smilies = 'N';
-        $config_icq = 'N';
-        $db_statement = 'N';
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/entry.inc.php';
-        ob_get_clean();
-
-        $this->assertStringContainsString('happy1.gif', $show_icon);
-        $this->assertSame('unknown', $ip);
-        $this->assertStringContainsString('Keine Homepage', $url);
+        $this->assertStringContainsString('../smilies/happy1.gif', $this->entryVars(['icon' => 'happy1'])['show_icon']);
+        $this->assertSame('', $this->entryVars(['icon' => '../../assets/x'])['show_icon']);
+        $this->assertSame('', $this->entryVars(['icon' => 'happy1'], ['config_icons' => 'N'])['show_icon']);
     }
 
     #[Test]
-    public function entryPageProcessesBBCodeAndSmilies(): void
+    public function entryHelperRendersBbcodeAndSmileysLikeGuestbook(): void
     {
-        $entry = [
-            'id' => 3,
-            'name' => 'BBUser',
-            'email' => '',
-            'text' => '[b]Bold text[/b] and :)',
-            'date' => 1700000000,
-            'homepage' => '',
-            'icq' => '12345678',
-            'ip' => '1.2.3.4',
-            'status' => 'R',
-            'icon' => 'no',
-            'smilies' => 'Y',
-            'statement' => '',
-            'statement_by' => '',
-        ];
+        $vars = $this->entryVars(['text' => '[b]Fett[/b] und [i]offen :)', 'smilies' => 'Y']);
 
-        $config_icons = 'N';
-        $config_text_format = 'Y';
-        $config_smilies = 'Y';
-        $config_icq = 'Y';
-        $db_statement = 'N';
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/entry.inc.php';
-        ob_get_clean();
-
-        $this->assertStringContainsString('<b>Bold text</b>', $entryText);
-        $this->assertStringContainsString('happy1.gif', $entryText);
-        // ICQ-Feature wurde komplett entfernt — $show_icq ist immer leer.
-        $this->assertSame('', $show_icq);
+        $this->assertStringContainsString('<b>Fett</b>', $vars['entryText']);
+        $this->assertStringContainsString('[i]offen', $vars['entryText']);
+        $this->assertStringContainsString('../smilies/happy1.gif', $vars['entryText']);
+        $this->assertStringNotContainsString('happy1.gif', $this->entryVars(['text' => 'Hallo :)', 'smilies' => 'N'])['entryText']);
     }
 
     #[Test]
-    public function entryPageShowsStatement(): void
+    public function entryHelperNormalizesHomepage(): void
     {
-        $entry = [
-            'id' => 4,
-            'name' => 'StatUser',
-            'email' => '',
-            'text' => 'Original text',
-            'date' => 1700000000,
-            'homepage' => '',
-            'icq' => '',
-            'ip' => '',
-            'status' => 'R',
-            'icon' => 'no',
-            'smilies' => 'N',
-            'statement' => 'Admin response here',
-            'statement_by' => 'SuperAdmin',
-        ];
+        $vars = $this->entryVars(['homepage' => 'www.example.org/seite']);
+        $this->assertStringContainsString('href="https://www.example.org/seite"', $vars['homepage_link']);
+        $this->assertStringContainsString('>www.example.org</a>', $vars['homepage_link']);
+        $this->assertSame($vars['homepage_link'], $vars['url']);
 
-        $config_icons = 'N';
-        $config_text_format = 'N';
-        $config_smilies = 'N';
-        $config_icq = 'N';
-        $db_statement = 'Y';
+        $this->assertStringContainsString('keine Homepage', $this->entryVars(['homepage' => 'javascript:alert(1)'])['homepage_link']);
+    }
 
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/entry.inc.php';
-        ob_get_clean();
+    #[Test]
+    public function entryHelperShowsAnswerAndPendingStatus(): void
+    {
+        $vars = $this->entryVars(['id' => 7, 'status' => 'U', 'statement' => "Danke!\nBis bald", 'statement_by' => 'Anke']);
 
-        $this->assertStringContainsString('Admin response here', $entry['text']);
-        $this->assertStringContainsString('SuperAdmin', $entry['text']);
-        $this->assertStringContainsString('Statement', $entry['text']);
+        $this->assertStringContainsString('id="pbEntryAnswerText7"', $vars['answerHtml']);
+        $this->assertStringContainsString('Antwort von Anke:', $vars['answerHtml']);
+        $this->assertStringContainsString('Danke!<br>', $vars['answerHtml']);
+        $this->assertStringContainsString('Antwort von Anke:', $vars['entry']['text']);
+        $this->assertStringContainsString('id="pbEntryStatus7"', $vars['statusBadge']);
+        $this->assertStringContainsString('Wartet auf Freischaltung', $vars['statusBadge']);
+        $this->assertSame('', $this->entryVars(['statement' => '   '])['answerHtml']);
+    }
+
+    #[Test]
+    public function entryHelperShowsMailtoOnlyWithAddress(): void
+    {
+        $vars = $this->entryVars(['name' => 'Ines', 'email' => 'ines@example.org']);
+
+        $this->assertStringContainsString('href="mailto:ines@example.org"', $vars['email_name']);
+        $this->assertStringContainsString('ines@example.org</a>', $vars['entryEmailLink']);
+        $this->assertSame('', $this->entryVars(['email' => ''])['entryEmailLink']);
     }
 
     // ========================================================================
-    // 9. configuration.inc.php
-    // ========================================================================
-
-    #[Test]
-    public function configurationPageDeniesWithoutPermission(): void
-    {
-        $output = $this->renderAdminPage('configuration.inc.php', [
-            'admin_session' => ['config' => 'N'],
-        ]);
-
-        $this->assertStringContainsString('keine Berechtigung', $output);
-    }
-
-    #[Test]
-    public function configurationPageShowsForm(): void
-    {
-        $output = $this->renderAdminPage('configuration.inc.php', [
-            'admin_session' => ['config' => 'Y'],
-        ]);
-
-        $this->assertStringContainsString('Konfiguration', $output);
-        $this->assertStringContainsString('<form', $output);
-        $this->assertStringContainsString('change_email', $output);
-        $this->assertStringContainsString('change_date', $output);
-        $this->assertStringContainsString('Konfiguration speichern', $output);
-    }
-
-    #[Test]
-    public function configurationPageUpdatesConfig(): void
-    {
-        $token = $this->getCsrfToken();
-
-        $_POST = [
-            'action' => 'update',
-            'csrf_token' => $token,
-            'change_release' => 'R',
-            'change_send_email' => 'N',
-            'change_email' => 'updated@test.com',
-            'change_date' => 'd.m.Y',
-            'change_time' => 'H:i',
-            'change_spam_check' => '120',
-            'change_color' => '#00FF00',
-            'change_show_entries' => '20',
-            'change_guestbook_name' => 'guestbook.php',
-            'change_admin_url' => '',
-            'change_text_format' => 'Y',
-            'change_icons' => 'Y',
-            'change_smilies' => 'Y',
-            'change_icq' => 'N',
-            'change_pages' => 'D',
-            'change_use_thanks' => 'N',
-            'change_language' => 'eng',
-            'change_design' => '(#ICON#)(#DATE#)(#TIME#)(#TEXT#)',
-            'change_thanks_title' => '',
-            'change_thanks' => '',
-            'change_statements' => 'Y',
-        ];
-
-        $output = $this->renderAdminPage('configuration.inc.php', [
-            'admin_session' => ['config' => 'Y'],
-        ]);
-
-        $this->assertStringContainsString('erfolgreich aktualisiert', $output);
-
-        // Verify the database was updated
-        $stmt = $this->db()->query('SELECT email, show_entries FROM pb_config LIMIT 1');
-        $config = $stmt->fetch(PDO::FETCH_ASSOC);
-        $this->assertSame('updated@test.com', $config['email']);
-        $this->assertEquals(20, $config['show_entries']);
-
-        // Restore defaults
-        $this->db()->exec("UPDATE pb_config SET email = 'admin@test.com', show_entries = 10");
-    }
-
-    #[Test]
-    public function configurationPageShowsValidationErrors(): void
-    {
-        $token = $this->getCsrfToken();
-
-        $_POST = [
-            'action' => 'update',
-            'csrf_token' => $token,
-            'change_release' => 'R',
-            'change_send_email' => 'N',
-            'change_email' => '',
-            'change_date' => '',
-            'change_time' => 'H:i',
-            'change_spam_check' => '30',
-            'change_color' => '#FF0000',
-            'change_show_entries' => '10',
-            'change_guestbook_name' => 'pbook.php',
-            'change_admin_url' => '',
-            'change_text_format' => 'Y',
-            'change_icons' => 'Y',
-            'change_smilies' => 'Y',
-            'change_icq' => 'N',
-            'change_pages' => 'D',
-            'change_use_thanks' => 'N',
-            'change_design' => '(#TEXT#)',
-            'change_thanks_title' => '',
-            'change_thanks' => '',
-            'change_statements' => 'Y',
-        ];
-
-        $output = $this->renderAdminPage('configuration.inc.php', [
-            'admin_session' => ['config' => 'Y'],
-        ]);
-
-        $this->assertStringContainsString('E-Mail-Adresse', $output);
-        $this->assertStringContainsString('Datumsformat', $output);
-    }
-
-    // ========================================================================
-    // 10. edit.inc.php
+    // Bearbeiten
     // ========================================================================
 
     #[Test]
     public function editPageDeniesWithoutPermission(): void
     {
-        $output = $this->renderAdminPage('edit.inc.php', [
-            'admin_session' => ['entries' => 'N'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-        ]);
+        $html = $this->render('edit.inc.php', ['admin_session' => ['entries' => 'N', 'release' => 'Y']]);
 
-        $this->assertStringContainsString('keine Berechtigung', $output);
+        $this->assertStringContainsString('keine Berechtigung', $html);
     }
 
     #[Test]
-    public function editPageShowsErrorForNoId(): void
+    public function editPageRejectsUnknownIds(): void
     {
-        $output = $this->renderAdminPage('edit.inc.php', [
-            'admin_session' => ['entries' => 'Y'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-        ]);
+        $this->assertStringContainsString('ID unbekannt', $this->render('edit.inc.php', ['admin_session' => self::FULL_RIGHTS]));
 
-        $this->assertStringContainsString('ID unbekannt', $output);
+        $_GET['edit_id'] = '-1';
+        $this->assertStringContainsString('ID unbekannt', $this->render('edit.inc.php', ['admin_session' => self::FULL_RIGHTS]));
+
+        $_GET['edit_id'] = '999';
+        $this->assertStringContainsString('Diesen Eintrag gibt es nicht mehr.', $this->render('edit.inc.php', ['admin_session' => self::FULL_RIGHTS]));
     }
 
     #[Test]
-    public function editPageShowsEditForm(): void
+    public function editPageShowsFormWithStableIds(): void
     {
-        $this->db()->exec("INSERT INTO pb_entries (id, name, text, date, email, ip, status) VALUES (100, 'EditTestUser', 'Edit me', " . time() . ", 'edit@test.com', '10.0.0.1', 'R')");
+        $id = $this->insertEntry(['name' => 'Familie Özdemir', 'homepage' => 'https://www.example.org/']);
+        $_GET['edit_id'] = (string) $id;
 
-        $_GET['edit_id'] = '100';
+        $html = $this->render('edit.inc.php', ['admin_session' => self::FULL_RIGHTS]);
 
-        $output = $this->renderAdminPage('edit.inc.php', [
-            'admin_session' => ['entries' => 'Y'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-        ]);
-
-        $this->assertStringContainsString('bearbeiten', $output);
-        $this->assertStringContainsString('EditTestUser', $output);
-        $this->assertStringContainsString('Edit me', $output);
-        $this->assertStringContainsString('Speichern', $output);
-
-        $this->db()->exec('DELETE FROM pb_entries WHERE id = 100');
+        foreach (['pb_edit_name', 'pb_edit_email', 'pb_edit_homepage', 'pb_edit_status', 'pb_edit_text', 'pb_edit_icon_no', 'pb_edit_smilies', 'pbEditSubmit', 'pbEditReset', 'pbEditDelete', 'pbBackToEntries'] as $field) {
+            $this->assertStringContainsString('id="' . $field . '"', $html, $field);
+        }
+        $this->assertStringContainsString('Familie Özdemir', $html);
+        $this->assertStringContainsString('>Freigeschaltet</option>', $html);
+        $this->assertStringContainsString('>Wartet auf Freischaltung</option>', $html);
+        $this->assertStringNotContainsString('input-group-text', $html);
+        $this->assertStringNotContainsString('Veroeffentlicht', $html);
+        $this->assertStringNotContainsString('Button', $html);
     }
 
     #[Test]
-    public function editPageUpdatesEntry(): void
+    public function editPageHidesStatusWithoutReleaseRight(): void
     {
-        $this->db()->exec("INSERT INTO pb_entries (id, name, text, date, email, ip, status) VALUES (101, 'OldName', 'Old text', " . time() . ", 'old@test.com', '10.0.0.1', 'R')");
+        $id = $this->insertEntry();
+        $_GET['edit_id'] = (string) $id;
 
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'update',
-            'csrf_token' => $token,
-            'edit_id' => '101',
-            'edit_name' => 'NewName',
-            'edit_email' => 'new@test.com',
-            'edit_text' => 'Updated text',
-            'edit_homepage' => '',
-            'edit_icq' => '',
-            'edit_icon' => 'no',
-            'edit_status' => 'R',
-            'edit_smilies' => 'N',
-        ];
+        $html = $this->render('edit.inc.php', ['admin_session' => ['entries' => 'Y', 'release' => 'N']]);
 
-        $output = $this->renderAdminPage('edit.inc.php', [
-            'admin_session' => ['entries' => 'Y'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-        ]);
-
-        $this->assertStringContainsString('erfolgreich bearbeitet', $output);
-
-        // Verify DB update
-        $stmt = $this->db()->prepare('SELECT name, text FROM pb_entries WHERE id = 101');
-        $stmt->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $this->assertSame('NewName', $row['name']);
-        $this->assertSame('Updated text', $row['text']);
-
-        $this->db()->exec('DELETE FROM pb_entries WHERE id = 101');
+        $this->assertStringNotContainsString('id="pb_edit_status"', $html);
+        $this->assertStringContainsString('Den Status ändert nur, wer Einträge freischalten darf.', $html);
     }
 
     #[Test]
-    public function editPageConfirmsDelete(): void
+    public function editPageSavesAndRedirectsToForm(): void
     {
-        $this->db()->exec("INSERT INTO pb_entries (id, name, text, date) VALUES (102, 'DeleteMe', 'To be deleted', " . time() . ')');
+        $id = $this->insertEntry(['name' => 'Alt', 'text' => 'Alter Text']);
+        $_POST = $this->editPost($id, ['edit_name' => 'Neu', 'edit_text' => 'Neuer Text', 'edit_homepage' => 'example.org', 'edit_status' => 'U']);
 
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'confirm_delete',
-            'csrf_token' => $token,
-            'edit_id' => '102',
-        ];
+        $this->render('edit.inc.php', ['admin_session' => self::FULL_RIGHTS]);
 
-        $output = $this->renderAdminPage('edit.inc.php', [
-            'admin_session' => ['entries' => 'Y'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-        ]);
-
-        $this->assertStringContainsString('Sind Sie sicher', $output);
-        $this->assertStringContainsString('value="delete"', $output);
-
-        $this->db()->exec('DELETE FROM pb_entries WHERE id = 102');
+        $this->assertSame('?page=edit&edit_id=' . $id, $this->redirect);
+        $this->assertSame(['type' => 'success', 'text' => 'Der Eintrag wurde gespeichert.'], $this->flash());
+        $row = $this->row($id);
+        $this->assertSame('Neu', $row['name']);
+        $this->assertSame('Neuer Text', $row['text']);
+        $this->assertSame('https://example.org', $row['homepage']);
+        $this->assertSame('U', $row['status']);
     }
 
     #[Test]
-    public function editPageDeletesEntry(): void
+    public function editPageKeepsInputOnValidationError(): void
     {
-        $this->db()->exec("INSERT INTO pb_entries (id, name, text, date) VALUES (103, 'WillBeDeleted', 'Bye', " . time() . ')');
+        $id = $this->insertEntry(['name' => 'Alt', 'text' => 'Alter Text']);
+        $_POST = $this->editPost($id, ['edit_name' => '', 'edit_text' => 'Geänderter Text bleibt']);
 
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'delete',
-            'csrf_token' => $token,
-            'edit_id' => '103',
-        ];
+        $html = $this->render('edit.inc.php', ['admin_session' => self::FULL_RIGHTS]);
 
-        $output = $this->renderAdminPage('edit.inc.php', [
-            'admin_session' => ['entries' => 'Y'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-        ]);
+        $this->assertNull($this->redirect);
+        $this->assertSame('Bitte geben Sie einen Namen ein.', $this->flash()['text'] ?? '');
+        $this->assertStringContainsString('Geänderter Text bleibt', $html);
+        $this->assertStringContainsString('form-control is-invalid', $html);
+        $this->assertSame('Alt', $this->row($id)['name']);
+    }
 
-        $this->assertStringContainsString('erfolgreich gel', $output);
+    #[Test]
+    public function editPageReportsSeveralErrors(): void
+    {
+        $id = $this->insertEntry();
+        $_POST = $this->editPost($id, ['edit_name' => '', 'edit_email' => 'kein-mail', 'edit_homepage' => 'javascript:alert(1)']);
 
-        // Verify deletion
-        $stmt = $this->db()->prepare('SELECT COUNT(*) FROM pb_entries WHERE id = 103');
-        $stmt->execute();
-        $this->assertEquals(0, $stmt->fetchColumn());
+        $html = $this->render('edit.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertSame('Bitte prüfen Sie die markierten Felder.', $this->flash()['text'] ?? '');
+        $this->assertStringContainsString('Die E-Mail-Adresse ist ungültig.', $html);
+        $this->assertStringContainsString('Die Homepage-Adresse ist ungültig.', $html);
+    }
+
+    #[Test]
+    public function editPageIgnoresStatusWithoutReleaseRight(): void
+    {
+        $id = $this->insertEntry(['status' => 'U']);
+        $_POST = $this->editPost($id, ['edit_status' => 'R']);
+
+        $this->render('edit.inc.php', ['admin_session' => ['entries' => 'Y', 'release' => 'N']]);
+
+        $this->assertNotNull($this->redirect);
+        $this->assertSame('U', $this->row($id)['status']);
+    }
+
+    #[Test]
+    public function editPageKeepsIconAndSmileysWhenDisabled(): void
+    {
+        $id = $this->insertEntry(['icon' => 'happy1', 'smilies' => 'Y']);
+        $post = $this->editPost($id);
+        unset($post['edit_icon'], $post['edit_smilies']);
+        $_POST = $post;
+
+        $this->render('edit.inc.php', ['admin_session' => self::FULL_RIGHTS, 'config_icons' => 'N', 'config_smilies' => 'N']);
+
+        $row = $this->row($id);
+        $this->assertSame('happy1', $row['icon']);
+        $this->assertSame('Y', $row['smilies']);
+    }
+
+    #[Test]
+    public function editPageRejectsUnknownIcon(): void
+    {
+        $id = $this->insertEntry(['icon' => 'happy1']);
+        $_POST = $this->editPost($id, ['edit_icon' => '../../assets/x']);
+
+        $this->render('edit.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertSame('no', $this->row($id)['icon']);
+    }
+
+    #[Test]
+    public function editPageAsksBeforeDeleting(): void
+    {
+        $id = $this->insertEntry(['name' => 'Kredit-Express']);
+        $_POST = ['action' => 'confirm_delete', 'edit_id' => (string) $id, 'csrf_token' => generateCsrfToken()];
+
+        $html = $this->render('edit.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertStringContainsString('id="pbDeleteQuestion"', $html);
+        $this->assertStringContainsString('id="pbDeleteConfirm"', $html);
+        $this->assertStringContainsString('id="pbDeleteCancel"', $html);
+        $this->assertStringContainsString('value="delete"', $html);
+        $this->assertStringNotContainsString('id="pb_edit_name"', $html);
+        $this->assertSame(1, (int) self::$pdo->query("SELECT COUNT(*) FROM pb_entries WHERE id = {$id}")->fetchColumn());
+    }
+
+    #[Test]
+    public function editPageDeletesAndReturnsToList(): void
+    {
+        $id = $this->insertEntry(['name' => 'Tim und Mara']);
+        $_POST = ['action' => 'delete', 'edit_id' => (string) $id, 'csrf_token' => generateCsrfToken()];
+
+        $this->render('edit.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertSame('?page=entries', $this->redirect);
+        $this->assertSame('Der Eintrag von „Tim und Mara“ wurde gelöscht.', $this->flash()['text'] ?? '');
+        $this->assertSame(0, (int) self::$pdo->query("SELECT COUNT(*) FROM pb_entries WHERE id = {$id}")->fetchColumn());
+    }
+
+    #[Test]
+    public function editPageDeleteReturnsToReleasePage(): void
+    {
+        $id = $this->insertEntry(['status' => 'U']);
+        $_POST = ['action' => 'delete', 'edit_id' => (string) $id, 'return' => 'release', 'csrf_token' => generateCsrfToken()];
+
+        $this->render('edit.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertSame('?page=release', $this->redirect);
+    }
+
+    #[Test]
+    public function editPageWithInvalidTokenKeepsInput(): void
+    {
+        $id = $this->insertEntry(['text' => 'Alter Text']);
+        $_POST = $this->editPost($id, ['edit_text' => 'Text aus dem zweiten Tab', 'csrf_token' => 'veraltet']);
+
+        $html = $this->render('edit.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertNull($this->redirect);
+        $this->assertSame(pb_admin_csrf_message(), $this->flash()['text'] ?? '');
+        $this->assertStringContainsString('Text aus dem zweiten Tab', $html);
+        $this->assertSame('Alter Text', $this->row($id)['text']);
     }
 
     // ========================================================================
-    // 11. release.inc.php
+    // Freischalten
     // ========================================================================
 
     #[Test]
     public function releasePageDeniesWithoutPermission(): void
     {
-        $output = $this->renderAdminPage('release.inc.php', [
-            'admin_session' => ['release' => 'N'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-            'db_statement' => 'N',
-        ]);
+        $html = $this->render('release.inc.php', ['admin_session' => ['release' => 'N', 'entries' => 'Y']]);
 
-        $this->assertStringContainsString('keine Berechtigung', $output);
+        $this->assertStringContainsString('keine Berechtigung', $html);
     }
 
     #[Test]
-    public function releasePageShowsNoUnreleasedEntries(): void
+    public function releasePageShowsEmptyMessage(): void
     {
-        $this->db()->exec('DELETE FROM pb_entries');
+        $this->insertEntry(['status' => 'R']);
 
-        $output = $this->renderAdminPage('release.inc.php', [
-            'admin_session' => ['release' => 'Y'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-            'db_statement' => 'N',
-        ]);
+        $html = $this->render('release.inc.php', ['admin_session' => self::FULL_RIGHTS]);
 
-        $this->assertStringContainsString('Keine Eintr', $output);
-        $this->assertStringContainsString('freischalten', $output);
+        $this->assertStringContainsString('Keine Einträge warten auf Freischaltung.', $html);
+        $this->assertStringNotContainsString('id="pbReleaseSelected"', $html);
     }
 
     #[Test]
-    public function releasePageShowsUnreleasedEntries(): void
+    public function releasePageListsPendingEntriesWithCheckboxes(): void
     {
-        $this->db()->exec('DELETE FROM pb_entries');
-        $this->db()->exec("INSERT INTO pb_entries (id, name, text, date, ip, status) VALUES (200, 'Unreleased1', 'Pending text', " . time() . ", '127.0.0.1', 'U')");
-        $this->db()->exec("INSERT INTO pb_entries (id, name, text, date, ip, status) VALUES (201, 'Unreleased2', 'Also pending', " . time() . ", '127.0.0.2', 'U')");
+        $a = $this->insertEntry(['status' => 'U', 'name' => 'Ines aus Leipzig']);
+        $b = $this->insertEntry(['status' => 'U', 'name' => 'Kredit-Express']);
+        $this->insertEntry(['status' => 'R', 'name' => 'Schon öffentlich']);
 
-        $output = $this->renderAdminPage('release.inc.php', [
-            'admin_session' => ['release' => 'Y'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-            'db_statement' => 'N',
-        ]);
+        $html = $this->render('release.inc.php', ['admin_session' => self::FULL_RIGHTS]);
 
-        $this->assertStringContainsString('2', $output);
-        $this->assertStringContainsString('nicht freigegebene', $output);
-        $this->assertStringContainsString('Pending text', $output);
-        $this->assertStringContainsString('Also pending', $output);
-        $this->assertStringContainsString('Alle freischalten', $output);
-
-        $this->db()->exec('DELETE FROM pb_entries');
+        $this->assertSame(2, substr_count($html, 'name="ids[]"'));
+        $this->assertStringContainsString('id="pbReleaseCheck' . $a . '"', $html);
+        $this->assertStringContainsString('id="pbReleaseCheck' . $b . '"', $html);
+        $this->assertStringContainsString('id="pbReleaseSelected"', $html);
+        $this->assertStringContainsString('id="pbDeleteSelected"', $html);
+        $this->assertStringContainsString('id="pbEntryEdit' . $a . '"', $html);
+        $this->assertStringNotContainsString('Schon öffentlich', $html);
+        $this->assertStringNotContainsString('Alle freischalten', $html);
+        $this->assertMatchesRegularExpression('~Es warten\s*<span[^>]*>2</span>\s*Einträge auf Freischaltung\.~', $html);
     }
 
     #[Test]
-    public function releasePageReleasesSingleEntry(): void
+    public function releasePageWithoutEntriesRightHasNoEditButton(): void
     {
-        $this->db()->exec('DELETE FROM pb_entries');
-        $this->db()->exec("INSERT INTO pb_entries (id, name, text, date, ip, status) VALUES (202, 'ToRelease', 'Release me', " . time() . ", '10.0.0.1', 'U')");
+        $id = $this->insertEntry(['status' => 'U']);
 
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'release_one',
-            'csrf_token' => $token,
-            'entry_id' => '202',
-        ];
+        $html = $this->render('release.inc.php', ['admin_session' => ['release' => 'Y', 'entries' => 'N']]);
 
-        $output = $this->renderAdminPage('release.inc.php', [
-            'admin_session' => ['release' => 'Y'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-            'db_statement' => 'N',
-        ]);
-
-        $this->assertStringContainsString('erfolgreich freigeschaltet', $output);
-
-        // Verify status changed
-        $stmt = $this->db()->prepare('SELECT status FROM pb_entries WHERE id = 202');
-        $stmt->execute();
-        $this->assertSame('R', $stmt->fetchColumn());
-
-        $this->db()->exec('DELETE FROM pb_entries');
+        $this->assertStringNotContainsString('id="pbEntryEdit' . $id . '"', $html);
+        $this->assertStringContainsString('id="pbDeleteSelected"', $html);
     }
 
     #[Test]
-    public function releasePageReleasesAllEntries(): void
+    public function releaseWithoutSelectionShowsMessage(): void
     {
-        $this->db()->exec('DELETE FROM pb_entries');
-        $this->db()->exec("INSERT INTO pb_entries (id, name, text, date, ip, status) VALUES (203, 'All1', 'First', " . time() . ", '10.0.0.1', 'U')");
-        $this->db()->exec("INSERT INTO pb_entries (id, name, text, date, ip, status) VALUES (204, 'All2', 'Second', " . time() . ", '10.0.0.2', 'U')");
+        $this->insertEntry(['status' => 'U']);
+        $_POST = ['action' => 'release', 'csrf_token' => generateCsrfToken()];
 
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'release_all',
-            'csrf_token' => $token,
-        ];
+        $this->render('release.inc.php', ['admin_session' => self::FULL_RIGHTS]);
 
-        $output = $this->renderAdminPage('release.inc.php', [
-            'admin_session' => ['release' => 'Y'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-            'db_statement' => 'N',
-        ]);
+        $this->assertNull($this->redirect);
+        $this->assertSame('Bitte wählen Sie mindestens einen Eintrag aus.', $this->flash()['text'] ?? '');
+        $this->assertSame(1, (int) self::$pdo->query("SELECT COUNT(*) FROM pb_entries WHERE status = 'U'")->fetchColumn());
+    }
 
-        $this->assertStringContainsString('erfolgreich freigeschaltet', $output);
+    #[Test]
+    public function releaseSelectedReleasesOnlySelection(): void
+    {
+        $keep = $this->insertEntry(['status' => 'U']);
+        $release = $this->insertEntry(['status' => 'U']);
+        $_POST = ['action' => 'release', 'ids' => [(string) $release], 'csrf_token' => generateCsrfToken()];
 
-        // Verify all released
-        $stmt = $this->db()->query("SELECT COUNT(*) FROM pb_entries WHERE status = 'U'");
-        $this->assertEquals(0, $stmt->fetchColumn());
+        $this->render('release.inc.php', ['admin_session' => self::FULL_RIGHTS]);
 
-        $this->db()->exec('DELETE FROM pb_entries');
+        $this->assertSame('?page=release', $this->redirect);
+        $this->assertSame('Ein Eintrag wurde freigeschaltet. Er steht jetzt im Gästebuch.', $this->flash()['text'] ?? '');
+        $this->assertSame('U', $this->row($keep)['status']);
+        $this->assertSame('R', $this->row($release)['status']);
+    }
+
+    #[Test]
+    public function releaseSeveralShowsPlural(): void
+    {
+        $a = $this->insertEntry(['status' => 'U']);
+        $b = $this->insertEntry(['status' => 'U']);
+        $_POST = ['action' => 'release', 'ids' => [(string) $a, (string) $b, 'x', '-3'], 'csrf_token' => generateCsrfToken()];
+
+        $this->render('release.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertSame('2 Einträge wurden freigeschaltet. Sie stehen jetzt im Gästebuch.', $this->flash()['text'] ?? '');
+    }
+
+    #[Test]
+    public function deleteSelectedAsksFirst(): void
+    {
+        $spam = $this->insertEntry(['status' => 'U', 'name' => 'Kredit-Express', 'text' => 'Schnelle Kredite ohne Schufa!']);
+        $_POST = ['action' => 'delete_confirm', 'ids' => [(string) $spam], 'csrf_token' => generateCsrfToken()];
+
+        $html = $this->render('release.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertNull($this->redirect);
+        $this->assertStringContainsString('Diesen Eintrag wirklich löschen?', $html);
+        $this->assertStringContainsString('erscheint nie im Gästebuch', $html);
+        $this->assertStringContainsString('Kredit-Express', $html);
+        $this->assertStringContainsString('Schnelle Kredite ohne Schufa!', $html);
+        $this->assertStringContainsString('name="ids[]" value="' . $spam . '"', $html);
+        $this->assertStringContainsString('id="pbDeleteConfirm"', $html);
+        $this->assertStringContainsString('id="pbDeleteCancel"', $html);
+        $this->assertSame(1, (int) self::$pdo->query("SELECT COUNT(*) FROM pb_entries WHERE id = {$spam}")->fetchColumn());
+    }
+
+    #[Test]
+    public function deleteRemovesOnlyPendingEntries(): void
+    {
+        $spam = $this->insertEntry(['status' => 'U']);
+        $public = $this->insertEntry(['status' => 'R']);
+        $_POST = ['action' => 'delete', 'ids' => [(string) $spam, (string) $public], 'csrf_token' => generateCsrfToken()];
+
+        $this->render('release.inc.php', ['admin_session' => ['release' => 'Y', 'entries' => 'N']]);
+
+        $this->assertSame('?page=release', $this->redirect);
+        $this->assertSame('Ein Eintrag wurde gelöscht.', $this->flash()['text'] ?? '');
+        $this->assertSame(0, (int) self::$pdo->query("SELECT COUNT(*) FROM pb_entries WHERE id = {$spam}")->fetchColumn());
+        $this->assertSame(1, (int) self::$pdo->query("SELECT COUNT(*) FROM pb_entries WHERE id = {$public}")->fetchColumn());
+    }
+
+    #[Test]
+    public function releaseWithInvalidTokenChangesNothing(): void
+    {
+        $id = $this->insertEntry(['status' => 'U']);
+        $_POST = ['action' => 'release', 'ids' => [(string) $id], 'csrf_token' => 'falsch'];
+
+        $html = $this->render('release.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertNull($this->redirect);
+        $this->assertSame(pb_admin_csrf_message(), $this->flash()['text'] ?? '');
+        $this->assertSame('U', $this->row($id)['status']);
+        $this->assertStringContainsString('id="pbReleaseCheck' . $id . '" class="form-check-input" type="checkbox" name="ids[]" value="' . $id . '" checked', $html);
     }
 
     // ========================================================================
-    // 12. password.inc.php
+    // Antwort
     // ========================================================================
 
     #[Test]
-    public function passwordPageShowsRecoveryForm(): void
+    public function answerPageDeniesWithoutPermission(): void
     {
-        $output = $this->renderAdminPage('password.inc.php');
+        $html = $this->render('statement.inc.php', ['admin_session' => ['entries' => 'N']]);
 
-        $this->assertStringContainsString('Passwort', $output);
-        $this->assertStringContainsString('<form', $output);
-        $this->assertStringContainsString('name="name"', $output);
-        $this->assertStringContainsString('name="email_known"', $output);
-        $this->assertStringContainsString('Passwort vergessen', $output);
+        $this->assertStringContainsString('keine Berechtigung', $html);
     }
 
     #[Test]
-    public function passwordPageRecoversByName(): void
+    public function answerPageRejectsUnknownIds(): void
     {
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'recover',
-            'csrf_token' => $token,
-            'name' => 'SuperAdmin',
-            'email_known' => '',
-        ];
+        $this->assertStringContainsString('ID unbekannt', $this->render('statement.inc.php', ['admin_session' => self::FULL_RIGHTS]));
 
-        $output = $this->renderAdminPage('password.inc.php');
-
-        // BUG-009/010: Recovery-Response ist jetzt generisch (kein Leak der Mail-Adresse).
-        $this->assertStringContainsString('Falls ein Konto', $output);
-
-        // Token wurde in DB persistiert.
-        $row = $this->db()->query('SELECT reset_token, reset_token_expires FROM pb_admins WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
-        $this->assertNotEmpty($row['reset_token']);
-        $this->assertGreaterThan(time(), (int) $row['reset_token_expires']);
+        $_GET['id'] = '999';
+        $this->assertStringContainsString('Diesen Eintrag gibt es nicht mehr.', $this->render('statement.inc.php', ['admin_session' => self::FULL_RIGHTS]));
     }
 
     #[Test]
-    public function passwordPageRecoversByEmail(): void
+    public function answerPageShowsFormAndPreview(): void
     {
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'recover',
-            'csrf_token' => $token,
-            'name' => '',
-            'email_known' => 'admin@test.com',
-        ];
+        $id = $this->insertEntry(['text' => 'Schöne Ferien!']);
+        $_GET['id'] = (string) $id;
 
-        $output = $this->renderAdminPage('password.inc.php');
+        $html = $this->render('statement.inc.php', ['admin_session' => self::FULL_RIGHTS]);
 
-        // Generische Response (BUG-009).
-        $this->assertStringContainsString('Falls ein Konto', $output);
-
-        // Token muss gesetzt sein; Passwort bleibt unveraendert (BUG-010).
-        $row = $this->db()->query('SELECT reset_token, password FROM pb_admins WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
-        $this->assertNotEmpty($row['reset_token']);
-
-        // Reset token for subsequent tests.
-        $this->db()->exec('UPDATE pb_admins SET reset_token = NULL, reset_token_expires = NULL WHERE id = 1');
+        $this->assertStringContainsString('Antwort schreiben', $html);
+        $this->assertStringContainsString('Schöne Ferien!', $html);
+        $this->assertStringContainsString('id="pb_statement"', $html);
+        $this->assertStringContainsString('id="pbAnswerSubmit"', $html);
+        $this->assertStringContainsString('id="pbAnswerPreview"', $html);
+        $this->assertStringNotContainsString('id="pbAnswerDelete"', $html);
+        $this->assertStringContainsString('„Antwort von Anke:“', $html);
+        $this->assertStringNotContainsString('Statement', $html);
     }
 
     #[Test]
-    public function passwordPageShowsNotFoundError(): void
+    public function answerIsSavedTrimmedUnderCurrentAdmin(): void
     {
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'recover',
-            'csrf_token' => $token,
-            'name' => 'NonExistentAdmin',
-            'email_known' => '',
-        ];
+        $id = $this->insertEntry(['statement' => 'Alt', 'statement_by' => 'Anke']);
+        $_POST = ['action' => 'save', 'id' => (string) $id, 'edit_statement' => "  Danke, Jannik hier.  \n", 'csrf_token' => generateCsrfToken()];
 
-        $output = $this->renderAdminPage('password.inc.php');
+        $this->render('statement.inc.php', ['admin_session' => self::MODERATOR]);
 
-        // BUG-009: Keine spezifische "nicht gefunden" mehr — gleiche Response wie bei existent.
-        $this->assertStringContainsString('Falls ein Konto', $output);
-        $this->assertStringNotContainsString('nicht gefunden', $output);
+        $this->assertSame('?page=statement&id=' . $id, $this->redirect);
+        $this->assertSame('Die Antwort wurde gespeichert. Sie erscheint im Gästebuch unter dem Eintrag.', $this->flash()['text'] ?? '');
+        $row = $this->row($id);
+        $this->assertSame('Danke, Jannik hier.', $row['statement']);
+        $this->assertSame('Jannik', $row['statement_by']);
     }
 
     #[Test]
-    public function passwordPageShowsErrorWhenBothEmpty(): void
+    public function blankAnswerRemovesAnswerAndAuthor(): void
     {
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'recover',
-            'csrf_token' => $token,
-            'name' => '',
-            'email_known' => '',
-        ];
+        $id = $this->insertEntry(['statement' => 'Alt', 'statement_by' => 'Anke']);
+        $_POST = ['action' => 'save', 'id' => (string) $id, 'edit_statement' => '   ', 'csrf_token' => generateCsrfToken()];
 
-        $output = $this->renderAdminPage('password.inc.php');
+        $this->render('statement.inc.php', ['admin_session' => self::FULL_RIGHTS]);
 
-        $this->assertStringContainsString('geben Sie Ihren Namen oder', $output);
+        $this->assertSame('Die Antwort wurde entfernt.', $this->flash()['text'] ?? '');
+        $row = $this->row($id);
+        $this->assertSame('', $row['statement']);
+        $this->assertSame('', $row['statement_by']);
+    }
+
+    #[Test]
+    public function deleteButtonRemovesAnswer(): void
+    {
+        $id = $this->insertEntry(['statement' => 'Alt', 'statement_by' => 'Anke']);
+        $_GET['id'] = (string) $id;
+        $this->assertStringContainsString('id="pbAnswerDelete"', $this->render('statement.inc.php', ['admin_session' => self::FULL_RIGHTS]));
+
+        $_POST = ['action' => 'delete', 'id' => (string) $id, 'edit_statement' => 'Alt', 'csrf_token' => generateCsrfToken()];
+        $this->render('statement.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertSame('Die Antwort wurde entfernt.', $this->flash()['text'] ?? '');
+        $this->assertSame('', $this->row($id)['statement']);
+    }
+
+    #[Test]
+    public function emptyAnswerWithoutExistingAnswerSavesNothing(): void
+    {
+        $id = $this->insertEntry();
+        $_POST = ['action' => 'save', 'id' => (string) $id, 'edit_statement' => '', 'csrf_token' => generateCsrfToken()];
+
+        $this->render('statement.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertNull($this->redirect);
+        $this->assertSame('info', $this->flash()['type'] ?? '');
+    }
+
+    #[Test]
+    public function answerPageWarnsAboutOtherAuthor(): void
+    {
+        $id = $this->insertEntry(['statement' => 'Von Anke', 'statement_by' => 'Anke']);
+        $_GET['id'] = (string) $id;
+
+        $html = $this->render('statement.inc.php', ['admin_session' => self::MODERATOR]);
+
+        $this->assertStringContainsString('id="pbAnswerOtherAuthor"', $html);
+        $this->assertStringContainsString('Die Antwort stammt von <b>Anke</b>.', $html);
+        $this->assertStringContainsString('Antwort bearbeiten', $html);
+    }
+
+    #[Test]
+    public function answerWithInvalidTokenKeepsText(): void
+    {
+        $id = $this->insertEntry();
+        $_POST = ['action' => 'save', 'id' => (string) $id, 'edit_statement' => 'Bleibt stehen', 'csrf_token' => 'veraltet'];
+
+        $html = $this->render('statement.inc.php', ['admin_session' => self::FULL_RIGHTS]);
+
+        $this->assertNull($this->redirect);
+        $this->assertSame(pb_admin_csrf_message(), $this->flash()['text'] ?? '');
+        $this->assertStringContainsString('Bleibt stehen</textarea>', $html);
+        $this->assertSame('', $this->row($id)['statement']);
     }
 
     // ========================================================================
-    // 13. statement.inc.php
+    // Blätterleiste
     // ========================================================================
 
     #[Test]
-    public function statementPageDeniesWithoutPermission(): void
+    public function pagerShowsNothingForSinglePage(): void
     {
-        $output = $this->renderAdminPage('statement.inc.php', [
-            'admin_session' => ['entries' => 'N'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-        ]);
-
-        $this->assertStringContainsString('keine Berechtigung', $output);
+        $this->assertSame('', $this->renderPager(10, 0));
     }
 
     #[Test]
-    public function statementPageShowsErrorForNoId(): void
+    public function pagerShowsNumbersAndGermanLabels(): void
     {
-        $output = $this->renderAdminPage('statement.inc.php', [
-            'admin_session' => ['entries' => 'Y', 'name' => 'Admin'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-        ]);
+        $html = $this->renderPager(45, 15, 'pbEntriesPagerBottom');
 
-        $this->assertStringContainsString('ID unbekannt', $output);
+        $this->assertStringContainsString('id="pbEntriesPagerBottom"', $html);
+        $this->assertStringContainsString('Anfang', $html);
+        $this->assertStringContainsString('Ende', $html);
+        $this->assertStringNotContainsString('Beginn', $html);
+        $this->assertStringContainsString('<li class="page-item active" aria-current="page"><span class="page-link">2</span>', $html);
+        $this->assertStringContainsString('href="?page=entries">1</a>', $html);
+        $this->assertStringContainsString('href="?page=entries&amp;tmp_start=30">3</a>', $html);
+        $this->assertMatchesRegularExpression('~Vorherige Seite</a>~', $html);
     }
 
     #[Test]
-    public function statementPageShowsFormForEntry(): void
+    public function pagerDisablesNextOnLastPage(): void
     {
-        $this->db()->exec("INSERT INTO pb_entries (id, name, text, date, ip, status) VALUES (300, 'StatementTest', 'Some text', " . time() . ", '127.0.0.1', 'R')");
+        $html = $this->renderPager(45, 30);
 
-        $_GET['id'] = '300';
-
-        $output = $this->renderAdminPage('statement.inc.php', [
-            'admin_session' => ['entries' => 'Y', 'name' => 'TestAdmin'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-            'db_statement' => 'N',
-        ]);
-
-        $this->assertStringContainsString('Statements', $output);
-        $this->assertStringContainsString('edit_statement', $output);
-        $this->assertStringContainsString('Statement speichern', $output);
-        $this->assertStringContainsString('Some text', $output);
-
-        $this->db()->exec('DELETE FROM pb_entries WHERE id = 300');
-    }
-
-    #[Test]
-    public function statementPageUpdatesStatement(): void
-    {
-        $this->db()->exec("INSERT INTO pb_entries (id, name, text, date, ip, status) VALUES (301, 'StatUpdate', 'Entry text', " . time() . ", '127.0.0.1', 'R')");
-
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'update',
-            'csrf_token' => $token,
-            'id' => '301',
-            'edit_statement' => 'This is the admin statement',
-        ];
-
-        $output = $this->renderAdminPage('statement.inc.php', [
-            'admin_session' => ['entries' => 'Y', 'name' => 'TestAdmin'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-        ]);
-
-        $this->assertStringContainsString('erfolgreich aktualisiert', $output);
-
-        // Verify DB
-        $stmt = $this->db()->prepare('SELECT statement, statement_by FROM pb_entries WHERE id = 301');
-        $stmt->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $this->assertSame('This is the admin statement', $row['statement']);
-        $this->assertSame('TestAdmin', $row['statement_by']);
-
-        $this->db()->exec('DELETE FROM pb_entries WHERE id = 301');
-    }
-
-    #[Test]
-    public function statementPageDeletesStatement(): void
-    {
-        $this->db()->exec("INSERT INTO pb_entries (id, name, text, date, ip, status, statement, statement_by) VALUES (302, 'StatDel', 'Entry', " . time() . ", '127.0.0.1', 'R', 'Old statement', 'Admin')");
-
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'update',
-            'csrf_token' => $token,
-            'id' => '302',
-            'edit_statement' => '',
-        ];
-
-        $output = $this->renderAdminPage('statement.inc.php', [
-            'admin_session' => ['entries' => 'Y', 'name' => 'TestAdmin'],
-            'config_icons' => 'N',
-            'config_text_format' => 'N',
-            'config_smilies' => 'N',
-            'config_icq' => 'N',
-        ]);
-
-        $this->assertStringContainsString('gel', $output);
-
-        $this->db()->exec('DELETE FROM pb_entries WHERE id = 302');
+        $this->assertStringContainsString('<span class="page-link">Nächste Seite &rsaquo;</span>', $html);
+        $this->assertStringContainsString('<span class="page-link">Ende &raquo;</span>', $html);
     }
 
     // ========================================================================
-    // 14. emails.inc.php
+    // Helfer
     // ========================================================================
-
-    #[Test]
-    public function emailsPageHandlesAdminAddedEmail(): void
-    {
-        $email = 'admin_added';
-        $add_email = 'newadmin@test.com';
-        $add_name = 'NewAdmin';
-        $admin_name = 'SuperAdmin';
-        $config_admin_url = 'https://example.com/admin';
-        $add_config = 'Y';
-        $add_admins = 'N';
-        $add_entries = 'Y';
-        $add_release = 'N';
-        $time = 'temppass123';
-        $edit_email = '';
-        $edit_name = '';
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/emails.inc.php';
-        $output = ob_get_clean();
-
-        // The file sends an email via sendEmail() - just verify no errors/output
-        $this->assertEmpty($output);
-    }
-
-    #[Test]
-    public function emailsPageHandlesAdminEditedEmail(): void
-    {
-        $email = 'admin_edited';
-        $edit_email = 'edited@test.com';
-        $edit_name = 'EditedAdmin';
-        $admin_name = 'SuperAdmin';
-        $config_admin_url = '';
-        $edit_config = 'Y';
-        $edit_admins = 'Y';
-        $edit_entries = 'Y';
-        $edit_release = 'Y';
-        $add_email = '';
-        $add_name = '';
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/emails.inc.php';
-        $output = ob_get_clean();
-
-        $this->assertEmpty($output);
-    }
-
-    #[Test]
-    public function emailsPageHandlesAdminDeletedEmail(): void
-    {
-        $email = 'admin_deleted';
-        $edit_email = 'deleted@test.com';
-        $edit_name = 'DeletedAdmin';
-        $admin_name = 'SuperAdmin';
-        $config_admin_url = '';
-        $add_email = '';
-        $add_name = '';
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/emails.inc.php';
-        $output = ob_get_clean();
-
-        $this->assertEmpty($output);
-    }
-
-    #[Test]
-    public function emailsPageDoesNothingForUnknownAction(): void
-    {
-        $email = 'unknown_action';
-        $add_email = '';
-        $add_name = '';
-        $edit_email = '';
-        $edit_name = '';
-        $admin_name = '';
-        $config_admin_url = '';
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/emails.inc.php';
-        $output = ob_get_clean();
-
-        $this->assertEmpty($output);
-    }
-
-    // ========================================================================
-    // 15. pages.inc.php
-    // ========================================================================
-
-    #[Test]
-    public function pagesPageShowsNothingForSinglePage(): void
-    {
-        $tmp_pages = 1;
-        $tmp_start = 0;
-        $count_pages = 10;
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/pages.inc.php';
-        $output = ob_get_clean();
-
-        // Single page = no pagination shown
-        $this->assertStringNotContainsString('Beginn', $output);
-    }
-
-    #[Test]
-    public function pagesPageShowsNavigationForMultiplePages(): void
-    {
-        $tmp_pages = 3;
-        $tmp_start = 0;
-        $count_pages = 45;
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/pages.inc.php';
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString('Beginn', $output);
-        $this->assertStringContainsString('Ende', $output);
-    }
-
-    #[Test]
-    public function pagesPageShowsPreviousLinkOnLaterPage(): void
-    {
-        $tmp_pages = 3;
-        $tmp_start = 15;
-        $count_pages = 45;
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/pages.inc.php';
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString('Vorherige Seite', $output);
-        $this->assertMatchesRegularExpression('/Vorherige Seite<\/a>/', $output);
-    }
-
-    #[Test]
-    public function pagesPageShowsNextLinkOnFirstPage(): void
-    {
-        $tmp_pages = 3;
-        $tmp_start = 0;
-        $count_pages = 45;
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/pages.inc.php';
-        $output = ob_get_clean();
-
-        $this->assertMatchesRegularExpression('/chste Seite[^<]*<\/a>/', $output);
-    }
-
-    #[Test]
-    public function pagesPageDisablesNextOnLastPage(): void
-    {
-        $tmp_pages = 3;
-        $tmp_start = 30;
-        $count_pages = 45;
-
-        ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/pages.inc.php';
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString('Ende', $output);
-        $this->assertStringNotContainsString('href="?page=entries&tmp_start=30"', $output);
-    }
-
-    // ========================================================================
-    // 16. admins.inc.php
-    // ========================================================================
-
-    #[Test]
-    public function adminsPageDeniesWithoutPermission(): void
-    {
-        $output = $this->renderAdminPage('admins.inc.php', [
-            'admin_session' => ['admins' => 'N'],
-            'config_admin_url' => '',
-        ]);
-
-        $this->assertStringContainsString('keine Berechtigung', $output);
-    }
-
-    #[Test]
-    public function adminsPageShowsAdminList(): void
-    {
-        $output = $this->renderAdminPage('admins.inc.php', [
-            'admin_session' => [
-                'admins' => 'Y',
-                'id' => 1,
-                'name' => 'SuperAdmin',
-            ],
-            'config_admin_url' => '',
-        ]);
-
-        $this->assertStringContainsString('Admins', $output);
-        $this->assertStringContainsString('Admins bearbeiten', $output);
-        $this->assertStringContainsString('Admin hinzuf', $output);
-        $this->assertStringContainsString('SuperAdmin', $output);
-    }
-
-    #[Test]
-    public function adminsPageAddsNewAdmin(): void
-    {
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'add',
-            'csrf_token' => $token,
-            'add_name' => 'NewTestAdmin',
-            'add_email' => 'newtestadmin@test.com',
-            'add_config' => 'N',
-            'add_admins' => 'N',
-            'add_entries' => 'Y',
-            'add_release' => 'N',
-        ];
-
-        $output = $this->renderAdminPage('admins.inc.php', [
-            'admin_session' => [
-                'admins' => 'Y',
-                'id' => 1,
-                'name' => 'SuperAdmin',
-            ],
-            'config_admin_url' => '',
-        ]);
-
-        $this->assertStringContainsString('erfolgreich hinzugef', $output);
-
-        // Verify in DB
-        $stmt = $this->db()->prepare('SELECT name, email FROM pb_admins WHERE name = ?');
-        $stmt->execute(['NewTestAdmin']);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $this->assertSame('NewTestAdmin', $row['name']);
-        $this->assertSame('newtestadmin@test.com', $row['email']);
-
-        // Cleanup
-        $this->db()->exec("DELETE FROM pb_admins WHERE name = 'NewTestAdmin'");
-    }
-
-    #[Test]
-    public function adminsPageRejectsAddWithoutPermissions(): void
-    {
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'add',
-            'csrf_token' => $token,
-            'add_name' => 'NoPermsAdmin',
-            'add_email' => 'noperms@test.com',
-            'add_config' => 'N',
-            'add_admins' => 'N',
-            'add_entries' => 'N',
-            'add_release' => 'N',
-        ];
-
-        $output = $this->renderAdminPage('admins.inc.php', [
-            'admin_session' => [
-                'admins' => 'Y',
-                'id' => 1,
-                'name' => 'SuperAdmin',
-            ],
-            'config_admin_url' => '',
-        ]);
-
-        $this->assertStringContainsString('mindestens eine Berechtigung', $output);
-    }
-
-    #[Test]
-    public function adminsPageRejectsDuplicateName(): void
-    {
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'add',
-            'csrf_token' => $token,
-            'add_name' => 'SuperAdmin',
-            'add_email' => 'duplicate@test.com',
-            'add_config' => 'Y',
-            'add_admins' => 'N',
-            'add_entries' => 'N',
-            'add_release' => 'N',
-        ];
-
-        $output = $this->renderAdminPage('admins.inc.php', [
-            'admin_session' => [
-                'admins' => 'Y',
-                'id' => 1,
-                'name' => 'SuperAdmin',
-            ],
-            'config_admin_url' => '',
-        ]);
-
-        $this->assertStringContainsString('bereits einen Admin', $output);
-    }
-
-    #[Test]
-    public function adminsPagePreventsDeleteSuperAdmin(): void
-    {
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'edit',
-            'csrf_token' => $token,
-            'edit_id' => '1',
-            'edit_name' => 'SuperAdmin',
-            'edit_email' => 'admin@test.com',
-            'edit_password1' => '',
-            'edit_password2' => '',
-            'delete' => 'yes',
-        ];
-
-        $output = $this->renderAdminPage('admins.inc.php', [
-            'admin_session' => [
-                'admins' => 'Y',
-                'id' => 999,
-                'name' => 'OtherAdmin',
-            ],
-            'config_admin_url' => '',
-        ]);
-
-        $this->assertStringContainsString('SuperAdmin kann nicht gel', $output);
-    }
-
-    #[Test]
-    public function adminsPagePreventsSelfDelete(): void
-    {
-        $this->db()->exec("INSERT INTO pb_admins (id, name, email, password, config, admins, entries, \"release\") VALUES (50, 'SelfAdmin', 'self@test.com', 'hash', 'Y', 'Y', 'Y', 'Y')");
-
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'edit',
-            'csrf_token' => $token,
-            'edit_id' => '50',
-            'edit_name' => 'SelfAdmin',
-            'edit_email' => 'self@test.com',
-            'edit_password1' => '',
-            'edit_password2' => '',
-            'delete' => 'yes',
-        ];
-
-        $output = $this->renderAdminPage('admins.inc.php', [
-            'admin_session' => [
-                'admins' => 'Y',
-                'id' => 50,
-                'name' => 'SelfAdmin',
-            ],
-            'config_admin_url' => '',
-        ]);
-
-        $this->assertStringContainsString('selbst nicht l', $output);
-
-        $this->db()->exec('DELETE FROM pb_admins WHERE id = 50');
-    }
-
-    #[Test]
-    public function adminsPageDeletesOtherAdmin(): void
-    {
-        $this->db()->exec("INSERT INTO pb_admins (id, name, email, password, config, admins, entries, \"release\") VALUES (60, 'ToDelete', 'todelete@test.com', 'hash', 'N', 'N', 'Y', 'N')");
-
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'edit',
-            'csrf_token' => $token,
-            'edit_id' => '60',
-            'edit_name' => 'ToDelete',
-            'edit_email' => 'todelete@test.com',
-            'edit_password1' => '',
-            'edit_password2' => '',
-            'delete' => 'yes',
-        ];
-
-        $output = $this->renderAdminPage('admins.inc.php', [
-            'admin_session' => [
-                'admins' => 'Y',
-                'id' => 1,
-                'name' => 'SuperAdmin',
-            ],
-            'config_admin_url' => '',
-        ]);
-
-        $this->assertStringContainsString('erfolgreich gel', $output);
-
-        // Verify deletion
-        $stmt = $this->db()->prepare('SELECT COUNT(*) FROM pb_admins WHERE id = 60');
-        $stmt->execute();
-        $this->assertEquals(0, $stmt->fetchColumn());
-    }
-
-    #[Test]
-    public function adminsPageRejectsAddWithEmptyFields(): void
-    {
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'add',
-            'csrf_token' => $token,
-            'add_name' => '',
-            'add_email' => '',
-            'add_config' => 'N',
-            'add_admins' => 'N',
-            'add_entries' => 'N',
-            'add_release' => 'N',
-        ];
-
-        $output = $this->renderAdminPage('admins.inc.php', [
-            'admin_session' => [
-                'admins' => 'Y',
-                'id' => 1,
-                'name' => 'SuperAdmin',
-            ],
-            'config_admin_url' => '',
-        ]);
-
-        $this->assertStringContainsString('Namen und eine E-Mail', $output);
-    }
-
-    #[Test]
-    public function adminsPageRejectsInvalidEmail(): void
-    {
-        $token = $this->getCsrfToken();
-        $_POST = [
-            'action' => 'add',
-            'csrf_token' => $token,
-            'add_name' => 'BadEmailAdmin',
-            'add_email' => 'not-an-email',
-            'add_config' => 'Y',
-            'add_admins' => 'N',
-            'add_entries' => 'N',
-            'add_release' => 'N',
-        ];
-
-        $output = $this->renderAdminPage('admins.inc.php', [
-            'admin_session' => [
-                'admins' => 'Y',
-                'id' => 1,
-                'name' => 'SuperAdmin',
-            ],
-            'config_admin_url' => '',
-        ]);
-
-        $this->assertStringContainsString('ltige E-Mail', $output);
-    }
 
     protected function setUp(): void
     {
-        // Ensure GLOBALS are set for each test (PHPUnit may backup/restore)
         $GLOBALS['pdo'] = self::$pdo;
-        $GLOBALS['pb_config'] = self::$pbConfig;
-        $GLOBALS['pb_admin'] = self::$pbAdmin;
-        $GLOBALS['pb_entries'] = self::$pbEntries;
-
-        // Reset superglobals before each test
         $_POST = [];
         $_GET = [];
+        $this->redirect = null;
+        unset($_SESSION['pb_flash']);
+        self::$pdo->exec('DELETE FROM pb_entries');
     }
 
     protected function tearDown(): void
     {
         $_POST = [];
         $_GET = [];
+        unset($_SESSION['pb_flash']);
     }
 
     /**
-     * Render an admin page by including it with the given variables.
+     * Bindet eine Seite des AdminCenters ein und liefert die Ausgabe.
+     * Eine Weiterleitung landet in $this->redirect.
      *
-     * @param array<string, mixed> $vars Variables to extract into scope
+     * @param array<string, mixed> $vars Variablen aus index.php
      */
-    /**
-     * Render an admin page by including it with the given variables.
-     * Source files with function definitions use function_exists() guards,
-     * so they can be safely re-included.
-     *
-     * @param array<string, mixed> $vars Variables to extract into scope
-     */
-    private function renderAdminPage(string $file, array $vars = []): string
+    private function render(string $file, array $vars = []): string
     {
         $pdo = self::$pdo;
-        $pb_admin = self::$pbAdmin;
-        $pb_entries = self::$pbEntries;
-        $pb_config = self::$pbConfig;
-
+        $pb_admin = 'pb_admins';
+        $pb_entries = 'pb_entries';
+        $pb_config = 'pb_config';
+        $config_icons = 'Y';
+        $config_text_format = 'Y';
+        $config_smilies = 'Y';
+        $config_date = 'd.m.Y';
+        $config_time = 'H:i';
+        $config_statements = 'Y';
+        $admin_session = [];
+        $loggedIn = true;
+        $loginName = '';
         extract($vars);
 
+        $this->redirect = null;
+        unset($_SESSION['pb_flash']);
         ob_start();
-        include POWERBOOK_ROOT . '/pb_inc/admincenter/' . $file;
+
+        try {
+            include POWERBOOK_ROOT . '/pb_inc/admincenter/' . $file;
+        } catch (\PbAdminRedirect $redirect) {
+            $this->redirect = $redirect->location;
+        } finally {
+            $html = (string) ob_get_clean();
+        }
+
+        return $html;
+    }
+
+    private function renderPager(int $count, int $start, string $pagerId = ''): string
+    {
+        $count_pages = $count;
+        $tmp_start = $start;
+        $perPage = 15;
+
+        ob_start();
+        include POWERBOOK_ROOT . '/pb_inc/admincenter/pages.inc.php';
 
         return (string) ob_get_clean();
     }
 
     /**
-     * Generate a valid CSRF token for form submissions.
+     * Bindet entry.inc.php ein und liefert die gesetzten Variablen.
+     *
+     * @param array<string, mixed> $entryValues
+     * @param array<string, mixed> $config
+     *
+     * @return array<string, mixed>
      */
-    private function getCsrfToken(): string
+    private function entryVars(array $entryValues, array $config = []): array
     {
-        return generateCsrfToken();
+        $entry = array_merge([
+            'id' => 1, 'name' => 'Gast', 'email' => '', 'text' => 'Text', 'date' => 1_700_000_000,
+            'homepage' => '', 'ip' => '192.0.2.1', 'status' => 'R', 'icon' => 'no', 'smilies' => 'Y',
+            'statement' => '', 'statement_by' => '',
+        ], $entryValues);
+        $config_icons = 'Y';
+        $config_text_format = 'Y';
+        $config_smilies = 'Y';
+        $config_date = 'd.m.Y';
+        $config_time = 'H:i';
+        extract($config);
+
+        include POWERBOOK_ROOT . '/pb_inc/admincenter/entry.inc.php';
+
+        return get_defined_vars();
     }
 
     /**
-     * Get the PDO instance for direct database access in tests.
+     * @param array<string, mixed> $overrides
+     *
+     * @return array<string, mixed>
      */
-    private function db(): PDO
+    private function editPost(int $id, array $overrides = []): array
     {
-        return self::$pdo;
+        return array_merge([
+            'action' => 'update',
+            'edit_id' => (string) $id,
+            'csrf_token' => generateCsrfToken(),
+            'edit_name' => 'Gast',
+            'edit_email' => '',
+            'edit_text' => 'Text',
+            'edit_homepage' => '',
+            'edit_icon' => 'no',
+            'edit_status' => 'R',
+            'edit_smilies' => 'Y',
+        ], $overrides);
+    }
+
+    /**
+     * @return array{type: string, text: string}|null
+     */
+    private function flash(): ?array
+    {
+        $flash = $_SESSION['pb_flash'] ?? null;
+
+        return is_array($flash) ? $flash : null;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function insertEntry(array $data = []): int
+    {
+        $row = array_merge([
+            'name' => 'Gast', 'email' => '', 'text' => 'Ein Eintrag.', 'date' => time(), 'homepage' => '',
+            'ip' => '192.0.2.1', 'status' => 'R', 'icon' => 'no', 'smilies' => 'Y', 'statement' => '', 'statement_by' => '',
+        ], $data);
+        $columns = array_keys($row);
+        $stmt = self::$pdo->prepare('INSERT INTO pb_entries (' . implode(', ', $columns) . ') VALUES (' . implode(', ', array_fill(0, count($columns), '?')) . ')');
+        $stmt->execute(array_values($row));
+
+        return (int) self::$pdo->lastInsertId();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function row(int $id): array
+    {
+        $stmt = self::$pdo->prepare('SELECT * FROM pb_entries WHERE id = ?');
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return is_array($row) ? $row : [];
     }
 }

@@ -2,11 +2,10 @@
 
 /**
  * PowerBook - PHP Guestbook System
- * Bootstrap 5 Layout Helper (öffentlicher Bereich)
+ * Bootstrap-5-Rahmen für den öffentlichen Bereich
  *
- * Stellt wiederverwendbare Header/Footer/Alert-Funktionen bereit, damit alle
- * öffentlichen Ausgabestellen (pbook.php, install_deu.php) das gleiche
- * Bootstrap-5-Skelett nutzen.
+ * Kopf, Fuß und Meldungen für alle öffentlichen Seiten (pbook.php und die
+ * Seiten der Einrichtung).
  *
  * @license MIT
  * @copyright PowerScripts.org
@@ -16,78 +15,91 @@
 
 declare(strict_types=1);
 
+/** Bootstrap vom CDN mit Prüfsumme (Subresource Integrity). */
+const PB_BOOTSTRAP_CSS = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css';
+const PB_BOOTSTRAP_CSS_SRI = 'sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH';
+const PB_BOOTSTRAP_JS = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js';
+const PB_BOOTSTRAP_JS_SRI = 'sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz';
+
+if (!function_exists('pb_asset_url')) {
+    /**
+     * Adresse einer Datei aus assets/ mit Versionsparameter gegen alte Browser-Caches.
+     */
+    function pb_asset_url(string $file): string
+    {
+        $path = __DIR__ . '/../assets/' . $file;
+        $version = is_file($path) ? (int) filemtime($path) : 1;
+
+        return 'assets/' . $file . '?v=' . $version;
+    }
+}
+
 if (!function_exists('pb_layout_header')) {
     /**
-     * Render the public Bootstrap 5 page header (doctype, head, navbar, container open).
+     * Seitenkopf: Doctype, head, Kopfleiste, Beginn des Inhalts.
      *
-     * @param string $title    Page title (will be html-escaped)
-     * @param array<string, mixed> $opts Optional flags:
-     *                                   - bool   showNav   : navbar einblenden (default true)
-     *                                   - string adminLink : URL für Admin-Link (default 'pb_inc/admincenter/')
-     *                                   - string siteName  : Marke in der Navbar (default 'PowerBook')
+     * @param string $title Seitentitel (<title>, wird maskiert)
+     * @param array<string, mixed> $opts Optionen:
+     *                                   - bool   showNav      : Kopfleiste anzeigen (Vorgabe true)
+     *                                   - string adminLink    : Adresse des AdminCenters, '' blendet den Link aus
+     *                                   - string siteName     : Name in der Kopfleiste (Vorgabe „PowerBook“)
+     *                                   - string homeLink     : Ziel des Namens (Vorgabe „#top-of-page“)
+     *                                   - bool   brandHeading : Name als <h1 id="pbTitle"> ausgeben
      */
     function pb_layout_header(string $title, array $opts = []): void
     {
-        $showNav = $opts['showNav'] ?? true;
-        $adminLink = $opts['adminLink'] ?? 'pb_inc/admincenter/';
-        $siteName = $opts['siteName'] ?? 'PowerBook';
+        $showNav = (bool) ($opts['showNav'] ?? true);
+        $adminLink = (string) ($opts['adminLink'] ?? 'pb_inc/admincenter/');
+        $siteName = (string) ($opts['siteName'] ?? 'PowerBook');
+        $homeLink = (string) ($opts['homeLink'] ?? '#top-of-page');
+        $brandHeading = (bool) ($opts['brandHeading'] ?? false);
 
-        $titleEsc = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
-        $adminLinkEsc = htmlspecialchars((string) $adminLink, ENT_QUOTES, 'UTF-8');
-        $siteNameEsc = htmlspecialchars((string) $siteName, ENT_QUOTES, 'UTF-8');
+        $esc = static fn (string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
         echo '<!DOCTYPE html>' . "\n";
         echo '<html lang="de">' . "\n";
         echo '<head>' . "\n";
         echo '    <meta charset="UTF-8">' . "\n";
         echo '    <meta name="viewport" content="width=device-width, initial-scale=1.0">' . "\n";
-        echo '    <title>' . $titleEsc . '</title>' . "\n";
-        echo '    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">' . "\n";
-        // Versions-Parameter aus filemtime() — schiebt den Browser-Cache nach jedem
-        // CSS-Edit zuverlaessig zur Seite, ohne harte Cache-Header anpassen zu muessen.
-        $cssPath = __DIR__ . '/../assets/powerbook.css';
-        $cssVersion = file_exists($cssPath) ? (int) filemtime($cssPath) : 1;
-        echo '    <link href="assets/powerbook.css?v=' . $cssVersion . '" rel="stylesheet">' . "\n";
+        echo '    <title>' . $esc($title) . '</title>' . "\n";
+        echo '    <link href="' . PB_BOOTSTRAP_CSS . '" rel="stylesheet" integrity="' . PB_BOOTSTRAP_CSS_SRI . '" crossorigin="anonymous">' . "\n";
+        echo '    <link href="' . $esc(pb_asset_url('powerbook.css')) . '" rel="stylesheet">' . "\n";
         echo '</head>' . "\n";
         echo '<body class="pb-body bg-body-tertiary">' . "\n";
+        echo '<a id="top-of-page"></a>' . "\n";
 
         if ($showNav) {
-            echo '<nav class="navbar navbar-expand-md bg-primary navbar-dark mb-4 shadow-sm">' . "\n";
-            echo '    <div class="container">' . "\n";
-            echo '        <a class="navbar-brand" href="#top-of-page">' . $siteNameEsc . '</a>' . "\n";
-            echo '        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#pbNavbar" aria-controls="pbNavbar" aria-expanded="false" aria-label="Navigation umschalten">' . "\n";
-            echo '            <span class="navbar-toggler-icon"></span>' . "\n";
-            echo '        </button>' . "\n";
-            echo '        <div class="collapse navbar-collapse" id="pbNavbar">' . "\n";
-            echo '            <ul class="navbar-nav ms-auto mb-2 mb-md-0 gap-md-2">' . "\n";
-            echo '                <li class="nav-item"><a class="nav-link" href="' . $adminLinkEsc . '">Adminbereich</a></li>' . "\n";
-            echo '            </ul>' . "\n";
-            echo '        </div>' . "\n";
+            echo '<nav id="pbNav" class="navbar bg-primary navbar-dark mb-4 shadow-sm" aria-label="Kopfzeile">' . "\n";
+            echo '    <div class="container flex-nowrap gap-3">' . "\n";
+            if ($brandHeading) {
+                echo '        <h1 id="pbTitle" class="navbar-brand pb-title mb-0"><a class="text-reset text-decoration-none" href="' . $esc($homeLink) . '">' . $esc($siteName) . '</a></h1>' . "\n";
+            } else {
+                echo '        <a id="pbBrand" class="navbar-brand pb-title" href="' . $esc($homeLink) . '">' . $esc($siteName) . '</a>' . "\n";
+            }
+            if ($adminLink !== '') {
+                echo '        <a id="pbNavAdmin" class="nav-link text-white text-nowrap pb-nav-admin" href="' . $esc($adminLink) . '">AdminCenter</a>' . "\n";
+            }
             echo '    </div>' . "\n";
             echo '</nav>' . "\n";
         }
 
-        echo '<a id="top-of-page"></a>' . "\n";
         echo '<main class="container pb-public">' . "\n";
     }
 }
 
 if (!function_exists('pb_layout_footer')) {
     /**
-     * Render the public Bootstrap 5 page footer (closing container, footer, JS bundle).
+     * Seitenfuß: Ende des Inhalts, Fußzeile, Skripte.
      */
     function pb_layout_footer(): void
     {
         echo '</main>' . "\n";
-        echo '<footer class="container py-4 mt-4 text-center text-body-secondary border-top">' . "\n";
-        echo '    <small>' . "\n";
-        // Footer-Hinweis bewusst minimal: kein Hinweis auf konkrete PHP-Version
-        // (Information-Disclosure-Schutz), kein interner Repo-Link, keine
-        // persoenlichen Mail-Adressen.
-        echo '        <a href="https://www.powerscripts.org" target="_blank" rel="noopener noreferrer">PowerBook</a> &middot; powered by powerscripts.org' . "\n";
-        echo '    </small>' . "\n";
+        echo '<footer id="pbFooter" class="container py-4 mt-4 text-center text-body-secondary border-top">' . "\n";
+        // Bewusst ohne Versionsnummer und ohne persönliche Adressen.
+        echo '    <small>Erstellt mit <a href="https://www.powerscripts.org" target="_blank" rel="noopener noreferrer">PowerBook</a> von powerscripts.org</small>' . "\n";
         echo '</footer>' . "\n";
-        echo '<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>' . "\n";
+        echo '<script src="' . PB_BOOTSTRAP_JS . '" integrity="' . PB_BOOTSTRAP_JS_SRI . '" crossorigin="anonymous"></script>' . "\n";
+        echo '<script src="' . htmlspecialchars(pb_asset_url('powerbook.js'), ENT_QUOTES, 'UTF-8') . '"></script>' . "\n";
         echo '</body>' . "\n";
         echo '</html>' . "\n";
     }
@@ -95,21 +107,24 @@ if (!function_exists('pb_layout_footer')) {
 
 if (!function_exists('pb_alert')) {
     /**
-     * Render a Bootstrap 5 alert.
+     * Bootstrap-Meldung.
      *
-     * Wichtig: $message darf bewusst HTML enthalten (z. B. <b>…</b> aus dem Bestand).
-     * Wenn der Aufrufer rohen User-Input ausgibt, MUSS er ihn vorher escapen.
+     * $message darf HTML enthalten; Eingaben von Besuchern muss der Aufrufer
+     * vorher maskieren.
      *
-     * @param string $message Bereits escaptes/vertrauenswuerdiges HTML-Markup
-     * @param string $type    Bootstrap-Variant (success, danger, warning, info, primary, secondary)
+     * @param string $message Maskiertes bzw. vertrauenswürdiges HTML
+     * @param string $type    success, danger, warning, info, primary, secondary, dark, light
+     * @param string $id      optionale ID des Elements
      */
-    function pb_alert(string $message, string $type = 'info'): string
+    function pb_alert(string $message, string $type = 'info', string $id = ''): string
     {
         $allowed = ['success', 'danger', 'warning', 'info', 'primary', 'secondary', 'dark', 'light'];
         if (!in_array($type, $allowed, true)) {
             $type = 'info';
         }
+        $role = in_array($type, ['danger', 'warning'], true) ? 'alert' : 'status';
+        $idAttribute = $id !== '' ? ' id="' . htmlspecialchars($id, ENT_QUOTES, 'UTF-8') . '"' : '';
 
-        return '<div class="alert alert-' . $type . '" role="alert">' . $message . '</div>';
+        return '<div' . $idAttribute . ' class="alert alert-' . $type . '" role="' . $role . '">' . $message . '</div>';
     }
 }

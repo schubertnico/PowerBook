@@ -1,3 +1,11 @@
+# Entwicklungsstack für PowerBook: Apache + PHP 8.4, MySQL 8.0, Mailpit.
+#
+# pb_inc/mysql.inc.php ist nicht versioniert. Nach dem ersten Start
+# http://localhost:8081/install.php aufrufen und im Schritt „Datenbank“
+# eintragen: Datenbankserver db, Port 3306, Datenbank powerbook,
+# Benutzer powerbook, Passwort powerbook_secret. Der Installer schreibt
+# pb_inc/mysql.inc.php und install.lock in den Projektordner.
+# Neu installieren: install.lock und pb_inc/mysql.inc.php löschen.
 name: powerbook
 
 services:

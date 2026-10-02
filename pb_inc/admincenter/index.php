@@ -1,7 +1,12 @@
 <?php
 /**
  * PowerBook - PHP Guestbook System
- * Admin Center Main Entry Point
+ * AdminCenter: Einstieg, Anmeldung, Sitzung und Seitenaufbau
+ *
+ * Ablauf: Sitzung prüfen, An- und Abmelden verarbeiten, dann die Seite in
+ * einen Puffer ausgeben. Erst danach entstehen Gruß, Zähler und Menü – so
+ * zeigen sie nach einer Aktion schon den neuen Stand. Seiten können über
+ * pb_admin_redirect() weiterleiten (Post/Redirect/Get).
  *
  * @license MIT
  * @copyright PowerScripts.org
@@ -11,237 +16,242 @@
 
 declare(strict_types=1);
 
-// Start session
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../csrf.inc.php';
+pb_session_start();
 
 require_once __DIR__ . '/config.inc.php';
 require_once __DIR__ . '/../error-handler.inc.php';
 require_once __DIR__ . '/../validation.inc.php';
+require_once __DIR__ . '/../functions.inc.php';
 require_once __DIR__ . '/layout.inc.php';
-// BUG-010: Falls die DB noch keine reset_token-Spalten hat, nachziehen.
-require_once __DIR__ . '/password_migrate.php';
+require_once __DIR__ . '/auth.inc.php';
 
-// Allowed pages whitelist (LFI protection)
-// BUG-004: Die Legacy-/Helper-/Platzhalter-Seiten (Email-Notifications, Paginierungs-Helper,
-// Empty-Placeholder) sind keine eigenstaendigen Admin-Views und wurden deshalb aus der
-// Whitelist entfernt — Direktaufruf faellt auf 'home' zurück.
+// Erlaubte Seiten (Schutz vor dem Einbinden beliebiger Dateien). Hilfsdateien
+// wie entry.inc.php, pages.inc.php, layout.inc.php oder auth.inc.php sind
+// keine eigenen Seiten.
 $allowedPages = [
     'home', 'login', 'logout', 'license', 'admins',
     'entries', 'configuration', 'password', 'release',
-    'entry', 'edit', 'statement',
+    'edit', 'statement', 'account',
 ];
 
-// Get request parameters safely
-$login = $_POST['login'] ?? '';
-$logout = $_GET['logout'] ?? $_POST['logout'] ?? '';
-$name = trim($_POST['name'] ?? '');
-$password = $_POST['password'] ?? '';
-$page = $_GET['page'] ?? 'home';
-
-// Initialize admin variables
-$admin_id = 0;
-$admin_name = '';
-$admin_password = '';
-$admin_email = '';
-$admin_config = 'N';
-$admin_release = 'N';
-$admin_entries = 'N';
-$admin_admins = 'N';
-$welcome_admin = '';
-$login_message = '';
-
-// Admin session array for included files
-$admin_session = [
-    'id' => 0,
-    'name' => '',
-    'email' => '',
-    'config' => 'N',
-    'release' => 'N',
-    'entries' => 'N',
-    'admins' => 'N',
+// Get request parameters
+$publicPages = ['login', 'password', 'license'];
+$pageTitles = [
+    'home' => 'Start',
+    'login' => 'Anmelden',
+    'logout' => 'Abmelden',
+    'license' => 'Lizenz',
+    'admins' => 'Admins',
+    'entries' => 'Einträge',
+    'configuration' => 'Konfiguration',
+    'password' => 'Passwort vergessen',
+    'release' => 'Freischalten',
+    'edit' => 'Eintrag bearbeiten',
+    'statement' => 'Antwort',
+    'account' => 'Mein Konto',
 ];
 
-// Process login
-if ($login === 'yes') {
-    // CSRF validation
-    if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
-        $login_message = 'CSRF-Token ungültig. Bitte die Seite neu laden.';
-        logCsrfFailure('admin_login');
-    } elseif (empty($name) || empty($password)) {
-        $login_message = 'Bitte <b>Name <i>und</i> Passwort</b> angeben!';
-    } else {
-        $stmt = $pdo->prepare("SELECT * FROM {$pb_admin} WHERE name = :name LIMIT 1");
-        $stmt->execute([':name' => $name]);
-        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+$requestedPage = isset($_GET['page']) && is_string($_GET['page']) ? $_GET['page'] : '';
+$page = in_array($requestedPage, $allowedPages, true) ? $requestedPage : 'home';
+$isPost = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' || ($_POST !== [] && !isset($_SERVER['REQUEST_METHOD']));
+$now = time();
 
-        if (!$admin) {
-            $login_message = 'Admin <b>' . e($name) . '</b> nicht in der Datenbank!';
-            logFailedLogin($name);
-        } else {
-            // Verify password with migration support
-            if (verifyAndMigratePassword($password, $admin['password'], (int) $admin['id'])) {
-                // Login successful - store in session
-                // BUG-014: Session-ID regenerieren, bevor Admin-Daten persistiert werden,
-                // um Session-Fixation-Angriffe zu verhindern.
-                session_regenerate_id(true);
+$pb_admin ??= 'pb_admins';
+$pb_entries ??= 'pb_entries';
+$pb_config ??= 'pb_config';
 
-                $_SESSION['admin_id'] = (int) $admin['id'];
-                $_SESSION['admin_name'] = $admin['name'];
-                $_SESSION['admin_logged_in'] = true;
+$loggedIn = false;
+$loginName = '';
+$admin_session = pb_admin_session_array([]);
+$pbObLevel = ob_get_level();
+$pbPageContent = '';
+$pbState = 'ok';
 
-                $admin_id = (int) $admin['id'];
-                $admin_name = $admin['name'];
-                $admin_email = $admin['email'];
-                $admin_config = $admin['config'] ?? 'N';
-                $admin_release = $admin['release'] ?? 'N';
-                $admin_entries = $admin['entries'] ?? 'N';
-                $admin_admins = $admin['admins'] ?? 'N';
-                $welcome_admin = $admin_name;
-
-                // Populate admin_session array for included files
-                $admin_session = [
-                    'id' => $admin_id,
-                    'name' => $admin_name,
-                    'email' => $admin_email,
-                    'config' => $admin_config,
-                    'release' => $admin_release,
-                    'entries' => $admin_entries,
-                    'admins' => $admin_admins,
-                ];
-
-                $login_message = 'Login erfolgreich, <b>' . e($name) . '</b>!';
-                logSuccessfulLogin($name);
-                regenerateCsrfToken();
-            } else {
-                $login_message = 'Sie gaben ein <b>falsches Passwort</b> ein!';
-                logFailedLogin($name);
-            }
-        }
-    }
-}
-
-// Check existing session
-if (!empty($_SESSION['admin_logged_in']) && !empty($_SESSION['admin_id'])) {
-    $stmt = $pdo->prepare("SELECT * FROM {$pb_admin} WHERE id = :id LIMIT 1");
-    $stmt->execute([':id' => $_SESSION['admin_id']]);
-    $admin = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($admin) {
-        $admin_id = (int) $admin['id'];
-        $admin_name = $admin['name'];
-        $admin_email = $admin['email'];
-        $admin_config = $admin['config'] ?? 'N';
-        $admin_release = $admin['release'] ?? 'N';
-        $admin_entries = $admin['entries'] ?? 'N';
-        $admin_admins = $admin['admins'] ?? 'N';
-        $welcome_admin = $admin_name;
-
-        // Populate admin_session array for included files
-        $admin_session = [
-            'id' => $admin_id,
-            'name' => $admin_name,
-            'email' => $admin_email,
-            'config' => $admin_config,
-            'release' => $admin_release,
-            'entries' => $admin_entries,
-            'admins' => $admin_admins,
-        ];
-    } else {
-        // Invalid session - clear it
-        unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_logged_in']);
-    }
-}
-
-// Process logout
-if ($logout === 'yes' || $page === 'logout') {
-    unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_logged_in']);
-    $welcome_admin = '';
-    $admin_id = 0;
-    $page = 'login';
-}
-
-// Get entry counts for header
-$head_count_entries = 0;
-$head_count_unreleased = 0;
-$installation_required = false;
-
+// --- Datenbank vorhanden? --------------------------------------------------
 try {
-    $stmt = $pdo->query("SELECT COUNT(*) FROM {$pb_entries} WHERE status = 'R'");
-    $head_count_entries = (int) $stmt->fetchColumn();
-
-    $stmt = $pdo->query("SELECT COUNT(*) FROM {$pb_entries} WHERE status = 'U'");
-    $head_count_unreleased = (int) $stmt->fetchColumn();
+    $pdo->query("SELECT COUNT(*) FROM {$pb_entries}");
+    $pdo->query("SELECT id FROM {$pb_admin} LIMIT 1");
 } catch (PDOException $e) {
-    // Check if tables don't exist
-    if (str_contains($e->getMessage(), 'doesn\'t exist') || str_contains($e->getMessage(), 'Base table or view not found')) {
-        $installation_required = true;
+    if (pb_admin_is_missing_table($e)) {
+        $pbState = 'install';
     } else {
-        throw $e; // Re-throw other database errors
+        logDbError('AdminCenter start: ' . $e->getMessage());
+        $pbState = 'dberror';
     }
 }
 
-// Build header message
-if (empty($welcome_admin)) {
-    $head_message = 'Nicht eingeloggt. <a href="?page=login" class="alert-link">Hier einloggen</a>.';
-} else {
-    $head_message = 'Hallo, <b>' . e($welcome_admin) . '</b>! &middot; <a href="?page=logout" class="alert-link">Logout</a>';
-}
-
-// Login-/Eingeloggt-Status entscheidet, ob Subnav und Counts gezeigt werden.
-$loggedIn = !empty($welcome_admin);
-
-pb_admin_layout_header('PowerBook AdminCenter', [
-    'headMessage' => $head_message,
-    'publicCount' => $head_count_entries,
-    'hiddenCount' => $head_count_unreleased,
-    'showCounts' => $loggedIn,
-    'showSubNav' => $loggedIn,
-    'guestbookUrl' => '../../' . ((string) ($config_guestbook_name ?? 'pbook.php')),
-]);
-
-if ($installation_required) {
-    ?>
-    <section class="card border-warning shadow-sm mb-4">
+if ($pbState !== 'ok') {
+    $guestbookName = (string) ($config_guestbook_name ?? 'pbook.php');
+    pb_admin_layout_header('PowerBook AdminCenter', [
+        'loggedIn' => false,
+        'guestbookUrl' => '../../' . ltrim($guestbookName !== '' ? $guestbookName : 'pbook.php', '/'),
+    ]);
+    if ($pbState === 'install') {
+        ?>
+    <section id="pbInstallRequired" class="card border-warning shadow-sm mb-4">
         <header class="card-header bg-warning text-dark">
             <h2 class="h5 mb-0">Installation erforderlich</h2>
         </header>
         <div class="card-body text-center">
-            <p class="lead text-danger fw-semibold">
-                Die PowerBook-Datenbanktabellen wurden nicht gefunden!
-            </p>
-            <p class="mb-4">
-                Bitte fuehren Sie zuerst die Installation aus, um die erforderlichen
-                Datenbanktabellen zu erstellen.
-            </p>
-            <p class="mb-4">
-                <a href="../../install_deu.php" class="btn btn-primary">
-                    &raquo; Zur Installation &laquo;
-                </a>
-            </p>
+            <p class="lead fw-semibold">Die Tabellen von PowerBook wurden in der Datenbank nicht gefunden.</p>
+            <p class="mb-4">Bitte führen Sie zuerst die Installation aus. Sie legt die Tabellen und Ihr Administratorkonto an.</p>
+            <p class="mb-4"><a href="../../install.php" class="btn btn-primary">Zur Installation</a></p>
             <p class="text-body-secondary mb-0"><small>
-                Falls Sie die Installation bereits durchgefuehrt haben, pruefen Sie bitte
-                die Datenbank-Konfiguration in <code>pb_inc/mysql.inc.php</code>.
+                Falls PowerBook bereits installiert ist, prüfen Sie bitte die Zugangsdaten in
+                <code>pb_inc/mysql.inc.php</code>.
             </small></p>
         </div>
     </section>
-    <?php
-} else {
-
-    // Validate and include page (LFI protection)
-    if (!in_array($page, $allowedPages, true)) {
-        $page = 'home';
-    }
-
-    $pageFile = __DIR__ . '/' . $page . '.inc.php';
-
-    if (!file_exists($pageFile)) {
-        echo '<div class="alert alert-warning text-center" role="alert">Die Seite <b>' . e($page) . '</b> wurde nicht gefunden.</div>';
+        <?php
     } else {
-        include $pageFile;
+        echo pb_admin_alert('Die Datenbank meldet einen Fehler. Bitte versuchen Sie es später noch einmal. Einzelheiten stehen im Fehlerprotokoll (<code>logs/error.log</code>).', 'danger', 'pbDatabaseError');
+    }
+    pb_admin_layout_footer();
+
+    return;
+}
+
+try {
+    // --- Bestehende Anmeldung prüfen --------------------------------------
+    if (!empty($_SESSION['admin_logged_in']) && !empty($_SESSION['admin_id'])) {
+        $account = pb_admin_load_account($pdo, $pb_admin, (int) $_SESSION['admin_id']);
+        $problem = pb_admin_session_problem($account, $_SESSION, $now);
+        if ($problem !== null || $account === null) {
+            pb_admin_end_session();
+            pb_admin_flash($problem[0] ?? 'info', $problem[1] ?? 'Bitte melden Sie sich an.');
+            pb_admin_redirect('?page=login');
+        }
+        $_SESSION['pb_last_activity'] = $now;
+        $loggedIn = true;
+        $admin_session = pb_admin_session_array($account);
     }
 
+    // --- Anmelden -----------------------------------------------------------
+    if ($page === 'login' && $isPost && ($_POST['login'] ?? '') === 'yes') {
+        if ($loggedIn) {
+            pb_admin_redirect('?page=home');
+        }
+        $loginName = trim(is_string($_POST['name'] ?? null) ? $_POST['name'] : '');
+        $loginPassword = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
+        $loginIp = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+
+        if (!validateCsrfToken(is_string($_POST['csrf_token'] ?? null) ? $_POST['csrf_token'] : '')) {
+            logCsrfFailure('admin_login');
+            pb_admin_flash('danger', pb_admin_csrf_message());
+        } elseif ($loginName === '' || $loginPassword === '') {
+            pb_admin_flash('danger', 'Bitte geben Sie Ihren Namen und Ihr Passwort ein.');
+        } else {
+            pb_admin_login_cleanup($pdo, $now);
+            if (pb_admin_login_blocked($pdo, $loginIp, $now)) {
+                logSecurityEvent('LOGIN_BLOCKED', ['ip' => $loginIp]);
+                pb_admin_flash('danger', 'Zu viele Fehlversuche. Bitte warten Sie 15 Minuten.');
+            } else {
+                $account = pb_admin_verify_login($pdo, $pb_admin, $loginName, $loginPassword);
+                if ($account !== null) {
+                    pb_admin_start_session($account, $now);
+                    pb_admin_login_succeeded($pdo, $loginIp);
+                    logSuccessfulLogin((string) $account['name']);
+                    pb_admin_flash('success', 'Hallo ' . $account['name'] . ', Sie sind jetzt angemeldet.');
+                    pb_admin_redirect('?page=home');
+                }
+                pb_admin_login_failed($pdo, $loginIp, $loginName, $now);
+                logFailedLogin($loginName);
+                pb_admin_flash('danger', 'Anmeldung fehlgeschlagen: Name oder Passwort stimmt nicht.');
+            }
+        }
+    }
+
+    // --- Abmelden (nur per POST mit Token) ----------------------------------
+    if ($page === 'logout') {
+        if (!$loggedIn) {
+            pb_admin_redirect('?page=login');
+        }
+        if ($isPost) {
+            if (validateCsrfToken(is_string($_POST['csrf_token'] ?? null) ? $_POST['csrf_token'] : '')) {
+                pb_admin_end_session();
+                pb_admin_flash('success', 'Sie sind abgemeldet.');
+                pb_admin_redirect('?page=login');
+            }
+            logCsrfFailure('admin_logout');
+            pb_admin_flash('danger', pb_admin_csrf_message());
+        }
+    }
+
+    // --- Zugriff ------------------------------------------------------------
+    if (!$loggedIn && !in_array($page, $publicPages, true)) {
+        if ($requestedPage !== '' && $requestedPage !== 'home') {
+            pb_admin_flash('info', 'Bitte melden Sie sich an.');
+        }
+        pb_admin_redirect('?page=login');
+    }
+    if ($loggedIn && $page === 'login') {
+        pb_admin_redirect('?page=home');
+    }
+
+    // --- Seite in den Puffer ausgeben --------------------------------------
+    $pageFile = __DIR__ . '/' . $page . '.inc.php';
+    ob_start();
+    if (is_file($pageFile)) {
+        include $pageFile;
+    } else {
+        pb_admin_card_open($pageTitles[$page]);
+        echo pb_admin_alert('Diese Seite ist in dieser Installation nicht vorhanden.', 'warning');
+        pb_admin_card_close();
+    }
+    $pbPageContent = (string) ob_get_clean();
+} catch (PbAdminRedirect $redirect) {
+    while (ob_get_level() > $pbObLevel) {
+        ob_end_clean();
+    }
+    if (defined('POWERBOOK_TEST_MODE')) {
+        throw $redirect;
+    }
+    header('Location: ' . $redirect->location, true, 303);
+
+    exit;
 }
+
+// --- Erst jetzt: Gruß, Rechte und Zähler mit dem Stand nach der Aktion ------
+if ($loggedIn) {
+    $account = pb_admin_load_account($pdo, $pb_admin, (int) $admin_session['id']);
+    if ($account !== null) {
+        $admin_session = pb_admin_session_array($account);
+    }
+    if (!isset($_SESSION['pb_db_outdated'])) {
+        $_SESSION['pb_db_outdated'] = pb_admin_db_outdated($pdo, $pb_config, $pb_admin);
+    }
+}
+
+$pbCounts = ['public' => 0, 'pending' => 0];
+if ($loggedIn) {
+    try {
+        $pbCounts = pb_admin_count_entries($pdo, $pb_entries);
+    } catch (PDOException $e) {
+        logDbError('AdminCenter counts: ' . $e->getMessage());
+    }
+}
+
+$guestbookName = trim((string) ($config_guestbook_name ?? 'pbook.php'));
+$guestbookUrl = preg_match('~^https?://~i', $guestbookName) === 1
+    ? $guestbookName
+    : '../../' . ltrim($guestbookName !== '' ? $guestbookName : 'pbook.php', '/');
+
+$activePage = match ($page) {
+    'edit', 'statement' => ($_GET['return'] ?? '') === 'release' ? 'release' : 'entries',
+    default => $page,
+};
+
+pb_admin_layout_header($pageTitles[$page] . ' · PowerBook AdminCenter', [
+    'loggedIn' => $loggedIn,
+    'admin' => $admin_session,
+    'activePage' => $activePage,
+    'publicCount' => $pbCounts['public'],
+    'pendingCount' => $pbCounts['pending'],
+    'guestbookUrl' => $guestbookUrl,
+    'dbOutdated' => $loggedIn && !empty($_SESSION['pb_db_outdated']),
+]);
+
+echo $pbPageContent;
 
 pb_admin_layout_footer();

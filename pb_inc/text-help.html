@@ -1,64 +1,16 @@
-<!--
-
-################################################################################################
-## POWERBOOK VERSION 1.21 (C) 2002 AXEL HABERMAIER
-##
-##
-## DANKE FÜR DIE BENUTZUNG VON POWERBOOK VERSION 1.21. SIE KÖNNEN DEN FOLGENDEN CODE NACH IHREN
-## WÜNSCHEN MODIFIZIEREN, JEDOCH IST POWERSCRIPTS NICHT FÜR AUFTRETENDE SCHÄDEN UND PROBLEME
-## VERANTWORTLICH. DER AUTOR WÜRDE GERNE ÜBER GROSSE ÄNDERUNGEN UND GEFUNDENE BUGS INFORMIERT
-## WERDEN. BITTE SCHREIBEN SIE EINE EMAIL AN EXPANDABLE@POWERSCRIPTS.ORG. VIELEN DANK.
-################################################################################################
-
-##    This program is free software; you can redistribute it and/or modify
-##    it under the terms of the GNU General Public License as published by
-##    the Free Software Foundation; either version 2 of the License, or
-##    (at your option) any later version.
-##
-##    This program is distributed in the hope that it will be useful,
-##    but WITHOUT ANY WARRANTY; without even the implied warranty of
-##    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-##    GNU General Public License for more details.
-##
-##    You should have received a copy of the GNU General Public License
-##    along with this program; if not, write to the Free Software
-##    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
--->
-
-<html>
+<!DOCTYPE html>
+<html lang="de">
 <head>
-<title>Text Formatierung -- Hilfe</title>
-<style type="text/css">
-td { font-size:10pt; color:#FFFFFF; font-style:normal; font-family:Arial; }
-th { font-size:10pt; color:#FFFFFF; font-style:bold; font-family:Arial; }
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hilfe zur Formatierung</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 </head>
-<body text="#FFFFFF" bgcolor="#000000" link="#FF0000" alink="#FF0000" vlink="#FF0000">
-
-<table border="0" width="300">
-   <tr><th>Code</th><th>Ergebnis</th></tr>
-
-   <tr><td align="center">[b] fett [/b]</td>
-       <td align="center"><b>fett</b></td>
-   </tr>
-   <tr><td align="center">[i] kursiv [/i]</td>
-       <td align="center"><i> kursiv</i></td>
-   </tr>
-   <tr><td align="center">[u] unterstrichen [/u]</td>
-       <td align="center"><u>unterstrichen</u></td>
-   </tr>
-   <tr><td align="center">[small] klein [/small]</td>
-       <td align="center"><small>klein</small></td>
-   </tr>
-   <tr><td align="center">ftp://domain.de</td>
-       <td align="center"><a href="ftp://domain.de" target="_blank">ftp://domain.de</a></td>
-   </tr>
-   <tr><td align="center">http://www.domain.de</td>
-       <td align="center"><a href="http://www.domain.de" target="_blank">http://www.domain.de</a></td>
-   </tr>
-</table>
-
+<body class="bg-body-tertiary">
+<!-- PowerBook â€“ MIT License â€“ powerscripts.org. Gleicher Inhalt wie die aufklappbare Hilfe im GÃ¤stebuch-Formular (pb_render_help()). -->
+<main class="container py-4" style="max-width: 40rem">
+<h1 class="h4 mb-3">Hilfe zur Formatierung</h1>
+<div class="row g-4"><div class="col-12"><h3 class="h6">Formatierung</h3><table class="table table-sm pb-help-table mb-2"><thead><tr><th scope="col">Eingabe</th><th scope="col">Ergebnis</th></tr></thead><tbody><tr><td><code>[b]fett[/b]</code></td><td><b>fett</b></td></tr><tr><td><code>[i]kursiv[/i]</code></td><td><i>kursiv</i></td></tr><tr><td><code>[u]unterstrichen[/u]</code></td><td><u>unterstrichen</u></td></tr><tr><td><code>[small]klein[/small]</code></td><td><small>klein</small></td></tr></tbody></table><p class="small text-body-secondary mb-0">Jedes Tag braucht sein Ende, zum Beispiel <code>[b]</code> â€¦ <code>[/b]</code>. Adressen, die mit <code>https://</code> oder <code>http://</code> beginnen, werden automatisch zu Links.</p></div></div>
+</main>
 </body>
 </html>

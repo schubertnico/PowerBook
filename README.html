@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PowerBook - PHP-Gästebuch-System - README</title>
+    <title>PowerBook – PHP-Gästebuch-System</title>
     <style>
         :root {
             --pb-dark: #002040;
@@ -131,254 +131,456 @@
 <h1>PowerBook — PHP-Gästebuch-System</h1>
 
 <p>
-    <span class="badge blue">v3.0.0</span>
+    <span class="badge blue">v3.1.0</span>
     <span class="badge blue">PHP 8.4</span>
-    <span class="badge green">514 Tests passing</span>
-    <span class="badge green">Coverage 87 %</span>
+    <span class="badge blue">MySQL 8.0 / MariaDB 10.6</span>
     <span class="badge gray">MIT License</span>
 </p>
 
-<p>Klassisches PHP-Gästebuch — ursprünglich 2002 von <strong>Axel "Expandable" Habermaier</strong> entwickelt, auf <strong>PHP 8.4</strong> modernisiert, sicherheitsgehärtet und mit <strong>Bootstrap 5</strong> komplett neu gestaltet (Stand: 2026-05-10, <strong>v3.0.0</strong>).</p>
-
-<table>
-    <tr><td><strong>Projekt-Webseite</strong></td><td><a href="https://www.powerscripts.org">https://www.powerscripts.org</a></td></tr>
-    <tr><td><strong>Projektbereich</strong></td><td><a href="https://www.powerscripts.org/projects-5.html">https://www.powerscripts.org/projects-5.html</a></td></tr>
-    <tr><td><strong>Repository</strong></td><td><a href="https://github.com/schubertnico/PowerBook">https://github.com/schubertnico/PowerBook</a></td></tr>
-</table>
-
-<div class="quickstart">
-    <h2>⚡ Schnellstart (Docker, 60 Sekunden)</h2>
-<pre><code># 1. Repository klonen
-git clone https://github.com/schubertnico/PowerBook.git
-cd PowerBook/.docker
-
-# 2. Container starten
-docker compose up -d --build
-
-# 3. Installation im Browser ausführen
-# → http://localhost:8081/install_deu.php
-#   Auf "Installation starten" klicken.
-#   Das angezeigte Initial-Passwort SOFORT notieren!
-
-# 4. Loslegen
-# Frontend (Gästebuch):  http://localhost:8081/pbook.php
-# Admin-Center:          http://localhost:8081/pb_inc/admincenter/
-# Mailpit (Test-Mails):  http://localhost:8035</code></pre>
-</div>
-
 <div class="info">
-    <strong>Hinweis zum Initial-Passwort:</strong> Seit IMP-006 (April 2026) wird bei der Installation ein zufälliges 16-stelliges Hex-Passwort generiert (kein hardcoded <code>powerbook</code> mehr). Das Passwort erscheint <strong>einmalig</strong> auf der Erfolgsseite — bitte sofort notieren oder direkt im AdminCenter ändern.
+<p>Klassisches PHP-Gästebuch — ursprünglich 2002 von <strong>Axel "Expandable" Habermaier</strong> entwickelt, auf <strong>PHP 8.4</strong> modernisiert, sicherheitsgehärtet und mit <strong>Bootstrap 5</strong> gestaltet. Version <strong>3.1.0</strong> bringt einen Installer mit Datenbankformular und <code>update.php</code> für Bestandsinstallationen ab PowerBook 1.x.</p>
 </div>
-
-<h2>Features</h2>
+<p><strong>Projekt-Webseite:</strong> <a href="https://www.powerscripts.org">https://www.powerscripts.org</a><br>
+<strong>Projektbereich:</strong> <a href="https://www.powerscripts.org/projects-5.html">https://www.powerscripts.org/projects-5.html</a><br>
+<strong>Repository:</strong> <a href="https://github.com/schubertnico/PowerBook">https://github.com/schubertnico/PowerBook</a></p>
+<hr>
+<h2 id="inhaltsverzeichnis">Inhaltsverzeichnis</h2>
 <ul>
-    <li><strong>Gästebuch-Frontend</strong> für Besucher: Eintrag schreiben, lesen, suchen, paginieren</li>
-    <li><strong>AdminCenter</strong> mit Rollen-/Rechtemanagement (Konfig, Einträge, Freischaltung, Admin-Verwaltung)</li>
-    <li><strong>BBCode-Textformatierung</strong> (<code>[b]</code>, <code>[i]</code>, <code>[u]</code>, <code>[small]</code>) + Auto-Linking von URLs</li>
-    <li><strong>Smilies/Emoticons</strong> (umschaltbar pro Eintrag) und Icons (Frage, Smileys etc.)</li>
-    <li><strong>Anti-Spam</strong> über IP-basierte Zeitsperre (konfigurierbar)</li>
-    <li><strong>Token-basierter Passwort-Reset</strong> mit 30-Min-TTL (kein Sofort-Wechsel)</li>
-    <li><strong>CSRF-Schutz</strong> mit Token-Rotation, <strong>Session-Fixation-Schutz</strong> via <code>session_regenerate_id</code></li>
-    <li><strong>SMTP-Versand</strong> für Benachrichtigungen (Mailpit für Dev-Setup)</li>
-    <li><strong>PHP 8.4</strong> mit <code>declare(strict_types=1)</code> durchgängig</li>
+<li><a href="#features">Features</a></li>
+<li><a href="#voraussetzungen">Voraussetzungen</a></li>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#aktualisierung-von-1x-20-oder-30">Aktualisierung von 1.x, 2.0 oder 3.0</a></li>
+<li><a href="#entwicklung-mit-docker">Entwicklung mit Docker</a></li>
+<li><a href="#admincenter">AdminCenter</a></li>
+<li><a href="#sicherheit">Sicherheit</a></li>
+<li><a href="#tests">Tests</a></li>
+<li><a href="#projektstruktur">Projektstruktur</a></li>
+<li><a href="#fehlersuche">Fehlersuche</a></li>
+<li><a href="#lizenz">Lizenz</a></li>
+<li><a href="#changelog">Changelog</a></li>
+<li><a href="#kontakt--support">Kontakt &amp; Support</a></li>
 </ul>
-
-<h2>Voraussetzungen</h2>
+<hr>
+<h2 id="features">Features</h2>
+<ul>
+<li><strong>Gästebuch</strong> für Besucher: Eintrag schreiben (mit Vorschau), lesen, suchen, blättern</li>
+<li><strong>AdminCenter</strong> mit Rechten je Konto: Einträge bearbeiten und löschen, Einträge freischalten, Admins verwalten, Konfiguration ändern</li>
+<li><strong>Freischaltung</strong> neuer Einträge (gegen Werbung) und <strong>Benachrichtigung</strong> per E-Mail</li>
+<li><strong>BBCode</strong> (<code>[b]</code>, <code>[i]</code>, <code>[u]</code>, <code>[small]</code>), automatische Links, <strong>Smileys</strong> und <strong>Icons</strong></li>
+<li><strong>Spam-Sperre</strong> je IP-Adresse mit einstellbarer Wartezeit</li>
+<li><strong>Passwort vergessen</strong> per Mail-Link, sichere Passwort-Hashes</li>
+<li><strong>Installer</strong> in vier Schritten und <strong>update.php</strong> für ältere Versionen</li>
+<li>Durchgängig <strong>PHP 8.4</strong> mit <code>declare(strict_types=1)</code>, <strong>Bootstrap 5.3</strong></li>
+</ul>
+<hr>
+<h2 id="voraussetzungen">Voraussetzungen</h2>
 <table>
-    <tr><th>Komponente</th><th>Mindestversion</th></tr>
-    <tr><td>PHP</td><td><strong>8.4</strong></td></tr>
-    <tr><td>Datenbank</td><td>MySQL 8.0 / MariaDB 10.6</td></tr>
-    <tr><td>Webserver</td><td>Apache 2.4 (mod_php) oder NGINX + PHP-FPM</td></tr>
-    <tr><td>Composer</td><td>2.x (nur für Tests/Tools)</td></tr>
+<thead>
+<tr>
+<th>Komponente</th>
+<th>Mindestversion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PHP</td>
+<td><strong>8.4</strong> mit den Erweiterungen <code>pdo_mysql</code> und <code>mbstring</code></td>
+</tr>
+<tr>
+<td>Datenbank</td>
+<td><strong>MySQL 8.0</strong> oder <strong>MariaDB 10.6</strong></td>
+</tr>
+<tr>
+<td>Webserver</td>
+<td>Apache 2.4 mit aktiver <code>.htaccess</code> (empfohlen) oder NGINX + PHP-FPM</td>
+</tr>
+</tbody>
 </table>
-<p>Für die Docker-Variante reicht <strong>Docker Desktop</strong> (Windows/macOS) oder <strong>Docker Engine + Compose v2</strong> (Linux).</p>
-
-<h2>Installation</h2>
-
-<h3>Docker (empfohlen)</h3>
-
+<p>Der Installer prüft PHP-Version, Erweiterungen und Schreibrechte selbst und zeigt, was fehlt.</p>
+<hr>
+<h2 id="installation">Installation</h2>
+<ol>
+<li><strong>Paket entpacken und hochladen.</strong> Laden Sie den Inhalt des Release-ZIPs per FTP in einen Ordner Ihres Webspace, zum Beispiel <code>/gaestebuch/</code>. Das Paket enthält keine Zugangsdaten – die Datei <code>pb_inc/mysql.inc.php</code> legt erst der Installer an.</li>
+<li><strong>Schreibrechte setzen.</strong> Der Ordner <code>pb_inc/</code> und der PowerBook-Ordner selbst müssen für PHP beschreibbar sein (meist <code>chmod 755</code>, bei manchen Hostern <code>775</code>). <code>logs/</code> sollte ebenfalls beschreibbar sein.</li>
+<li><strong>Installer aufrufen:</strong> <code>https://ihre-domain.tld/gaestebuch/install.php</code></li>
+<li><strong>Willkommen:</strong> prüft die Voraussetzungen.</li>
+<li><strong>Schritt 1 – Datenbank:</strong> Datenbankserver, Port, Datenbankname, Benutzername und Passwort vom Hoster. Der Installer testet die Verbindung sofort und erklärt Fehler verständlich. Gibt es in der Datenbank schon PowerBook-Tabellen, löscht er sie nur nach ausdrücklicher Bestätigung.</li>
+<li><strong>Schritt 2 – Gästebuch:</strong> Name des Gästebuchs, Adresse (daraus entsteht der Link zum AdminCenter in Mails), E-Mail-Adresse für Benachrichtigungen. Benachrichtigung und Freischaltung sind vorab eingeschaltet.</li>
+<li><strong>Schritt 3 – Administrator:</strong> Name, E-Mail-Adresse und Passwort (mindestens 8 Zeichen) des ersten Kontos. Es hat alle Rechte und lässt sich nicht löschen (Superadmin).</li>
+<li><strong>Fertig:</strong> Tabellen, Konfiguration, <code>pb_inc/mysql.inc.php</code> und die Sperrdatei <code>install.lock</code> sind angelegt. Der Knopf <strong>„install.php jetzt löschen“</strong> entfernt den Installer vom Server.</li>
+<li>Anmelden im AdminCenter unter <code>https://ihre-domain.tld/gaestebuch/pb_inc/admincenter/</code>.</li>
+</ol>
+<p><strong>Ohne Schreibrecht für <code>pb_inc/</code>:</strong> Speichern Sie die Vorlage <code>pb_inc/mysql.inc.php.example</code> als <code>pb_inc/mysql.inc.php</code>, tragen Sie die Zugangsdaten ein und laden Sie die Datei hoch. Der Installer übernimmt die Werte dann aus der Datei und fragt nur noch nach Gästebuch und Administrator.</p>
+<p><strong>Neu installieren:</strong> <code>install.lock</code> und <code>pb_inc/mysql.inc.php</code> löschen, <code>install.php</code> erneut hochladen und aufrufen.</p>
+<div class="info">
+<p>Unter NGINX greift die <code>.htaccess</code> nicht. Sperren Sie dort <code>pb_inc/*.inc.php</code>, <code>logs/</code>, <code>*.sql</code>, <code>*.lock</code>, <code>*.example</code>, <code>install_deu.php</code> und – nach der Installation – <code>install.php</code> in der Serverkonfiguration.</p>
+</div>
+<hr>
+<h2 id="aktualisierung-von-1x-20-oder-30">Aktualisierung von 1.x, 2.0 oder 3.0</h2>
+<ol>
+<li><strong>Sicherung anlegen</strong>, zum Beispiel in phpMyAdmin über „Exportieren“.</li>
+<li><strong>Alle Dateien von 3.1 hochladen</strong> und die vorhandenen überschreiben. Die bestehende <code>pb_inc/mysql.inc.php</code> bleibt erhalten, weil das Paket keine enthält.</li>
+<li><strong><code>update.php</code> aufrufen</strong>, zum Beispiel <code>https://ihre-domain.tld/gaestebuch/update.php</code>. Die Seite zeigt vorher, was sie erledigt, und startet erst nach Anmeldung mit einem Konto, das die Konfiguration ändern darf (in PowerBook 1.x: Ihr bisheriges Admin-Konto).</li>
+<li>Danach <strong>„update.php jetzt löschen“</strong> klicken.</li>
+</ol>
+<p><code>update.php</code> ergänzt nur und lässt sich beliebig oft aufrufen; Einträge, Admins und Einstellungen bleiben erhalten. Je nach Ausgangsversion erledigt es:</p>
 <table>
-    <tr><th>Service</th><th>Image</th><th>Port (Host)</th></tr>
-    <tr><td><code>web</code></td><td>Apache 2.4 + PHP 8.4</td><td><strong>8081</strong></td></tr>
-    <tr><td><code>db</code></td><td>MySQL 8.0</td><td>3314</td></tr>
-    <tr><td><code>mail</code></td><td>Axllent Mailpit</td><td>SMTP <strong>1035</strong>, Web-UI <strong>8035</strong></td></tr>
+<thead>
+<tr>
+<th>Aufgabe</th>
+<th style="text-align: center;">1.x</th>
+<th style="text-align: center;">2.0</th>
+<th style="text-align: center;">3.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primärschlüssel für <code>pb_config</code> (verlangen manche MySQL-Server)</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Tabellen von MyISAM auf InnoDB umstellen</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Kollation <code>utf8mb4_unicode_ci</code> (Sicherungen lassen sich auch in MariaDB einspielen)</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Rechte <code>PERMITTED</code>/<code>FORBIDDEN</code> → <code>Y</code>/<code>N</code></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td>Neue Spalten: Titel, Absenderadresse, Passwort-Reset, Passwortwechsel</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Tabelle <code>pb_login_attempts</code> (Schutz vor dem Durchprobieren von Passwörtern)</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Zahlen- und Zeitspalten (Datum nach dem 19.01.2038, IPv6-Adressen, lange Homepage-Adressen)</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Vorgabewerte für alte Spalten (z. B. <code>icq</code>), damit neue Einträge klappen</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Adresse des AdminCenters eintragen, falls leer</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Unverändertes Standarddesign und Danke-Mail durch die neuen ersetzen („(#TIME#) Uhr“)</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Sperrdatei <code>install.lock</code> anlegen, alten Installer <code>install_deu.php</code> löschen</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+</tbody>
 </table>
-
-<pre><code>git clone https://github.com/schubertnico/PowerBook.git
+<p>Tabellen mit altem Zeichensatz (latin1) stellt <code>update.php</code> bewusst nicht um und weist nur darauf hin. Passwörter im alten Format von 1.x werden bei der nächsten Anmeldung im AdminCenter sicher gespeichert.</p>
+<p>Die Datei <code>install_deu.php</code> ist in 3.1 nur noch ein Platzhalter, der auf <code>install.php</code> weiterleitet; die <code>.htaccess</code> sperrt sie zusätzlich.</p>
+<hr>
+<h2 id="entwicklung-mit-docker">Entwicklung mit Docker</h2>
+<p>Das Repository enthält unter <code>.docker/</code> einen Entwicklungsstack:</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Image</th>
+<th>Port (Host)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>web</code></td>
+<td>Apache 2.4 + PHP 8.4</td>
+<td><strong>8081</strong></td>
+</tr>
+<tr>
+<td><code>db</code></td>
+<td>MySQL 8.0</td>
+<td>3314</td>
+</tr>
+<tr>
+<td><code>mail</code></td>
+<td>Mailpit</td>
+<td>SMTP <strong>1035</strong>, Web-Oberfläche <strong>8035</strong></td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-bash">git clone https://github.com/schubertnico/PowerBook.git
 cd PowerBook/.docker
-docker compose up -d --build</code></pre>
-
-<p>Anschließend <code>http://localhost:8081/install_deu.php</code> aufrufen und auf <strong>Installation starten</strong> klicken. Die Installation:</p>
-<ol>
-    <li>legt die MySQL-Tabellen <code>pb_admins</code>, <code>pb_config</code>, <code>pb_entries</code> an (mit Spalten <code>reset_token</code> + <code>reset_token_expires</code> für den sicheren Recovery-Flow),</li>
-    <li>erzeugt einen Standard-Admin <strong>PowerBook</strong> mit zufälligem 16-Hex-Passwort,</li>
-    <li>zeigt dieses Passwort <strong>einmalig</strong> in einer Hervorhebungs-Box,</li>
-    <li>erstellt das Lock-File <code>.installed</code>, sodass <code>install_deu.php</code> nicht versehentlich erneut ausgeführt werden kann (HTTP 403).</li>
-</ol>
-
-<div class="warn">
-    <strong>Wichtig:</strong> Notieren Sie das Initial-Passwort sofort. Es kann jederzeit im AdminCenter geändert werden — aber es wird nicht erneut angezeigt.
-</div>
-
-<h3>Klassisches Hosting (LAMP)</h3>
-<ol>
-    <li>Dateien per FTP/SCP auf den Webserver übertragen.</li>
-    <li><code>pb_inc/mysql.inc.php</code> anpassen:
-<pre><code>$config_sql_server   = 'localhost';
-$config_sql_user     = 'powerbook';
-$config_sql_password = 'IhrSicheresPasswort';
-$config_sql_database = 'powerbook';</code></pre></li>
-    <li><code>https://ihre-domain.tld/install_deu.php</code> im Browser öffnen.</li>
-    <li>Initial-Passwort notieren.</li>
-    <li><strong>Empfehlung:</strong> <code>install_deu.php</code> nach Installation per <code>.htaccess</code> sperren oder löschen — das <code>.installed</code>-Lock greift bereits automatisch.</li>
-</ol>
-
-<h2>AdminCenter</h2>
-<p>URL: <code>http://&lt;host&gt;/pb_inc/admincenter/</code></p>
+docker compose up -d --build
+</code></pre>
+<p>Danach <code>http://localhost:8081/install.php</code> aufrufen und im Schritt „Datenbank“ eintragen: Datenbankserver <code>db</code>, Port <code>3306</code>, Datenbank <code>powerbook</code>, Benutzer <code>powerbook</code>, Passwort <code>powerbook_secret</code>. Testmails landen in Mailpit unter <code>http://localhost:8035</code>.</p>
+<hr>
+<h2 id="admincenter">AdminCenter</h2>
+<p>URL: <code>https://ihre-domain.tld/gaestebuch/pb_inc/admincenter/</code></p>
 <table>
-    <tr><th>Bereich</th><th>Zweck</th></tr>
-    <tr><td><strong>Home</strong></td><td>Dashboard mit System-Info und Schnellnavigation</td></tr>
-    <tr><td><strong>Einträge verwalten</strong></td><td>Liste, Bearbeiten, Löschen, Statement schreiben</td></tr>
-    <tr><td><strong>Einträge freischalten</strong></td><td>Sichtbarkeit (R/U) — abhängig von Konfiguration</td></tr>
-    <tr><td><strong>Admins verwalten</strong></td><td>Hinzufügen, Bearbeiten, Löschen, Rechte (Konfig/Admins/Einträge/Release)</td></tr>
-    <tr><td><strong>Konfiguration</strong></td><td>Spam-Check, Anzeige, Smilies/BBCode/ICQ, E-Mail, Eintrags-Design (Template)</td></tr>
-    <tr><td><strong>Lizenz</strong></td><td>MIT-Lizenztext</td></tr>
-    <tr><td><strong>Logout</strong></td><td>Beendet die Session</td></tr>
+<thead>
+<tr>
+<th>Menüpunkt</th>
+<th>Zweck</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Start</strong></td>
+<td>Übersicht mit Zahl der freigeschalteten und wartenden Einträge</td>
+</tr>
+<tr>
+<td><strong>Einträge</strong></td>
+<td>Einträge bearbeiten, beantworten und löschen</td>
+</tr>
+<tr>
+<td><strong>Freischalten</strong></td>
+<td>Wartende Einträge freischalten oder löschen</td>
+</tr>
+<tr>
+<td><strong>Admins</strong></td>
+<td>Konten anlegen, bearbeiten, löschen und Rechte vergeben</td>
+</tr>
+<tr>
+<td><strong>Konfiguration</strong></td>
+<td>Titel, Absenderadresse, Benachrichtigung, Freischaltung, Spam-Sperre, Anzeige, Design der Einträge</td>
+</tr>
+<tr>
+<td><strong>Mein Konto</strong></td>
+<td>Eigenen Namen, E-Mail-Adresse und Passwort ändern</td>
+</tr>
+<tr>
+<td><strong>Lizenz</strong></td>
+<td>MIT-Lizenztext</td>
+</tr>
+</tbody>
 </table>
-<p><strong>Passwort vergessen?</strong> <code>?page=password</code> aufrufen, Name oder E-Mail eingeben → Reset-Link kommt per Mail (30 Minuten gültig). Erst durch Klick + Setzen des neuen Passworts wird das alte ungültig.</p>
-
-<h2>Sicherheit</h2>
-<p>PowerBook wurde im April 2026 einem vollständigen Sicherheits-Audit unterzogen. Alle 14 dokumentierten Bugs sind behoben, drei priorisierte Workflow-Verbesserungen sind umgesetzt:</p>
+<p>Jedes Konto sieht nur die Menüpunkte, für die es Rechte hat. <strong>Passwort vergessen?</strong> Auf der Anmeldeseite den Link anklicken, Name oder E-Mail-Adresse eingeben – der Link zum Festlegen eines neuen Passworts kommt per Mail.</p>
+<hr>
+<h2 id="sicherheit">Sicherheit</h2>
 <table>
-    <tr><th>Kategorie</th><th>Maßnahme</th></tr>
-    <tr><td>SQL-Injection</td><td>PDO Prepared Statements für alle Queries</td></tr>
-    <tr><td>XSS</td><td>Konsequentes Output-Escaping (<code>htmlspecialchars</code>), keine doppelten Escapes mehr im Preview-Pfad</td></tr>
-    <tr><td>CSRF</td><td>Token in jedem Formular, Rotation nach erfolgreichen Aktionen</td></tr>
-    <tr><td>Session-Fixation</td><td><code>session_regenerate_id(true)</code> nach jedem Login</td></tr>
-    <tr><td>Passwort-Speicherung</td><td><code>password_hash(PASSWORD_DEFAULT)</code>, Auto-Migration alter Hashes</td></tr>
-    <tr><td>Passwort-Reset</td><td>Token-Flow mit 30-Min-TTL (kein Sofort-Reset, kein Account-DoS)</td></tr>
-    <tr><td>User-Enumeration</td><td>Generische Recovery-Response („Falls ein Konto existiert …")</td></tr>
-    <tr><td>LFI / Path-Traversal</td><td>Whitelist <code>$allowedPages</code> für AdminCenter-Routing</td></tr>
-    <tr><td>Direktaufruf-Schutz</td><td><code>PB_ENTRY</code>-Konstanten-Guard für <code>pb_inc/guestbook.inc.php</code></td></tr>
-    <tr><td>Installation-Schutz</td><td><code>.installed</code> Lock-File verhindert Re-Install (HTTP 403)</td></tr>
-    <tr><td>Standard-Passwort</td><td>Zufällig generiert (<code>bin2hex(random_bytes(8))</code>) — kein hardcoded Wert</td></tr>
-    <tr><td>Admin-Add-Fallback</td><td>Bei SMTP-Fehler wird das Initial-Passwort einmalig im UI angezeigt → kein Self-Lockout</td></tr>
-    <tr><td>Längen-Validierung</td><td>Server-seitige Längenprüfung für Name (100), Text (5000), E-Mail (250), URL (255)</td></tr>
-    <tr><td>Cookie-Flags</td><td>Session-Cookie mit <code>HttpOnly</code> und <code>SameSite=Strict</code></td></tr>
-    <tr><td>E-Mail-Header</td><td>Sanitisierung aller Recipient-Header (Anti Header-Injection)</td></tr>
+<thead>
+<tr>
+<th>Bereich</th>
+<th>Maßnahme</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQL-Injection</td>
+<td>PDO mit Prepared Statements</td>
+</tr>
+<tr>
+<td>XSS</td>
+<td>Konsequentes Escaping aller Ausgaben</td>
+</tr>
+<tr>
+<td>CSRF</td>
+<td>Token in jedem Formular, auch im Installer und in <code>update.php</code></td>
+</tr>
+<tr>
+<td>Anmeldung</td>
+<td>Passwort-Hashes, neue Sitzungs-ID nach der Anmeldung, Drossel bei Fehlversuchen</td>
+</tr>
+<tr>
+<td>Installer</td>
+<td>Nur POST-Formulare mit Token, gesperrt durch <code>install.lock</code> (PHP und <code>.htaccess</code>), löscht vorhandene Tabellen nur nach Bestätigung, kein Standardpasswort</td>
+</tr>
+<tr>
+<td>Zugangsdaten</td>
+<td><code>pb_inc/mysql.inc.php</code> ist nicht Teil des Pakets und per <code>.htaccess</code> gesperrt</td>
+</tr>
+<tr>
+<td>Fehlermeldungen</td>
+<td>Datenbankfehler ohne Benutzername, Server und IP-Adresse; Details nur in <code>logs/error.log</code></td>
+</tr>
+<tr>
+<td>Dateien</td>
+<td><code>.htaccess</code> sperrt Includes, Logs, Schema, Sperrdateien und Werkzeug-Dateien; deutsche Fehlerseiten für 403 und 404</td>
+</tr>
+<tr>
+<td>Cookies</td>
+<td><code>HttpOnly</code>, <code>SameSite=Lax</code>, <code>Secure</code> unter HTTPS</td>
+</tr>
+</tbody>
 </table>
+<p>Den <code>Server</code>-Kopf mit Versionsnummer schaltet nur die Serverkonfiguration ab (<code>ServerTokens Prod</code>), nicht die <code>.htaccess</code>.</p>
+<hr>
+<h2 id="tests">Tests</h2>
+<pre><code class="language-bash">composer install
 
-<p><strong>Audit-Dokumentation:</strong></p>
-<ul>
-    <li><code>docs/2026-04-23-Userbereichs-bugs.md</code></li>
-    <li><code>docs/2026-04-23-Userbereichs-improvements.md</code></li>
-    <li><code>docs/2026-04-23-Userbereichs-test-coverage.md</code></li>
-</ul>
-
-<h2>Tests</h2>
-<pre><code># Composer-Abhängigkeiten installieren
-composer install
-
-# Volle Test-Suite (Unit + Integration)
+# Alle Tests (Unit + Integration)
 vendor/bin/phpunit
 
-# Nur Unit-Tests
-vendor/bin/phpunit --testsuite Unit
-
-# Nur Integration-Tests (benötigen laufenden Apache-Container)
-vendor/bin/phpunit --testsuite Integration
-
-# Im Docker-Container
-docker exec powerbook_web vendor/bin/phpunit</code></pre>
-<p><strong>Aktueller Stand:</strong> 514 Tests / 953 Assertions / Coverage <strong>87 %</strong>.</p>
-
-<p><strong>Statische Analyse &amp; Code-Qualität:</strong></p>
-<pre><code>composer run phpstan        # PHPStan Level max
-vendor/bin/phpmd pb_inc text phpmd.xml
-vendor/bin/php-cs-fixer fix --dry-run --diff</code></pre>
-
-<h2>Troubleshooting</h2>
+# Installer, update.php und Schema gegen einen echten Datenbankserver
+PB_TEST_DB_HOST=127.0.0.1 PB_TEST_DB_PORT=3306 PB_TEST_DB_USER=root PB_TEST_DB_PASSWORD=geheim vendor/bin/phpunit
+</code></pre>
+<p>Die meisten Tests laufen mit SQLite im Speicher. Tests für Installer, <code>update.php</code> (mit den Tabellen von PowerBook 1.21, 2.0 und 3.0 unter <code>tests/Fixtures/</code>) und Schema brauchen einen MySQL- oder MariaDB-Server und werden ohne <code>PB_TEST_DB_HOST</code> übersprungen. Der Benutzer muss Datenbanken und Benutzer anlegen dürfen; die Testdatenbanken beginnen mit <code>pbtest_</code> (änderbar über <code>PB_TEST_DB_PREFIX</code>). Die CI prüft mit MySQL 8.0 und MariaDB 10.6.</p>
+<p>Statische Analyse und Codestil:</p>
+<pre><code class="language-bash">composer phpstan
+composer psalm
+composer phpmd
+composer cs-check
+</code></pre>
+<hr>
+<h2 id="projektstruktur">Projektstruktur</h2>
+<pre><code>PowerBook/
+├── pbook.php                       Gästebuch
+├── install.php                     Installer (Einstieg)
+├── update.php                      Aktualisierung (Einstieg)
+├── install_deu.php                 Platzhalter für den alten Installer
+├── powerbook.sql                   Datenbankschema (einzige Quelle)
+├── pb_inc/
+│   ├── mysql.inc.php.example       Vorlage für die Zugangsdaten
+│   ├── install.inc.php             Installer: Schritte und Seiten
+│   ├── update.inc.php              Aktualisierung: Plan und Ausführung
+│   ├── setup.inc.php               Gemeinsame Helfer, Seiten „noch nicht eingerichtet“
+│   ├── config.inc.php              Konfiguration aus der Datenbank
+│   ├── database.inc.php            Datenbankverbindung (PDO)
+│   ├── mysql-connect.inc.php       Verbindung für Gästebuch und AdminCenter
+│   ├── guestbook.inc.php           Gästebuch-Logik
+│   ├── mail.inc.php                Mailversand
+│   └── admincenter/                AdminCenter
+├── tests/                          PHPUnit (Unit, Integration, Fixtures)
+├── docs/                           Dokumentation
+└── .docker/                        Entwicklungsstack
+</code></pre>
+<hr>
+<h2 id="fehlersuche">Fehlersuche</h2>
 <table>
-    <tr><th>Symptom</th><th>Ursache / Lösung</th></tr>
-    <tr><td><code>install_deu.php</code> zeigt HTTP 403</td><td>Lock-File <code>.installed</code> existiert. Bei gewünschter Re-Installation manuell löschen.</td></tr>
-    <tr><td>Login schlägt fehl</td><td>Initial-Passwort vergessen? <code>?page=password</code> für Reset-Link nutzen.</td></tr>
-    <tr><td>Reset-Link kommt nicht an</td><td>Mailpit-UI prüfen (<a href="http://localhost:8035">localhost:8035</a>) bzw. SMTP-Konfiguration in <code>pb_inc/mysql.inc.php</code>.</td></tr>
-    <tr><td>"E-Mail konnte NICHT versendet werden" + Passwort wird angezeigt</td><td>SMTP nicht erreichbar — Passwort sofort sichern, dann SMTP konfigurieren.</td></tr>
-    <tr><td>Direktaufruf von <code>pb_inc/guestbook.inc.php</code> → 403</td><td>Erwünscht: Direktaufruf von Includes ist seit BUG-013 blockiert (<code>PB_ENTRY</code>-Guard).</td></tr>
-    <tr><td><code>Cannot redeclare function …</code> beim Test</td><td>Container neu starten: <code>docker compose restart web</code>.</td></tr>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Ursache / Lösung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>„PowerBook ist noch nicht eingerichtet“</td>
+<td>Es gibt noch keine <code>pb_inc/mysql.inc.php</code>. <code>install.php</code> aufrufen.</td>
+</tr>
+<tr>
+<td>„PowerBook ist bereits installiert“</td>
+<td><code>install.lock</code> sperrt den Installer. Bestehende Installation: <code>update.php</code>. Neu installieren: <code>install.lock</code> und <code>pb_inc/mysql.inc.php</code> löschen.</td>
+</tr>
+<tr>
+<td>„PowerBook ist bereits eingerichtet“</td>
+<td><code>pb_inc/mysql.inc.php</code> gehört zu einer Datenbank mit Administrator. <code>update.php</code> aufrufen.</td>
+</tr>
+<tr>
+<td>„Die Datenbank ist gerade nicht erreichbar“</td>
+<td>Datenbankserver aus oder Zugangsdaten in <code>pb_inc/mysql.inc.php</code> falsch. Die genaue Meldung steht in <code>logs/error.log</code>.</td>
+</tr>
+<tr>
+<td>Hinweis im AdminCenter „Die Datenbank ist noch auf einem älteren Stand“</td>
+<td><code>update.php</code> hochladen und aufrufen.</td>
+</tr>
+<tr>
+<td>Mails kommen nicht an</td>
+<td>Absenderadresse unter „Konfiguration“ auf eine Adresse Ihrer Domain setzen; im Docker-Stack Mailpit prüfen (<code>http://localhost:8035</code>).</td>
+</tr>
+</tbody>
 </table>
-
-<h2>Lizenz</h2>
+<hr>
+<h2 id="lizenz">Lizenz</h2>
 <p><strong>MIT License</strong></p>
-<pre><code>Copyright (c) 2002 Axel "Expandable" Habermaier (Original PowerBook 1.21)
-Copyright (c) 2025-2026 Nico Schubert (PHP 8.4 Migration &amp; Security Updates)</code></pre>
-<p>Voller Lizenztext: <a href="LICENSE">LICENSE</a>.</p>
-
-<h2>Changelog</h2>
-
-<h3>v3.0.0 — 2026-05-10</h3>
-<p><strong>Bootstrap-5-Migration &amp; Anonymisierung &amp; ICQ-Removal.</strong></p>
-
-<h4>Frontend</h4>
+<pre><code>Copyright (c) 2002 Axel &quot;Expandable&quot; Habermaier (Original PowerBook 1.21)
+Copyright (c) 2025-2026 Nico Schubert (PHP 8.4 Migration &amp; Security Updates)
+</code></pre>
+<p>Voller Lizenztext: <a href="LICENSE"><code>LICENSE</code></a>.</p>
+<hr>
+<h2 id="changelog">Changelog</h2>
+<h3 id="v310-2026">v3.1.0 — 2026</h3>
+<h4 id="installation-und-aktualisierung">Installation und Aktualisierung</h4>
 <ul>
-    <li>Komplettes Frontend (öffentlich + Admin) auf <strong>Bootstrap 5.3</strong> umgestellt (CDN).</li>
-    <li>Neue Layout-Helper: <code>pb_layout_header/footer</code>, <code>pb_admin_card_open/close</code>, <code>pb_admin_alert</code>.</li>
-    <li>Eigenes minimales CSS unter <code>assets/powerbook.css</code> mit <code>filemtime()</code>-Cache-Bust.</li>
-    <li>Default-Entry-Design im Installer als Bootstrap-Card; Legacy-Designs mit <code>bgcolor=</code> werden automatisch durch ein Card-Default ersetzt (kein Eingriff für Bestandskunden).</li>
-    <li>Einheitliche Schriftgrößen (<code>legend.form-label</code> von 24 px auf 16 px), konsistente Card-Header (<code>h2.h5</code>), Form-Labels (<code>.form-label</code>), Bootstrap-Spacing-Utilities.</li>
-    <li>Mobile-fähig dank Navbar-Collapse + Grid.</li>
-    <li>E-Mail-Label durchgängig zu <strong>„E-Mail-Adresse"</strong> ausgeschrieben.</li>
+<li><strong>Neuer Installer <code>install.php</code></strong> in vier Schritten (Datenbank, Gästebuch, Administrator, Fertig) mit Verbindungstest, verständlichen Fehlermeldungen, Prüfung vorhandener Tabellen und selbst gewähltem Administrator-Passwort. Er schreibt <code>pb_inc/mysql.inc.php</code> und die Sperrdatei <code>install.lock</code> und bietet an, sich danach selbst zu löschen.</li>
+<li><strong>Neues <code>update.php</code></strong> für PowerBook 1.x, 2.0 und 3.0: zeigt den Plan, startet nach Anmeldung, ergänzt Tabellen, Spalten, Indizes und Einstellungen und legt <code>install.lock</code> an.</li>
+<li><strong><code>powerbook.sql</code></strong> als einzige Quelle des Schemas: läuft unter MySQL 8 im Strict Mode und mit <code>sql_require_primary_key</code>, ausdrückliche Kollation, Datum als <code>BIGINT</code>, deutsche Vorgaben.</li>
+<li><code>pb_inc/mysql.inc.php</code> gehört nicht mehr zum Paket – ein Update per FTP überschreibt keine Zugangsdaten mehr. Vorlage: <code>pb_inc/mysql.inc.php.example</code>.</li>
+<li>Der alte Installer <code>install_deu.php</code> ist nur noch ein Platzhalter und per <code>.htaccess</code> gesperrt.</li>
+<li>Ohne Einrichtung bzw. ohne erreichbare Datenbank zeigen Gästebuch und AdminCenter eine kleine Seite statt einer Fehlermeldung mit Zugangsdaten.</li>
 </ul>
-
-<h4>Sicherheit</h4>
+<h4 id="weitere-anderungen">Weitere Änderungen</h4>
 <ul>
-    <li><strong>Information-Disclosure-Schutz:</strong> keine PHP-Versionsnummer mehr im Footer oder auf der Home-Seite.</li>
-    <li>Footer/Home/License-Page/E-Mail-Templates anonymisiert: Verweise nur noch auf <code>https://www.powerscripts.org</code>. Keine internen Repo-Links, keine Personennamen oder Mail-Adressen mehr im User-Output.</li>
-    <li>LICENSE und License-Anzeigeseite behalten den MIT-Original-Vermerk (rechtlich notwendig für MIT-Distribution).</li>
-    <li>Reset-Link in der Passwort-Mail nutzt jetzt einen Fallback auf <code>$_SERVER['HTTP_HOST']</code>, wenn <code>config_admin_url</code> leer ist — der Link ist damit immer vollständig klickbar.</li>
+<li>Gästebuch, AdminCenter und Mails überarbeitet: Titel des Gästebuchs und Absenderadresse einstellbar, Mails mit korrekt kodiertem Kopf, echte Umlaute, Rechte und Menü des AdminCenters eindeutig, Bereich „Mein Konto“.</li>
+<li>Release-Archiv ohne Tests, Dokumentation und Entwicklungswerkzeuge (<code>.gitattributes</code>).</li>
 </ul>
-
-<h4>Cleanup</h4>
+<h3 id="v300-2026-05-10">v3.0.0 — 2026-05-10</h3>
+<p>Bootstrap-5-Oberfläche für Gästebuch und AdminCenter, ICQ entfernt, keine Versionsnummern und Personennamen mehr in der Ausgabe.</p>
+<h3 id="fruhere-versionen">Frühere Versionen</h3>
 <ul>
-    <li><strong>ICQ komplett entfernt</strong> (Service eingestellt) aus Forms, Anzeige, Konfig, Edit, Default-Designs und SQL-Statements.</li>
-    <li>Bestehende DB-Spalten (<code>icq</code>) bleiben unangetastet — kein Datenverlust, keine zwingende Schema-Migration.</li>
-    <li>Alte <code>pb_inc/admincenter/powerbook.css</code> (Legacy-Theme) entfernt.</li>
+<li><strong>PowerBook PHP 8.4 Update (2025–2026):</strong> Migration auf PHP 8.4, Sicherheits-Audit, CSRF, Prepared Statements, <code>password_hash</code>, neue Test-Suite.</li>
+<li><strong>PowerBook 1.21 (2002):</strong> Original-Release von Axel „Expandable“ Habermaier.</li>
 </ul>
+<hr>
+<h2 id="kontakt-support">Kontakt &amp; Support</h2>
+<p><strong>SchubertMedia</strong><br>
+Inhaber: Nico Schubert<br>
+Stauffenbergallee 57<br>
+99085 Erfurt — Deutschland</p>
+<table>
+<thead>
+<tr>
+<th>Kanal</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Telefon</td>
+<td><strong>+49 (0) 3612 3002247</strong> (Mo.–Fr. 9–12 + 13–18 Uhr)</td>
+</tr>
+<tr>
+<td>Telefax</td>
+<td>+49 (0) 3612 3004636</td>
+</tr>
+<tr>
+<td>E-Mail</td>
+<td><a href="mailto:info@schubertmedia.de">info@schubertmedia.de</a></td>
+</tr>
+<tr>
+<td>Webseite</td>
+<td><a href="https://www.powerscripts.org">https://www.powerscripts.org</a></td>
+</tr>
+<tr>
+<td>Projektbereich</td>
+<td><a href="https://www.powerscripts.org/projects-5.html">https://www.powerscripts.org/projects-5.html</a></td>
+</tr>
+<tr>
+<td>Bug-Tracker</td>
+<td><a href="https://github.com/schubertnico/PowerBook/issues">https://github.com/schubertnico/PowerBook/issues</a></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><strong>Original:</strong> PowerBook 1.21 © 2002 by Axel "Expandable" Habermaier<br>
+<strong>PHP 8.4 Update:</strong> © 2025–2026 by Nico Schubert / SchubertMedia</p>
 
-<h4>Tests</h4>
-<ul>
-    <li>514 Tests, 953 Assertions, <strong>0 Failures</strong> (2 vorbestehend skipped).</li>
-    <li>PHPStan: 0 errors.</li>
-</ul>
-
-<h3>Frühere Versionen</h3>
-<ul>
-    <li><strong>PowerBook PHP 8.4 Update (2025–2026):</strong> Migration auf PHP 8.4, Security-Audit, CSRF, prepared statements, password_hash, Session-Hardening, neue Test-Suite.</li>
-    <li><strong>PowerBook 1.21 (2002):</strong> Original-Release von Axel „Expandable" Habermaier.</li>
-</ul>
-
-<h2>Kontakt &amp; Support</h2>
-
-<div class="contact">
-    <h3>SchubertMedia</h3>
-    <p><strong>Inhaber:</strong> Nico Schubert<br>
-    Stauffenbergallee 57<br>
-    99085 Erfurt — Deutschland</p>
-
-    <table>
-        <tr><td><strong>Telefon</strong></td><td><a href="tel:+4936123002247">+49 (0) 3612 3002247</a> &nbsp;<small>(Mo.–Fr. 9–12 + 13–18 Uhr)</small></td></tr>
-        <tr><td><strong>Telefax</strong></td><td>+49 (0) 3612 3004636</td></tr>
-        <tr><td><strong>E-Mail</strong></td><td><a href="mailto:info@schubertmedia.de">info@schubertmedia.de</a></td></tr>
-        <tr><td><strong>Webseite</strong></td><td><a href="https://www.powerscripts.org">https://www.powerscripts.org</a></td></tr>
-        <tr><td><strong>Projektbereich</strong></td><td><a href="https://www.powerscripts.org/projects-5.html">https://www.powerscripts.org/projects-5.html</a></td></tr>
-        <tr><td><strong>Bug-Tracker</strong></td><td><a href="https://github.com/schubertnico/PowerBook/issues">github.com/schubertnico/PowerBook/issues</a></td></tr>
-    </table>
-</div>
-
-<footer>
-    <p><strong>Original:</strong> PowerBook 1.21 © 2002 by Axel "Expandable" Habermaier<br>
-    <strong>PHP 8.4 Update:</strong> © 2025–2026 by Nico Schubert / SchubertMedia</p>
-</footer>
+<footer>PowerBook 3.1.0 · <a href="https://www.powerscripts.org">powerscripts.org</a></footer>
 
 </body>
 </html>

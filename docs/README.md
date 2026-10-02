@@ -1,6 +1,6 @@
 # Dokumentation
 
-Dieses Verzeichnis enthält die ausführliche Projekt-Dokumentation. Eine Schnellübersicht findest du in der [`README.md`](../README.md) im Projekt-Root.
+Dieses Verzeichnis enthält die ausführliche Projekt-Dokumentation. Eine Schnellübersicht steht in der [`README.md`](../README.md) im Projektordner.
 
 ## Sicherheits-Audit (April 2026)
 
@@ -12,11 +12,19 @@ Vollständiger Audit des PowerBook-Userbereichs (Frontend + AdminCenter), durchg
 | [`2026-04-23-Userbereichs-improvements.md`](2026-04-23-Userbereichs-improvements.md) | 41 Workflow- und UX-Verbesserungs-Vorschläge |
 | [`2026-04-23-Userbereichs-test-coverage.md`](2026-04-23-Userbereichs-test-coverage.md) | 78 Testfälle mit Status (91 % vollständig durchgeführt) |
 
-## Implementierungspläne
+## Installation und Aktualisierung (ab 3.1)
 
 | Datei | Inhalt |
 |-------|--------|
-| [`superpowers/plans/2026-04-23-userbereich-bugs-fix.md`](superpowers/plans/2026-04-23-userbereich-bugs-fix.md) | Schritt-für-Schritt-Plan für die Bug-Behebung (15 Tasks, TDD-orientiert) |
+| [`../powerbook.sql`](../powerbook.sql) | Einzige Quelle des Datenbankschemas. `install.php` legt die Tabellen daraus an, `update.php` vergleicht damit, die Tests laden sie. |
+| [`../install.php`](../install.php), `../pb_inc/install.inc.php` | Installer in vier Schritten: Datenbank, Gästebuch, Administrator, Fertig. Schreibt `pb_inc/mysql.inc.php` und die Sperrdatei `install.lock`. |
+| [`../update.php`](../update.php), `../pb_inc/update.inc.php` | Aktualisierung von PowerBook 1.x, 2.0 und 3.0 auf 3.1, nur nach Anmeldung als Administrator mit dem Recht „Konfiguration ändern“. |
+| `../pb_inc/setup.inc.php` | Gemeinsame Helfer (Seitenrahmen, Verbindung, Schema, `mysql.inc.php` schreiben) und die Seiten „noch nicht eingerichtet“ bzw. „Datenbank nicht erreichbar“. |
+| [`../tests/Fixtures/`](../tests/Fixtures/) | Tabellen von PowerBook 1.21, 2.0 und 3.0 für die Tests von `update.php`. |
+
+Tests gegen einen echten MySQL- oder MariaDB-Server laufen, sobald `PB_TEST_DB_HOST` gesetzt ist
+(dazu `PB_TEST_DB_PORT`, `PB_TEST_DB_USER`, `PB_TEST_DB_PASSWORD`, `PB_TEST_DB_PREFIX`); sonst werden
+sie übersprungen. Die CI startet dafür MySQL 8.0 und MariaDB 10.6.
 
 ## Übersicht: Behobene Bugs (Stand 2026-04-24)
 

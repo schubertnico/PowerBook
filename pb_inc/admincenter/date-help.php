@@ -1,7 +1,10 @@
 <?php
 /**
  * PowerBook - PHP Guestbook System
- * Date/Time Format Help
+ * Hilfe zu Datums- und Zeitformaten (aus der Konfiguration verlinkt)
+ *
+ * Alle Beispiele werden mit dem heutigen Datum berechnet, genau so, wie
+ * PowerBook sie im Gästebuch und im AdminCenter ausgibt.
  *
  * @license MIT
  * @copyright PowerScripts.org
@@ -11,140 +14,116 @@
 
 declare(strict_types=1);
 
-$section = $_GET['section'] ?? '';
+require_once __DIR__ . '/../functions.inc.php';
+
+$section = isset($_GET['section']) && is_string($_GET['section']) ? $_GET['section'] : '';
+$showDate = $section !== 'time';
+$showTime = $section !== 'date';
+$now = time();
+$h = static fn (string $value): string => htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+$example = static fn (string $format): string => pb_format_date($format, $now);
+
+$dateChars = [
+    ['d', 'Tag, zweistellig (01 bis 31)'],
+    ['j', 'Tag ohne führende Null (1 bis 31)'],
+    ['l', 'Wochentag ausgeschrieben (kleines L)'],
+    ['D', 'Wochentag, zwei Buchstaben'],
+    ['m', 'Monat, zweistellig (01 bis 12)'],
+    ['n', 'Monat ohne führende Null (1 bis 12)'],
+    ['F', 'Monatsname ausgeschrieben'],
+    ['M', 'Monatsname, drei Buchstaben'],
+    ['Y', 'Jahr, vierstellig'],
+    ['y', 'Jahr, zweistellig'],
+    ['W', 'Kalenderwoche'],
+];
+$dateExamples = ['d.m.Y', 'j. F Y', 'l, j. F Y', 'D, d.m.y', '\K\W W, d.m.Y'];
+$timeChars = [
+    ['H', 'Stunde, zweistellig (00 bis 23)'],
+    ['G', 'Stunde ohne führende Null (0 bis 23)'],
+    ['i', 'Minute, zweistellig (00 bis 59)'],
+    ['s', 'Sekunde, zweistellig (00 bis 59)'],
+];
+$timeExamples = ['H:i', 'G:i', 'H.i', 'H:i:s'];
 ?>
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PowerBook - Hilfe</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 10pt;
-            color: #FFFFFF;
-            background-color: #000000;
-            margin: 10px;
-        }
-        table {
-            border-collapse: collapse;
-        }
-        td {
-            font-size: 10pt;
-            color: #FFFFFF;
-            padding: 2px 5px;
-        }
-        th {
-            font-size: 10pt;
-            color: #FFFFFF;
-            font-weight: bold;
-            padding: 5px;
-        }
-        .code {
-            font-family: monospace;
-            color: #FF9900;
-        }
-    </style>
+    <meta name="robots" content="noindex, nofollow">
+    <title>Hilfe: Datum und Uhrzeit · PowerBook AdminCenter</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="../../assets/powerbook.css" rel="stylesheet">
 </head>
-<body>
+<body class="pb-body bg-body-tertiary">
+<main class="container py-4 pb-admin" style="max-width: 60rem">
+    <h1 class="h3 mb-3">Hilfe: Datum und Uhrzeit</h1>
+    <p>
+        PowerBook schreibt Datum und Uhrzeit nach einem Muster. Jeder Buchstabe aus den Tabellen steht für
+        einen Teil des Datums, alle anderen Zeichen wie Punkt, Komma und Leerzeichen erscheinen unverändert.
+        Ein Muster darf höchstens 20 Zeichen lang sein. Die Beispiele zeigen das heutige Datum.
+    </p>
 
-<?php if ($section === 'date') { ?>
-<table border="0" width="250">
-    <tr><th colspan="2">Datumsformate</th></tr>
-    <tr>
-        <td class="code">d</td>
-        <td>Tag des Monats: "01" - "31"</td>
-    </tr>
-    <tr>
-        <td class="code">j</td>
-        <td>Tag des Monats: "1" - "31"</td>
-    </tr>
-    <tr>
-        <td class="code">D</td>
-        <td>Tag der Woche, 3 Buchstaben ("Mo")</td>
-    </tr>
-    <tr>
-        <td class="code">l</td>
-        <td>Tag der Woche, wie "Montag"</td>
-    </tr>
-    <tr>
-        <td class="code">F</td>
-        <td>Monat, wie "März"</td>
-    </tr>
-    <tr>
-        <td class="code">m</td>
-        <td>Monat: "01" - "12"</td>
-    </tr>
-    <tr>
-        <td class="code">n</td>
-        <td>Monat: "1" - "12"</td>
-    </tr>
-    <tr>
-        <td class="code">M</td>
-        <td>Monat, 3 Buchstaben ("Jan")</td>
-    </tr>
-    <tr>
-        <td class="code">Y</td>
-        <td>Jahr, vierstellig ("2025")</td>
-    </tr>
-    <tr>
-        <td class="code">y</td>
-        <td>Jahr, zweistellig ("25")</td>
-    </tr>
-    <tr>
-        <td class="code">S</td>
-        <td>Ordinalendung ("1st", "2nd")</td>
-    </tr>
-</table>
-<br>
-<p><b>Beispiel:</b> <span class="code">l, j. F Y</span><br>
-Ergibt: "Montag, 1. Januar 2025"</p>
+    <?php if ($showDate) { ?>
+    <section id="pbHelpDate" class="card shadow-sm mb-4">
+        <header class="card-header bg-primary text-white"><h2 class="h5 mb-0">Datumsformat</h2></header>
+        <div class="card-body">
+            <table class="table table-sm align-middle">
+                <thead><tr><th scope="col">Zeichen</th><th scope="col">Bedeutung</th><th scope="col">Heute</th></tr></thead>
+                <tbody>
+                <?php foreach ($dateChars as [$char, $meaning]) { ?>
+                    <tr><td><code><?= $h($char) ?></code></td><td><?= $h($meaning) ?></td><td><?= $h($example($char)) ?></td></tr>
+                <?php } ?>
+                </tbody>
+            </table>
+            <h3 class="h6 mt-4">Beispiele</h3>
+            <table class="table table-sm align-middle mb-3">
+                <thead><tr><th scope="col">Muster</th><th scope="col">Ergebnis heute</th></tr></thead>
+                <tbody>
+                <?php foreach ($dateExamples as $format) { ?>
+                    <tr><td><code><?= $h($format) ?></code></td><td><?= $h($example($format)) ?></td></tr>
+                <?php } ?>
+                </tbody>
+            </table>
+            <p class="mb-0 small text-body-secondary">
+                Tages- und Monatsnamen erscheinen auf Deutsch. Soll ein Buchstabe wörtlich erscheinen,
+                schreiben Sie einen Backslash davor: <code>\K\W W</code> ergibt „<?= $h($example('\K\W W')) ?>“.
+            </p>
+        </div>
+    </section>
+    <?php } ?>
 
-<?php } elseif ($section === 'time') { ?>
-<table border="0" width="180">
-    <tr><th colspan="2">Zeitformate</th></tr>
-    <tr>
-        <td class="code">a</td>
-        <td>"am" / "pm"</td>
-    </tr>
-    <tr>
-        <td class="code">A</td>
-        <td>"AM" / "PM"</td>
-    </tr>
-    <tr>
-        <td class="code">g</td>
-        <td>Stunden: "1" - "12"</td>
-    </tr>
-    <tr>
-        <td class="code">G</td>
-        <td>Stunden: "0" - "23"</td>
-    </tr>
-    <tr>
-        <td class="code">h</td>
-        <td>Stunden: "01" - "12"</td>
-    </tr>
-    <tr>
-        <td class="code">H</td>
-        <td>Stunden: "00" - "23"</td>
-    </tr>
-    <tr>
-        <td class="code">i</td>
-        <td>Minuten: "00" - "59"</td>
-    </tr>
-    <tr>
-        <td class="code">s</td>
-        <td>Sekunden: "00" - "59"</td>
-    </tr>
-</table>
-<br>
-<p><b>Beispiel:</b> <span class="code">H:i</span><br>
-Ergibt: "14:30"</p>
+    <?php if ($showTime) { ?>
+    <section id="pbHelpTime" class="card shadow-sm mb-4">
+        <header class="card-header bg-primary text-white"><h2 class="h5 mb-0">Zeitformat</h2></header>
+        <div class="card-body">
+            <table class="table table-sm align-middle">
+                <thead><tr><th scope="col">Zeichen</th><th scope="col">Bedeutung</th><th scope="col">Jetzt</th></tr></thead>
+                <tbody>
+                <?php foreach ($timeChars as [$char, $meaning]) { ?>
+                    <tr><td><code><?= $h($char) ?></code></td><td><?= $h($meaning) ?></td><td><?= $h($example($char)) ?></td></tr>
+                <?php } ?>
+                </tbody>
+            </table>
+            <h3 class="h6 mt-4">Beispiele</h3>
+            <table class="table table-sm align-middle mb-3">
+                <thead><tr><th scope="col">Muster</th><th scope="col">Ergebnis jetzt</th></tr></thead>
+                <tbody>
+                <?php foreach ($timeExamples as $format) { ?>
+                    <tr><td><code><?= $h($format) ?></code></td><td><?= $h($example($format)) ?></td></tr>
+                <?php } ?>
+                </tbody>
+            </table>
+            <p class="mb-0 small text-body-secondary">
+                Das Wort „Uhr“ steht in der Design-Vorlage hinter <code>(#TIME#)</code> und gehört nicht ins
+                Zeitformat. Die Buchstaben <code>g</code>, <code>h</code>, <code>a</code> und <code>A</code>
+                (12-Stunden-Uhr mit am/pm) passen nicht zu deutschen Uhrzeiten.
+            </p>
+        </div>
+    </section>
+    <?php } ?>
 
-<?php } else { ?>
-<p>Kein Abschnitt ausgewählt!</p>
-<p><a href="?section=date">Datumsformate</a> | <a href="?section=time">Zeitformate</a></p>
-<?php } ?>
-
+    <p class="mb-0"><a href="index.php?page=configuration">Zur Konfiguration</a></p>
+</main>
 </body>
 </html>

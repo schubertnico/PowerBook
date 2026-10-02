@@ -11,12 +11,14 @@ declare(strict_types=1);
 
 namespace PowerBook\Tests\Unit;
 
+use PDO;
 use PHPUnit\Framework\Attributes\CoversFunction;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 #[CoversFunction('e')]
 #[CoversFunction('sanitizeEmailHeader')]
+#[CoversFunction('verifyAndMigratePassword')]
 class DatabaseUtilsTest extends TestCase
 {
     // ========================================
@@ -74,13 +76,13 @@ class DatabaseUtilsTest extends TestCase
     #[Test]
     public function eHandlesUnicodeCorrectly(): void
     {
-        $this->assertSame('Umlaute: aeoeue', e('Umlaute: aeoeue'));
+        $this->assertSame('Umlaute: äöü', e('Umlaute: äöü'));
     }
 
     #[Test]
     public function ePreservesGermanUmlauts(): void
     {
-        $this->assertSame('Gruesse', e('Gruesse'));
+        $this->assertSame('Grüße aus der Möwenstraße', e('Grüße aus der Möwenstraße'));
     }
 
     // ========================================
@@ -139,6 +141,45 @@ class DatabaseUtilsTest extends TestCase
 
         $this->assertStringNotContainsString("\n", $result);
         $this->assertStringNotContainsString("\r", $result);
+    }
+
+    // ========================================
+    // Tests for verifyAndMigratePassword()
+    // ========================================
+
+    #[Test]
+    public function verifyAndMigratePasswordAcceptsHashes(): void
+    {
+        $hash = password_hash('Moewenblick2026', PASSWORD_DEFAULT);
+
+        $this->assertTrue(verifyAndMigratePassword('Moewenblick2026', $hash, 1));
+        $this->assertFalse(verifyAndMigratePassword('falsch', $hash, 1));
+        $this->assertFalse(verifyAndMigratePassword('', $hash, 1));
+        $this->assertFalse(verifyAndMigratePassword('', '', 1));
+    }
+
+    #[Test]
+    public function verifyAndMigratePasswordConvertsBase64InTheConfiguredTable(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('CREATE TABLE gb_admins_test (id INTEGER PRIMARY KEY, password TEXT NOT NULL)');
+        $pdo->exec("INSERT INTO gb_admins_test (id, password) VALUES (7, '" . base64_encode('powerbook') . "')");
+        $previous = $GLOBALS['pb_admin'] ?? null;
+        $previousPdo = $GLOBALS['pdo'] ?? null;
+        $GLOBALS['pb_admin'] = 'gb_admins_test';
+        $GLOBALS['pdo'] = $pdo;
+
+        try {
+            $this->assertFalse(verifyAndMigratePassword('PowerBook', base64_encode('powerbook'), 7));
+            $this->assertTrue(verifyAndMigratePassword('powerbook', base64_encode('powerbook'), 7));
+            $stored = (string) $pdo->query('SELECT password FROM gb_admins_test WHERE id = 7')->fetchColumn();
+            $this->assertStringStartsWith('$2y$', $stored);
+            $this->assertTrue(password_verify('powerbook', $stored));
+        } finally {
+            $GLOBALS['pb_admin'] = $previous;
+            $GLOBALS['pdo'] = $previousPdo;
+        }
     }
 
     protected function setUp(): void

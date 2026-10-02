@@ -1,7 +1,11 @@
 <?php
 /**
  * PowerBook - PHP Guestbook System
- * Admin Center Login Page
+ * AdminCenter: Anmelden
+ *
+ * Das Formular schickt an index.php (?page=login). Dort laufen Prüfung,
+ * Anmeldedrossel und die Weiterleitung zur Startseite; Meldungen kommen als
+ * #pbMessage aus dem Layout.
  *
  * @license MIT
  * @copyright PowerScripts.org
@@ -13,56 +17,41 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/layout.inc.php';
 
-$show_form = !empty($welcome_admin) ? 'no' : 'yes';
+// Variables from parent scope (index.php)
+/** @var string $loginName */
+/** @var bool $loggedIn */
+pb_admin_card_open('Anmelden', 'pbLogin');
 
-pb_admin_card_open('Login');
-
-if (!empty($login_message)) {
-    // Bei einem erfolgreichen Login startet die Meldung mit "Login erfolgreich" — als Erfolg darstellen.
-    $isSuccess = stripos($login_message, 'erfolgreich') !== false;
-    echo pb_admin_alert($login_message, $isSuccess ? 'success' : 'danger');
-}
-
-if ($show_form !== 'no') {
-    ?>
+if (!empty($loggedIn)) { ?>
+<p class="mb-0">Sie sind bereits angemeldet. <a href="?page=home">Zur Startseite</a></p>
+<?php } else { ?>
 <div class="pb-card-narrow">
-    <p>Ein Login ist erforderlich, um administrative Funktionen zu nutzen.</p>
+    <p>Bitte melden Sie sich an, um Ihr Gästebuch zu verwalten.</p>
 
-    <form action="?page=login" method="post" novalidate>
+    <form id="pbLoginForm" action="?page=login" method="post" novalidate>
         <?= csrfField() ?>
+        <input type="hidden" name="login" value="yes">
 
         <div class="mb-3">
-            <label for="pb_login_name" class="form-label">Name <span class="text-danger" aria-hidden="true">*</span></label>
-            <input id="pb_login_name" type="text" class="form-control" name="name" required value="<?= e($name ?? '') ?>" autocomplete="username">
+            <label for="pb_login_name" class="form-label">Name oder E-Mail-Adresse</label>
+            <input id="pb_login_name" type="text" class="form-control" name="name" required value="<?= e($loginName ?? '') ?>" autocomplete="username" autocapitalize="none" spellcheck="false">
         </div>
 
         <div class="mb-3">
-            <label for="pb_login_password" class="form-label">Passwort <span class="text-danger" aria-hidden="true">*</span></label>
+            <label for="pb_login_password" class="form-label">Passwort</label>
             <input id="pb_login_password" type="password" class="form-control" name="password" required autocomplete="current-password">
             <div class="form-text">
-                <a href="?page=password">Passwort vergessen?</a>
+                <a id="pbForgotLink" href="?page=password">Passwort vergessen?</a>
             </div>
         </div>
 
-        <input type="hidden" name="login" value="yes">
-
-        <div class="d-flex flex-wrap gap-2">
-            <button type="submit" class="btn btn-primary">Login</button>
-        </div>
+        <button type="submit" id="pbLoginSubmit" class="btn btn-primary">Anmelden</button>
     </form>
 
     <p class="text-body-secondary mt-3 mb-0"><small>
-        Die Anmeldung erfolgt über eine sichere Session (kein Passwort im Cookie).
+        Nach 60 Minuten ohne Aktivität werden Sie aus Sicherheitsgründen automatisch abgemeldet.
     </small></p>
 </div>
-<?php } else { ?>
-
-<p class="mb-2">Sie sind bereits eingeloggt als <b><?= e($welcome_admin) ?></b>.</p>
-<p class="mb-0">
-    <a href="?page=home" class="btn btn-primary btn-sm">Zum AdminCenter</a>
-    <a href="?page=logout" class="btn btn-outline-danger btn-sm">Logout</a>
-</p>
-
 <?php }
 
 pb_admin_card_close();

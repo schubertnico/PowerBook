@@ -1,6 +1,6 @@
 # PowerBook Userbereich - Testabdeckung / Testmatrix
 **Datum:** 2026-04-23
-**Tester:** Senior-QA-Engineer (Claude)
+**Prüfung:** Qualitätssicherung SchubertMedia
 **Testumgebung (zum Audit-Zeitpunkt):** http://localhost:8080 + Mailpit (http://localhost:8031)
 > **Hinweis (Mai 2026):** Container-Ports wurden inzwischen verschoben (`web` 8080→**8081**, Mailpit 8031→**8035**) wegen Konflikten mit anderen Compose-Stacks. Aktuelle Ports: siehe README.md.
 
@@ -277,7 +277,7 @@ Die folgenden Bereiche wurden aus Codebasis (`pbook.php`, `pb_inc/`, `pb_inc/adm
 
 ### 4.2 Gefundene Bugs (14 Einträge in bugs.md) — **alle behoben am 2026-04-23**
 
-> Siehe Plan `docs/superpowers/plans/2026-04-23-userbereich-bugs-fix.md` und Commits seit `854956b`.
+> Siehe die Commits seit `854956b`.
 
 | ID       | Schweregrad | Kurzbeschreibung | Status |
 |----------|-------------|------------------|

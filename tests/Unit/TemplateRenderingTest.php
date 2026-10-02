@@ -47,23 +47,37 @@ class TemplateRenderingTest extends TestCase
     }
 
     #[Test]
-    public function testEntryDisplayWithEmail(): void
+    public function testEntryDisplayNeverPublishesEmail(): void
     {
+        // B07: Die E-Mail-Adresse des Gastes erscheint nie öffentlich.
         $vars = $this->makeEntryVars(['email' => 'test@example.com']);
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/entry.inc.php', $vars);
 
-        $this->assertStringContainsString('mailto:test@example.com', $output);
-        $this->assertStringContainsString('>Test User</a>', $output);
+        $this->assertStringNotContainsString('mailto:', $output);
+        $this->assertStringNotContainsString('test@example.com', $output);
+        $this->assertStringContainsString('<span class="pb-entry-name">Test User</span>', $output);
     }
 
     #[Test]
     public function testEntryDisplayWithHomepage(): void
     {
+        // Ohne Schema gespeicherte Adressen (Altbestand) bekommen https:// davor.
         $vars = $this->makeEntryVars(['homepage' => 'example.com']);
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/entry.inc.php', $vars);
 
-        $this->assertStringContainsString('http://example.com', $output);
+        $this->assertStringContainsString('href="https://example.com"', $output);
         $this->assertStringContainsString('Homepage</a>', $output);
+        $this->assertStringContainsString('rel="noopener noreferrer nofollow ugc"', $output);
+    }
+
+    #[Test]
+    public function testEntryDisplayWithInvalidHomepage(): void
+    {
+        $vars = $this->makeEntryVars(['homepage' => 'javascript:alert(1)']);
+        $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/entry.inc.php', $vars);
+
+        $this->assertStringNotContainsString('javascript', $output);
+        $this->assertStringContainsString('Keine Homepage', $output);
     }
 
     #[Test]
@@ -131,6 +145,7 @@ class TemplateRenderingTest extends TestCase
     {
         $vars = $this->makeEntryVars(
             [
+                'id' => 4,
                 'statement' => 'Admin reply here',
                 'statement_by' => 'AdminUser',
             ],
@@ -139,15 +154,16 @@ class TemplateRenderingTest extends TestCase
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/entry.inc.php', $vars);
 
         $this->assertStringContainsString('Admin reply here', $output);
-        $this->assertStringContainsString('AdminUser', $output);
-        $this->assertStringContainsString('Statement:', $output);
+        $this->assertStringContainsString('<b>Antwort von AdminUser:</b>', $output);
+        $this->assertStringContainsString('id="pbEntryAnswer4"', $output);
+        $this->assertStringNotContainsString('Statement', $output);
     }
 
     #[Test]
     public function testEntryDisplayNeverShowsIcq(): void
     {
         // ICQ-Feature wurde komplett entfernt — auch wenn ein alter DB-Eintrag
-        // noch eine ICQ-Nummer enthaelt, darf sie NICHT mehr angezeigt werden.
+        // noch eine ICQ-Nummer enthält, darf sie NICHT mehr angezeigt werden.
         $vars = $this->makeEntryVars(
             ['icq' => '123456789'],
             ['config_icq' => 'Y']
@@ -250,104 +266,130 @@ class TemplateRenderingTest extends TestCase
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/form.inc.php', $vars);
 
         $this->assertStringContainsString('name="smilies2"', $output);
-        $this->assertStringContainsString('Smilies aktivieren', $output);
+        $this->assertStringContainsString('Smileys als Bilder anzeigen', $output);
+    }
+
+    #[Test]
+    public function testFormHasTwoButtonsHelpAndPrivacyNote(): void
+    {
+        $vars = $this->makeFormVars();
+        $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/form.inc.php', $vars);
+
+        $this->assertStringContainsString('id="pbEntryForm"', $output);
+        $this->assertMatchesRegularExpression('/id="pbEntryPreviewBtn"[^>]*value="preview"[^>]*>Vorschau</', $output);
+        $this->assertMatchesRegularExpression('/id="pbEntrySubmit"[^>]*value="save"[^>]*>Eintragen</', $output);
+        $this->assertStringContainsString('id="pbHelpToggle"', $output);
+        $this->assertStringContainsString('data-bs-toggle="collapse"', $output);
+        $this->assertStringNotContainsString('javascript:', $output);
+        $this->assertStringNotContainsString('window.open', $output);
+        $this->assertStringContainsString('Ihre E-Mail-Adresse wird nicht veröffentlicht. Zum Schutz vor Missbrauch speichern wir die IP-Adresse Ihres Eintrags.', $output);
+    }
+
+    #[Test]
+    public function testFormShowsErrorsAtFieldsAndEscapesOnce(): void
+    {
+        $vars = $this->makeFormVars([
+            'pbFormValues' => ['name' => 'Anke & Co "Team"', 'email' => '', 'url' => '', 'text' => 'Er sagte "Moin" & ging.', 'icon' => 'happy1', 'smilies' => 'N'],
+            'pbFormErrors' => ['email' => 'Bitte prüfen Sie die E-Mail-Adresse.', 'name' => 'Name zu lang.'],
+        ]);
+        $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/form.inc.php', $vars);
+
+        $this->assertStringContainsString('value="Anke &amp; Co &quot;Team&quot;"', $output);
+        $this->assertStringContainsString('>Er sagte &quot;Moin&quot; &amp; ging.</textarea>', $output);
+        $this->assertStringNotContainsString('&amp;amp;', $output);
+        $this->assertStringContainsString('id="pbFormError"', $output);
+        $this->assertStringContainsString('<div id="pb_email_error" class="invalid-feedback">Bitte prüfen Sie die E-Mail-Adresse.</div>', $output);
+        $this->assertSame(2, substr_count($output, 'is-invalid'));
+        $this->assertSame(2, substr_count($output, 'aria-invalid="true"'));
+        $this->assertSame(1, substr_count($output, ' autofocus'));
+        $this->assertMatchesRegularExpression('/id="pb_name"[^>]*autofocus/', $output);
+        $this->assertMatchesRegularExpression('/id="pb_icon_happy1"[^>]*checked/', $output);
+        $this->assertDoesNotMatchRegularExpression('/id="pb_smilies"[^>]*checked/', $output);
     }
 
     #[Test]
     public function testLinearPaginationFirstPage(): void
     {
-        $vars = $this->makePagesVars([
-            'config_pages' => 'L',
-            'tmp_start' => 0,
-            'tmp_pages' => 3,
-            'count_pages' => 30,
-        ]);
+        $vars = $this->makePagesVars(['config_pages' => 'L', 'tmp_start' => 0, 'count_pages' => 30]);
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/pages.inc.php', $vars);
 
-        // On first page, "Anfang" should not be a link
-        $this->assertStringNotContainsString('<a href="pbook.php">&laquo;&laquo; Anfang</a>', $output);
-        $this->assertStringContainsString('&laquo;&laquo; Anfang', $output);
-        // "Vorherige Seite" should not be a link on first page
-        $this->assertStringNotContainsString('Vorherige Seite</a>', $output);
-        // "Nächste Seite" should be a link
-        $this->assertStringContainsString('Nächste Seite &raquo;</a>', $output);
-        // "Ende" should be a link
-        $this->assertStringContainsString('Ende &raquo;&raquo;</a>', $output);
+        $this->assertStringContainsString('id="pbPagerTop"', $output);
+        $this->assertMatchesRegularExpression('/<span class="page-link pb-pager-first"[^>]*aria-disabled="true">/', $output);
+        $this->assertMatchesRegularExpression('/<span class="page-link pb-pager-prev"[^>]*aria-disabled="true">/', $output);
+        $this->assertStringContainsString('Seite 1 von 3', $output);
+        $this->assertMatchesRegularExpression('/<a class="page-link pb-pager-next"[^>]*href="pbook.php\?tmp_start=10">/', $output);
+        $this->assertMatchesRegularExpression('/<a class="page-link pb-pager-last"[^>]*href="pbook.php\?tmp_start=20">/', $output);
+        // IDs der Knöpfe nur in der unteren Leiste
+        $this->assertStringNotContainsString('id="pbPagerNext"', $output);
     }
 
     #[Test]
-    public function testLinearPaginationMiddlePage(): void
+    public function testLinearPaginationMiddlePageBottom(): void
     {
-        $vars = $this->makePagesVars([
-            'config_pages' => 'L',
-            'tmp_start' => 10,
-            'tmp_pages' => 3,
-            'count_pages' => 30,
-        ]);
+        $vars = $this->makePagesVars(['config_pages' => 'L', 'tmp_start' => 10, 'count_pages' => 30, 'pbPagerPosition' => 'bottom']);
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/pages.inc.php', $vars);
 
-        // On middle page, both "Anfang" and previous should be links
-        $this->assertStringContainsString('Anfang</a>', $output);
-        $this->assertStringContainsString('Vorherige Seite</a>', $output);
-        // Next page and Ende should also be links
-        $this->assertStringContainsString('Nächste Seite &raquo;</a>', $output);
-        $this->assertStringContainsString('Ende &raquo;&raquo;</a>', $output);
+        $this->assertStringContainsString('id="pbPagerBottom"', $output);
+        $this->assertMatchesRegularExpression('/<a class="page-link pb-pager-first" id="pbPagerFirst"[^>]*href="pbook.php">/', $output);
+        $this->assertMatchesRegularExpression('/<a class="page-link pb-pager-prev" id="pbPagerPrev"[^>]*href="pbook.php">/', $output);
+        $this->assertMatchesRegularExpression('/<a class="page-link pb-pager-next" id="pbPagerNext"[^>]*href="pbook.php\?tmp_start=20">/', $output);
+        $this->assertStringContainsString('id="pbPagerLast"', $output);
+        $this->assertStringContainsString('Seite 2 von 3', $output);
     }
 
     #[Test]
     public function testLinearPaginationLastPage(): void
     {
-        $vars = $this->makePagesVars([
-            'config_pages' => 'L',
-            'tmp_start' => 20,
-            'tmp_pages' => 3,
-            'count_pages' => 30,
-            'config_show_entries' => 10,
-        ]);
+        $vars = $this->makePagesVars(['config_pages' => 'L', 'tmp_start' => 20, 'count_pages' => 30]);
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/pages.inc.php', $vars);
 
-        // On last page, "Ende" should not be a link
-        $this->assertStringNotContainsString('Ende &raquo;&raquo;</a>', $output);
-        $this->assertStringContainsString('Ende &raquo;&raquo;', $output);
-        // "Nächste Seite" should not be a link
-        $this->assertStringNotContainsString('Nächste Seite &raquo;</a>', $output);
-        // "Vorherige Seite" and "Anfang" should be links
-        $this->assertStringContainsString('Vorherige Seite</a>', $output);
-        $this->assertStringContainsString('Anfang</a>', $output);
+        $this->assertMatchesRegularExpression('/<span class="page-link pb-pager-next"[^>]*aria-disabled="true">/', $output);
+        $this->assertMatchesRegularExpression('/<span class="page-link pb-pager-last"[^>]*aria-disabled="true">/', $output);
+        $this->assertStringContainsString('Seite 3 von 3', $output);
     }
 
     #[Test]
-    public function testDirectPaginationMultiplePages(): void
+    public function testDirectPaginationMarksPageFromStart(): void
     {
-        $vars = $this->makePagesVars([
-            'config_pages' => 'D',
-            'tmp_pages' => 3,
-            'tmp_page' => 2,
-            'config_show_entries' => 10,
-        ]);
+        // B24: aktive Seite aus tmp_start, nicht aus tmp_page
+        $vars = $this->makePagesVars(['config_pages' => 'D', 'tmp_start' => 10, 'tmp_page' => 1, 'count_pages' => 30]);
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/pages.inc.php', $vars);
 
-        // Bootstrap-5-Migration: Pagination als <ul class="pagination">.
         $this->assertStringContainsString('class="pagination', $output);
-        // Current page (2) is rendered with .active marker around span "2".
-        $this->assertStringContainsString('page-item active', $output);
-        $this->assertStringContainsString('>2</span>', $output);
-        // Other pages should be links
-        $this->assertStringContainsString('>1</a>', $output);
-        $this->assertStringContainsString('>3</a>', $output);
+        $this->assertMatchesRegularExpression('/<li class="page-item active" aria-current="page"><span[^>]*data-page="2">2<\/span>/', $output);
+        $this->assertMatchesRegularExpression('/data-page="1" href="pbook.php">1<\/a>/', $output);
+        $this->assertMatchesRegularExpression('/data-page="3" href="pbook.php\?tmp_start=20">3<\/a>/', $output);
+        $this->assertStringNotContainsString('tmp_page', $output);
+    }
+
+    #[Test]
+    public function testDirectPaginationShortensManyPages(): void
+    {
+        $vars = $this->makePagesVars(['config_pages' => 'D', 'tmp_start' => 100, 'count_pages' => 400, 'pbPagerPosition' => 'bottom']);
+        $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/pages.inc.php', $vars);
+
+        preg_match_all('/data-page="(\d+)"[^>]*>(\d+)</', $output, $m);
+        $this->assertSame(['1', '9', '10', '11', '12', '13', '40'], $m[2]);
+        $this->assertSame(2, substr_count($output, '…'));
+        $this->assertStringContainsString('id="pbPagerFirst"', $output);
+        $this->assertStringContainsString('id="pbPagerLast"', $output);
+    }
+
+    #[Test]
+    public function testUnknownPagerModeFallsBackToNumbers(): void
+    {
+        $vars = $this->makePagesVars(['config_pages' => 'Y', 'tmp_start' => 0, 'count_pages' => 30]);
+        $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/pages.inc.php', $vars);
+
+        $this->assertStringContainsString('pb-pager-page', $output);
     }
 
     #[Test]
     public function testNoPaginationSinglePage(): void
     {
-        $vars = $this->makePagesVars([
-            'config_pages' => 'L',
-            'tmp_pages' => 1,
-            'count_pages' => 5,
-        ]);
+        $vars = $this->makePagesVars(['config_pages' => 'L', 'count_pages' => 5]);
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/pages.inc.php', $vars);
 
-        // Single page should produce no pagination output
         $this->assertEmpty(trim($output));
     }
 
@@ -357,16 +399,13 @@ class TemplateRenderingTest extends TestCase
         $vars = $this->makePagesVars([
             'config_pages' => 'L',
             'tmp_where' => 'name',
-            'tmp_search' => 'TestSearch',
+            'tmp_search' => 'Möwe & Co',
             'tmp_start' => 0,
-            'tmp_pages' => 3,
             'count_pages' => 30,
         ]);
         $output = $this->renderTemplate(POWERBOOK_ROOT . '/pb_inc/pages.inc.php', $vars);
 
-        // Search parameters should be included in pagination links
-        $this->assertStringContainsString('tmp_where=name', $output);
-        $this->assertStringContainsString('tmp_search=TestSearch', $output);
+        $this->assertStringContainsString('href="pbook.php?tmp_start=10&amp;tmp_where=name&amp;tmp_search=M%C3%B6we%20%26%20Co"', $output);
     }
 
     #[Test]
@@ -430,8 +469,9 @@ class TemplateRenderingTest extends TestCase
         include POWERBOOK_ROOT . '/pb_inc/admincenter/entry.inc.php';
         ob_get_clean();
 
-        $this->assertStringContainsString('http://example.org', $url);
-        $this->assertStringContainsString('Homepage</a>', $url);
+        // AdminCenter (Agent C): Link mit Adresse als Text
+        $this->assertStringContainsString('href="https://example.org"', $url);
+        $this->assertStringContainsString('example.org</a>', $url);
     }
 
     #[Test]
@@ -452,7 +492,7 @@ class TemplateRenderingTest extends TestCase
         /** @var array<string, mixed> $entry */
         $this->assertStringContainsString('Admin response text', $entry['text']);
         $this->assertStringContainsString('SuperAdmin', $entry['text']);
-        $this->assertStringContainsString('Statement:', $entry['text']);
+        $this->assertStringContainsString('Antwort von SuperAdmin:', $entry['text']);
     }
 
     /**

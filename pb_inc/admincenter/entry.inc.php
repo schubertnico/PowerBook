@@ -2,7 +2,17 @@
 
 /**
  * PowerBook - PHP Guestbook System
- * Admin Entry Display Helper
+ * Aufbereitung eines Eintrags für das AdminCenter
+ *
+ * Wird je Eintrag eingebunden und setzt fertige HTML-Bausteine. Datum und
+ * Uhrzeit folgen der Konfiguration, Text und Antwort sehen aus wie im
+ * Gästebuch (pb_render_text()). Die E-Mail-Adresse des Gastes erscheint nur
+ * hier im AdminCenter.
+ *
+ * Gesetzt werden: $entryId, $isPending, $ip, $show_icon, $date, $time,
+ * $entryText, $entryName, $email_name, $entryEmailLink, $homepage_link
+ * (Alias $url), $answerText, $answerBy, $answerHtml, $statusBadge,
+ * $show_icq (immer leer) und $entry['text'] (Text samt Antwort).
  *
  * @license MIT
  * @copyright PowerScripts.org
@@ -12,117 +22,84 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/layout.inc.php';
+
 // Variables from parent scope
 /** @var array<string, mixed> $entry */
 /** @var string $config_icons */
 /** @var string $config_text_format */
 /** @var string $config_smilies */
-/** @var string $db_statement */
+/** @var string $config_date */
+/** @var string $config_time */
+$entryId = (int) ($entry['id'] ?? 0);
+$isPending = ($entry['status'] ?? 'R') === 'U';
+$smileyBase = '../smilies/';
+$smileysOn = ($config_smilies ?? 'N') === 'Y';
 
-// IP address
-$ip = !empty($entry['ip']) ? e($entry['ip']) : 'unknown';
+// IP-Adresse
+$ip = trim((string) ($entry['ip'] ?? '')) !== '' ? e($entry['ip']) : 'unbekannt';
 
-// Icon display
+// Icon
 $show_icon = '';
-if (!empty($entry['icon']) && $entry['icon'] !== 'no' && ($config_icons ?? 'N') === 'Y') {
-    $iconFile = e($entry['icon']);
-    $show_icon = "<img src=\"../smilies/{$iconFile}.gif\" alt=\"\" class=\"me-2\">";
+$entryIcon = (string) ($entry['icon'] ?? '');
+$entryIconLabel = pb_icon_label($entryIcon);
+if (($config_icons ?? 'N') === 'Y' && $entryIconLabel !== null) {
+    $show_icon = '<img src="' . $smileyBase . e($entryIcon) . '.gif" alt="' . e($entryIconLabel) . '" title="' . e($entryIconLabel) . '" class="pb-entry-icon me-2">';
 }
 
-// Text processing - escape first, then apply formatting
-$entryText = htmlspecialchars($entry['text'] ?? '', ENT_QUOTES, 'UTF-8');
-$entryText = str_replace("\n", '<br>', $entryText);
+// Datum und Uhrzeit nach der Konfiguration
+$timestamp = (int) ($entry['date'] ?? 0);
+$date = e(pb_admin_format_date((string) ($config_date ?? 'd.m.Y'), $timestamp));
+$time = e(pb_admin_format_time((string) ($config_time ?? 'H:i'), $timestamp));
 
-// BBCode formatting
-if (($config_text_format ?? 'N') === 'Y') {
-    $entryText = (string) preg_replace('/\[b\]/i', '<b>', $entryText);
-    $entryText = (string) preg_replace('/\[\/b\]/i', '</b>', $entryText);
-    $entryText = (string) preg_replace('/\[u\]/i', '<u>', $entryText);
-    $entryText = (string) preg_replace('/\[\/u\]/i', '</u>', $entryText);
-    $entryText = (string) preg_replace('/\[i\]/i', '<i>', $entryText);
-    $entryText = (string) preg_replace('/\[\/i\]/i', '</i>', $entryText);
-    $entryText = (string) preg_replace('/\[small\]/i', '<small>', $entryText);
-    $entryText = (string) preg_replace('/\[\/small\]/i', '</small>', $entryText);
-    // Auto-link URLs
-    $entryText = (string) preg_replace('/(https?:\/\/[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="$1" target="_blank" rel="noopener">$1</a>$2', $entryText);
-    $entryText = (string) preg_replace('/(ftp:\/\/[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="$1" target="_blank" rel="noopener">$1</a>$2', $entryText);
-}
+// Text wie im Gästebuch
+$entryText = pb_render_text(
+    (string) ($entry['text'] ?? ''),
+    ($config_text_format ?? 'N') === 'Y',
+    $smileysOn && ($entry['smilies'] ?? 'N') === 'Y',
+    $smileyBase
+);
 
-// Smilies
-if (($entry['smilies'] ?? 'N') === 'Y' && ($config_smilies ?? 'N') === 'Y') {
-    $smilieReplacements = [
-        '?:)' => '<img src="../smilies/confused.gif" alt=":confused:">',
-        '!:)' => '<img src="../smilies/shock.gif" alt=":shock:">',
-        ';(' => '<img src="../smilies/sad1.gif" alt=":sad:">',
-        ':(' => '<img src="../smilies/sad2.gif" alt=":sad:">',
-        ':X' => '<img src="../smilies/sad3.gif" alt=":sad:">',
-        ':)' => '<img src="../smilies/happy1.gif" alt=":happy:">',
-        ':P' => '<img src="../smilies/happy2.gif" alt=":tongue:">',
-        ';)' => '<img src="../smilies/happy3.gif" alt=":wink:">',
-        ':D' => '<img src="../smilies/happy4.gif" alt=":grin:">',
-        ';o)' => '<img src="../smilies/happy5.gif" alt=":happy:">',
-    ];
-    $entryText = str_replace(array_keys($smilieReplacements), array_values($smilieReplacements), $entryText);
-}
-
-// Homepage URL — BUG-001: eigene Variable $homepage_link, um nicht mit $url
-// des Formular-Input-Scope zu kollidieren.
-if (!empty($entry['homepage']) && strlen($entry['homepage']) > 1) {
-    $homepage = $entry['homepage'];
-    // Add http:// if not present
-    if (!preg_match('/^https?:\/\//i', $homepage)) {
-        $homepage = 'http://' . $homepage;
-    }
-    $homepage_link = '<small><a href="' . e($homepage) . '" target="_blank" rel="noopener">Homepage</a></small>';
-} else {
-    $homepage_link = '<small class="text-body-secondary">Keine Homepage</small>';
-}
-// Backwards-compat Alias.
-$url = $homepage_link;
-
-// Email and name
-$entryName = e($entry['name'] ?? '');
-if (!empty($entry['email']) && strlen($entry['email']) > 1) {
-    $email_name = '<a href="mailto:' . e($entry['email']) . '">' . $entryName . '</a>';
+// Name und E-Mail-Adresse (mailto nur im AdminCenter)
+$entryName = e(trim((string) ($entry['name'] ?? '')));
+$entryEmail = trim((string) ($entry['email'] ?? ''));
+$entryEmailLink = '';
+if ($entryEmail !== '') {
+    $email_name = '<a href="mailto:' . e($entryEmail) . '">' . $entryName . '</a>';
+    $entryEmailLink = '<a class="pb-entry-email small" href="mailto:' . e($entryEmail) . '">' . e($entryEmail) . '</a>';
 } else {
     $email_name = $entryName;
 }
 
-// ICQ wurde komplett entfernt (Legacy-Service eingestellt). Variable bleibt
-// als leerer String fuer Backwards-Kompatibilitaet zu alten Templates.
+// Homepage – BUG-001: eigene Variable $homepage_link, $url bleibt als Alias.
+$homepage = pb_normalize_url((string) ($entry['homepage'] ?? ''));
+if ($homepage !== '') {
+    $homepageHost = (string) (parse_url($homepage, PHP_URL_HOST) ?? '');
+    $homepage_link = '<a class="pb-entry-homepage" href="' . e($homepage) . '" target="_blank" rel="noopener noreferrer nofollow" title="' . e($homepage) . '">'
+        . e($homepageHost !== '' ? $homepageHost : 'Homepage') . '</a>';
+} else {
+    $homepage_link = '<span class="text-body-secondary">keine Homepage</span>';
+}
+$url = $homepage_link;
+
+// ICQ gibt es nicht mehr; die Variable bleibt für alte Vorlagen leer.
 $show_icq = '';
 
-// Date and time
-$timestamp = (int) ($entry['date'] ?? 0);
-$date = $timestamp > 0 ? date('l, jS F Y', $timestamp) : '';
-$time = $timestamp > 0 ? date('H:i\h', $timestamp) : '';
-
-// Statement (admin response)
-if (!empty($entry['statement']) && strlen($entry['statement']) > 1 && ($db_statement ?? 'N') !== 'N') {
-    $statementText = htmlspecialchars($entry['statement'], ENT_QUOTES, 'UTF-8');
-    $statementText = str_replace("\n", '<br>', $statementText);
-
-    // BBCode for statement
-    $statementText = (string) preg_replace('/\[b\]/i', '<b>', $statementText);
-    $statementText = (string) preg_replace('/\[\/b\]/i', '</b>', $statementText);
-    $statementText = (string) preg_replace('/\[u\]/i', '<u>', $statementText);
-    $statementText = (string) preg_replace('/\[\/u\]/i', '</u>', $statementText);
-    $statementText = (string) preg_replace('/\[i\]/i', '<i>', $statementText);
-    $statementText = (string) preg_replace('/\[\/i\]/i', '</i>', $statementText);
-    $statementText = (string) preg_replace('/\[small\]/i', '<small>', $statementText);
-    $statementText = (string) preg_replace('/\[\/small\]/i', '</small>', $statementText);
-    $statementText = (string) preg_replace('/(https?:\/\/[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="$1" target="_blank" rel="noopener">$1</a>$2', $statementText);
-    $statementText = (string) preg_replace('/(www\.[-~a-zA-Z0-9\/\.\+%&\?|=:]+)([^-~a-zA-Z0-9\/\.\+%&\?|=:]|$)/i', '<a href="http://$1" target="_blank" rel="noopener">$1</a>$2', $statementText);
-
-    // Smilies for statement
-    if (isset($smilieReplacements)) {
-        /** @var array<string, string> $smilieReplacements */
-        $statementText = str_replace(array_keys($smilieReplacements), array_values($smilieReplacements), $statementText);
-    }
-
-    $statementBy = e($entry['statement_by'] ?? 'Admin');
-    $entryText .= "<hr class=\"my-3\"><div class=\"fst-italic\"><b>{$statementBy}</b>'s Statement:<br><br>{$statementText}</div>";
+// Antwort des Betreibers – im AdminCenter immer sichtbar
+$answerText = trim((string) ($entry['statement'] ?? ''));
+$answerBy = trim((string) ($entry['statement_by'] ?? ''));
+$answerHtml = '';
+if ($answerText !== '') {
+    $answerLabel = $answerBy !== '' ? 'Antwort von ' . e($answerBy) . ':' : 'Antwort:';
+    $answerHtml = '<div' . ($entryId > 0 ? ' id="pbEntryAnswerText' . $entryId . '"' : '') . ' class="pb-entry-statement fst-italic border-top mt-3 pt-3">'
+        . '<b>' . $answerLabel . '</b><br>'
+        . pb_render_text($answerText, true, $smileysOn, $smileyBase)
+        . '</div>';
 }
 
-// Store processed text back
-$entry['text'] = $entryText;
+// Status
+$statusBadge = '<span' . ($entryId > 0 ? ' id="pbEntryStatus' . $entryId . '"' : '') . ' class="badge '
+    . ($isPending ? 'text-bg-warning">Wartet auf Freischaltung' : 'text-bg-success">Freigeschaltet')
+    . '</span>';
+
+$entry['text'] = $entryText . $answerHtml;

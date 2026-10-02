@@ -9,6 +9,8 @@ return RectorConfig::configure()
     ->withPaths([
         __DIR__ . '/pbook.php',
         __DIR__ . '/pb_inc',
+        __DIR__ . '/install.php',
+        __DIR__ . '/update.php',
         __DIR__ . '/install_deu.php',
     ])
     ->withSkip([

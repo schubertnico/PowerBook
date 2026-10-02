@@ -1,7 +1,11 @@
 <?php
 /**
  * PowerBook - PHP Guestbook System
- * Logout Handler
+ * AdminCenter: Abmelden
+ *
+ * Abgemeldet wird nur per Formular (POST mit Token, siehe index.php). Diese
+ * Seite erscheint, wenn jemand ?page=logout direkt aufruft oder das Token
+ * abgelaufen war, und bietet den Knopf zum Abmelden an.
  *
  * @license MIT
  * @copyright PowerScripts.org
@@ -13,51 +17,19 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/layout.inc.php';
 
-// Variables from parent scope
-/** @var array<string, string> $admin_session */
-$logout = $_GET['logout'] ?? '';
-$message = '';
-$messageType = 'info';
+// Variables from parent scope (index.php)
+/** @var array<string, mixed> $admin_session */
+$logoutName = trim((string) (($admin_session ?? [])['name'] ?? ''));
 
-if (!isset($admin_session) || empty($admin_session)) {
-    $message = 'Sie sind nicht eingeloggt!';
-    $messageType = 'warning';
-} elseif ($logout === 'yes') {
-    // Destroy session
-    $_SESSION = [];
-    if (ini_get('session.use_cookies')) {
-        $params = session_get_cookie_params();
-        $sessionName = session_name();
-        setcookie(
-            $sessionName !== false ? $sessionName : 'PHPSESSID',
-            '',
-            time() - 42000,
-            $params['path'],
-            $params['domain'],
-            $params['secure'],
-            $params['httponly']
-        );
-    }
-    session_destroy();
-
-    $message = 'Logout erfolgreich! <a class="alert-link" href="index.php">Zur Login-Seite</a>';
-    $messageType = 'success';
-} else {
-    $adminName = e($admin_session['name'] ?? 'Admin');
-    $message = "Sind Sie sicher, dass Sie sich ausloggen möchten, <b>{$adminName}</b>?";
-    $messageType = 'warning';
-}
-
-pb_admin_card_open('Logout');
-
-echo pb_admin_alert($message, $messageType);
-
-if (!empty($admin_session) && $logout !== 'yes') {
-    ?>
+pb_admin_card_open('Abmelden', 'pbLogoutCard');
+?>
+<p>Möchten Sie sich abmelden<?= $logoutName !== '' ? ', ' . e($logoutName) : '' ?>?</p>
 <div class="d-flex flex-wrap gap-2">
-    <a href="?page=logout&amp;logout=yes" class="btn btn-danger">Ja, ausloggen</a>
-    <a href="?page=home" class="btn btn-outline-secondary">Abbrechen</a>
+    <form action="?page=logout" method="post" class="d-inline">
+        <?= csrfField() ?>
+        <button type="submit" id="pbLogoutConfirm" class="btn btn-primary">Abmelden</button>
+    </form>
+    <a class="btn btn-outline-secondary" href="?page=home">Abbrechen</a>
 </div>
-<?php }
-
+<?php
 pb_admin_card_close();

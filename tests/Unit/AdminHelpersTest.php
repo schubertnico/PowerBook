@@ -2,9 +2,7 @@
 
 /**
  * PowerBook - PHPUnit Tests
- * Admin Helper Functions Tests
- *
- * Tests helper functions from admins.inc.php and statement.inc.php
+ * Admin Helper Functions Tests (Mailtexte der Admin-Verwaltung)
  *
  * @license MIT
  */
@@ -23,98 +21,13 @@ use PHPUnit\Framework\TestCase;
 #[CoversFunction('buildAddedEmailBody')]
 #[CoversFunction('buildEditedEmailBody')]
 #[CoversFunction('buildDeletedEmailBody')]
-#[CoversFunction('formatStatement')]
+#[CoversFunction('buildPasswordLinkEmailBody')]
 class AdminHelpersTest extends TestCase
 {
-    private static bool $adminsLoaded = false;
-
-    private static bool $statementLoaded = false;
-
     public static function setUpBeforeClass(): void
     {
-        // Load dependencies first (only if not already loaded)
-        $incPath = POWERBOOK_ROOT . '/pb_inc';
-
-        if (!function_exists('e')) {
-            require_once $incPath . '/database.inc.php';
-        }
-        if (!function_exists('validateCsrfToken')) {
-            require_once $incPath . '/csrf.inc.php';
-        }
-        if (!function_exists('validateGuestbookEntry')) {
-            require_once $incPath . '/validation.inc.php';
-        }
-        if (!function_exists('logDbError')) {
-            require_once $incPath . '/error-handler.inc.php';
-        }
-
-        // Load admins.inc.php with proper global state
-        if (!function_exists('formatPermission')) {
-            // Set up globals required by admins.inc.php
-            $GLOBALS['admin_session'] = [
-                'admins' => 'Y',
-                'id' => 1,
-                'name' => 'TestAdmin',
-                'email' => 'admin@test.com',
-                'config' => 'Y',
-                'release' => 'Y',
-                'entries' => 'Y',
-            ];
-
-            $pdo = new \PDO('sqlite::memory:');
-            $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-            $pdo->exec('CREATE TABLE pb_admins (
-                id INTEGER PRIMARY KEY,
-                name TEXT,
-                email TEXT,
-                password TEXT,
-                config TEXT DEFAULT \'N\',
-                admins TEXT DEFAULT \'N\',
-                entries TEXT DEFAULT \'N\',
-                "release" TEXT DEFAULT \'N\'
-            )');
-            $GLOBALS['pdo'] = $pdo;
-            $GLOBALS['pb_admin'] = 'pb_admins';
-            $GLOBALS['config_admin_url'] = '';
-
-            // Avoid action processing
-            $_POST = [];
-
-            ob_start();
-            include $incPath . '/admincenter/admins.inc.php';
-            ob_end_clean();
-
-            self::$adminsLoaded = true;
-        }
-
-        // Load statement.inc.php with proper global state.
-        // NOTE: statement.inc.php macht einen frueheren `return;` wenn der
-        // Permission-Check auf $admin_session['entries'] fehlschlaegt. PHPs
-        // `return` aus einem include beendet die gesamte Datei - die
-        // conditional Definition von formatStatement() am Ende wird dann
-        // uebersprungen. Darum setzen wir $admin_session/$pb_entries/$config_*
-        // als LOKALE Variablen (sichtbar fuer das eingebundene File).
-        if (!function_exists('formatStatement')) {
-            $admin_session = [
-                'entries' => 'Y',
-                'name' => 'TestAdmin',
-            ];
-            $pb_entries = 'pb_entries';
-            $config_icons = 'N';
-            $config_text_format = 'Y';
-            $config_smilies = 'Y';
-            $config_icq = 'N';
-
-            // Set $_GET and $_POST so $id = 0, triggering $showForm = false early
-            $_GET = [];
-            $_POST = [];
-
-            ob_start();
-            include $incPath . '/admincenter/statement.inc.php';
-            ob_end_clean();
-
-            self::$statementLoaded = true;
-        }
+        require_once POWERBOOK_ROOT . '/pb_inc/admincenter/layout.inc.php';
+        require_once POWERBOOK_ROOT . '/pb_inc/admincenter/admin_email_helpers.inc.php';
     }
 
     // ========================================
@@ -158,72 +71,40 @@ class AdminHelpersTest extends TestCase
     #[Test]
     public function formatAdminPermissionsAllYes(): void
     {
-        $data = [
-            'config' => 'Y',
-            'admins' => 'Y',
-            'entries' => 'Y',
-            'release' => 'Y',
-        ];
+        $result = formatAdminPermissions(['config' => 'Y', 'admins' => 'Y', 'entries' => 'Y', 'release' => 'Y']);
 
-        $result = formatAdminPermissions($data);
-
-        $this->assertStringContainsString('Konfiguration: Ja', $result);
-        $this->assertStringContainsString('Admin-Verwaltung: Ja', $result);
-        $this->assertStringContainsString('Eintrag-Verwaltung: Ja', $result);
-        $this->assertStringContainsString('Freischalten: Ja', $result);
+        $this->assertStringContainsString('- Einträge freischalten: Ja', $result);
+        $this->assertStringContainsString('- Einträge bearbeiten und löschen: Ja', $result);
+        $this->assertStringContainsString('- Konfiguration ändern: Ja', $result);
+        $this->assertStringContainsString('- Admins verwalten: Ja', $result);
     }
 
     #[Test]
     public function formatAdminPermissionsAllNo(): void
     {
-        $data = [
-            'config' => 'N',
-            'admins' => 'N',
-            'entries' => 'N',
-            'release' => 'N',
-        ];
+        $result = formatAdminPermissions(['config' => 'N', 'admins' => 'N', 'entries' => 'N', 'release' => 'N']);
 
-        $result = formatAdminPermissions($data);
-
-        $this->assertStringContainsString('Konfiguration: Nein', $result);
-        $this->assertStringContainsString('Admin-Verwaltung: Nein', $result);
-        $this->assertStringContainsString('Eintrag-Verwaltung: Nein', $result);
-        $this->assertStringContainsString('Freischalten: Nein', $result);
+        $this->assertStringNotContainsString(': Ja', $result);
+        $this->assertSame(4, substr_count($result, ': Nein'));
     }
 
     #[Test]
-    public function formatAdminPermissionsMixed(): void
+    public function formatAdminPermissionsMissingKeysCountAsNo(): void
     {
-        $data = [
-            'config' => 'Y',
-            'admins' => 'N',
-            'entries' => 'Y',
-            'release' => 'N',
-        ];
+        $result = formatAdminPermissions(['release' => 'Y']);
 
-        $result = formatAdminPermissions($data);
-
-        $this->assertStringContainsString('Konfiguration: Ja', $result);
-        $this->assertStringContainsString('Admin-Verwaltung: Nein', $result);
-        $this->assertStringContainsString('Eintrag-Verwaltung: Ja', $result);
-        $this->assertStringContainsString('Freischalten: Nein', $result);
+        $this->assertStringContainsString('- Einträge freischalten: Ja', $result);
+        $this->assertStringContainsString('- Admins verwalten: Nein', $result);
     }
 
     #[Test]
-    public function formatAdminPermissionsContainsNewlines(): void
+    public function formatAdminPermissionsUsesGlossaryOrder(): void
     {
-        $data = [
-            'config' => 'Y',
-            'admins' => 'Y',
-            'entries' => 'Y',
-            'release' => 'Y',
-        ];
+        $lines = explode("\n", trim(formatAdminPermissions(['config' => 'Y', 'admins' => 'Y', 'entries' => 'Y', 'release' => 'Y'])));
 
-        $result = formatAdminPermissions($data);
-
-        // Each line should be separated by newlines
-        $lines = explode("\n", trim($result));
         $this->assertCount(4, $lines);
+        $this->assertStringStartsWith('- Einträge freischalten', $lines[0]);
+        $this->assertStringStartsWith('- Admins verwalten', $lines[3]);
     }
 
     // ========================================
@@ -231,615 +112,88 @@ class AdminHelpersTest extends TestCase
     // ========================================
 
     #[Test]
-    public function getEmailFooterContainsSeparatorLine(): void
+    public function getEmailFooterUsesSignatureSeparator(): void
     {
-        $footer = getEmailFooter();
-
-        $this->assertStringContainsString('--------------------------------------------------------', $footer);
+        $this->assertStringStartsWith("\n-- \n", getEmailFooter());
     }
 
     #[Test]
-    public function getEmailFooterContainsPowerBookBranding(): void
+    public function getEmailFooterContainsBrandingWithUmlaut(): void
     {
         $footer = getEmailFooter();
 
-        // Anonymisiertes Branding: kein "PHP Guestbook System" mehr (nennt
-        // implizit die Sprache und damit eine Angriffsoberflaeche).
-        $this->assertStringContainsString('PowerBook', $footer);
-        $this->assertStringContainsString('Gaestebuch-System', $footer);
-    }
-
-    #[Test]
-    public function getEmailFooterContainsProjectUrl(): void
-    {
-        $footer = getEmailFooter();
-
-        // Generischer Projekt-Link statt internem Repo-Verweis.
+        $this->assertStringContainsString('PowerBook – Gästebuch', $footer);
         $this->assertStringContainsString('https://www.powerscripts.org', $footer);
+        $this->assertStringNotContainsString('Gaestebuch', $footer);
+        $this->assertStringNotContainsString('AUTOMATISCH', $footer);
     }
 
     #[Test]
-    public function getEmailFooterContainsAutoGeneratedNotice(): void
+    public function buildAddedEmailBodyHasLinkInsteadOfPassword(): void
     {
-        $footer = getEmailFooter();
+        $body = buildAddedEmailBody($this->data());
 
-        $this->assertStringContainsString('DIESE E-MAIL WURDE AUTOMATISCH GENERIERT!', $footer);
-    }
-
-    // ========================================
-    // Tests for buildAddedEmailBody()
-    // ========================================
-
-    #[Test]
-    public function buildAddedEmailBodyContainsGreeting(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'NewAdmin',
-            'email' => 'new@test.com',
-            'password' => 'secret123',
-            'config' => 'Y',
-            'admins' => 'N',
-            'entries' => 'Y',
-            'release' => 'N',
-            'admin_url' => 'https://example.com/admin',
-        ];
-
-        $body = buildAddedEmailBody($data);
-
-        $this->assertStringStartsWith("Hallo!\n\n", $body);
+        $this->assertStringStartsWith("Hallo Ole,\n\n", $body);
+        $this->assertStringContainsString('Anke hat für Sie einen Zugang zum AdminCenter von „Testgästebuch“ angelegt.', $body);
+        $this->assertStringContainsString("token=abc\n", $body);
+        $this->assertStringContainsString('48 Stunden', $body);
+        $this->assertStringNotContainsString('Ihr Passwort:', $body);
     }
 
     #[Test]
-    public function buildAddedEmailBodyContainsAdderName(): void
+    public function buildEditedEmailBodyListsDataAndKeepsPassword(): void
     {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'NewAdmin',
-            'email' => 'new@test.com',
-            'password' => 'secret123',
-            'config' => 'Y',
-            'admins' => 'N',
-            'entries' => 'Y',
-            'release' => 'N',
-            'admin_url' => '',
-        ];
+        $body = buildEditedEmailBody($this->data());
 
-        $body = buildAddedEmailBody($data);
-
-        $this->assertStringContainsString('SuperAdmin hat Sie zur Admin-Datenbank', $body);
+        $this->assertStringContainsString('Anke hat Ihren Zugang zum AdminCenter von „Testgästebuch“ geändert.', $body);
+        $this->assertStringContainsString('E-Mail-Adresse: ole@example.org', $body);
+        $this->assertStringContainsString('Ihr Passwort bleibt unverändert.', $body);
+        $this->assertStringContainsString('https://example.com/pb_inc/admincenter/', $body);
     }
 
     #[Test]
-    public function buildAddedEmailBodyContainsCredentials(): void
+    public function buildPasswordLinkEmailBodyContainsLink(): void
     {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'NewAdmin',
-            'email' => 'new@test.com',
-            'password' => 'secret123',
-            'config' => 'N',
-            'admins' => 'N',
-            'entries' => 'N',
-            'release' => 'N',
-            'admin_url' => '',
-        ];
+        $body = buildPasswordLinkEmailBody($this->data());
 
-        $body = buildAddedEmailBody($data);
-
-        $this->assertStringContainsString('Ihr Name: NewAdmin', $body);
-        $this->assertStringContainsString('Ihre E-Mail: new@test.com', $body);
-        $this->assertStringContainsString('Ihr Passwort: secret123', $body);
+        $this->assertStringContainsString('Anke hat Ihnen einen Link geschickt', $body);
+        $this->assertStringContainsString('token=abc', $body);
+        $this->assertStringContainsString('Ihr bisheriges Passwort gilt weiter', $body);
     }
 
     #[Test]
-    public function buildAddedEmailBodyContainsPermissions(): void
+    public function buildDeletedEmailBodyRevokesAccess(): void
     {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'NewAdmin',
-            'email' => 'new@test.com',
-            'password' => 'secret123',
-            'config' => 'Y',
-            'admins' => 'N',
-            'entries' => 'Y',
-            'release' => 'N',
-            'admin_url' => '',
-        ];
+        $body = buildDeletedEmailBody($this->data());
 
-        $body = buildAddedEmailBody($data);
-
-        $this->assertStringContainsString('Konfiguration: Ja', $body);
-        $this->assertStringContainsString('Admin-Verwaltung: Nein', $body);
-        $this->assertStringContainsString('Eintrag-Verwaltung: Ja', $body);
-    }
-
-    #[Test]
-    public function buildAddedEmailBodyContainsSecurityWarning(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'NewAdmin',
-            'email' => 'new@test.com',
-            'password' => 'secret123',
-            'config' => 'N',
-            'admins' => 'N',
-            'entries' => 'N',
-            'release' => 'N',
-            'admin_url' => '',
-        ];
-
-        $body = buildAddedEmailBody($data);
-
-        $this->assertStringContainsString('Geben Sie diese Informationen niemals weiter!', $body);
-    }
-
-    #[Test]
-    public function buildAddedEmailBodyWithAdminUrl(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'NewAdmin',
-            'email' => 'new@test.com',
-            'password' => 'secret123',
-            'config' => 'N',
-            'admins' => 'N',
-            'entries' => 'N',
-            'release' => 'N',
-            'admin_url' => 'https://example.com/admin',
-        ];
-
-        $body = buildAddedEmailBody($data);
-
-        $this->assertStringContainsString('(https://example.com/admin)', $body);
-    }
-
-    #[Test]
-    public function buildAddedEmailBodyWithoutAdminUrl(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'NewAdmin',
-            'email' => 'new@test.com',
-            'password' => 'secret123',
-            'config' => 'N',
-            'admins' => 'N',
-            'entries' => 'N',
-            'release' => 'N',
-            'admin_url' => '',
-        ];
-
-        $body = buildAddedEmailBody($data);
-
-        $this->assertStringNotContainsString('(https://', $body);
-        $this->assertStringContainsString("im AdminCenter.\n", $body);
+        $this->assertStringStartsWith("Hallo Ole,\n\n", $body);
+        $this->assertStringContainsString('Anke hat Ihren Zugang zum AdminCenter von „Testgästebuch“ entfernt.', $body);
+        $this->assertStringContainsString('Sie können sich dort nicht mehr anmelden.', $body);
+        $this->assertStringNotContainsString('Passwort', $body);
     }
 
     // ========================================
-    // Tests for buildEditedEmailBody()
+    // Tests for the mail bodies
     // ========================================
 
-    #[Test]
-    public function buildEditedEmailBodyContainsGreeting(): void
+    /**
+     * @return array<string, string>
+     */
+    private function data(): array
     {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'EditedAdmin',
-            'email' => 'edited@test.com',
-            'password' => '',
-            'config' => 'Y',
-            'admins' => 'Y',
+        return [
+            'by' => 'Anke',
+            'name' => 'Ole',
+            'email' => 'ole@example.org',
+            'config' => 'N',
+            'admins' => 'N',
             'entries' => 'Y',
             'release' => 'Y',
-            'admin_url' => '',
+            'admin_url' => 'https://example.com/pb_inc/admincenter/',
+            'link' => 'https://example.com/pb_inc/admincenter/index.php?page=password&token=abc',
+            'title' => 'Testgästebuch',
+            'old_email' => 'alt@example.org',
+            'new_email' => 'ole@example.org',
         ];
-
-        $body = buildEditedEmailBody($data);
-
-        $this->assertStringStartsWith("Hallo!\n\n", $body);
-    }
-
-    #[Test]
-    public function buildEditedEmailBodyContainsEditorName(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'EditedAdmin',
-            'email' => 'edited@test.com',
-            'password' => '',
-            'config' => 'N',
-            'admins' => 'N',
-            'entries' => 'N',
-            'release' => 'N',
-            'admin_url' => '',
-        ];
-
-        $body = buildEditedEmailBody($data);
-
-        $this->assertStringContainsString('SuperAdmin hat Ihr Profil im AdminCenter', $body);
-    }
-
-    #[Test]
-    public function buildEditedEmailBodyContainsNewCredentials(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'EditedAdmin',
-            'email' => 'edited@test.com',
-            'password' => '',
-            'config' => 'N',
-            'admins' => 'N',
-            'entries' => 'N',
-            'release' => 'N',
-            'admin_url' => '',
-        ];
-
-        $body = buildEditedEmailBody($data);
-
-        $this->assertStringContainsString('Ihr (neuer) Name: EditedAdmin', $body);
-        $this->assertStringContainsString('Ihre (neue) E-Mail: edited@test.com', $body);
-    }
-
-    #[Test]
-    public function buildEditedEmailBodyWithPassword(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'EditedAdmin',
-            'email' => 'edited@test.com',
-            'password' => 'newpass456',
-            'config' => 'N',
-            'admins' => 'N',
-            'entries' => 'N',
-            'release' => 'N',
-            'admin_url' => '',
-        ];
-
-        $body = buildEditedEmailBody($data);
-
-        $this->assertStringContainsString('Ihr (neues) Passwort: newpass456', $body);
-    }
-
-    #[Test]
-    public function buildEditedEmailBodyWithoutPassword(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'EditedAdmin',
-            'email' => 'edited@test.com',
-            'password' => '',
-            'config' => 'N',
-            'admins' => 'N',
-            'entries' => 'N',
-            'release' => 'N',
-            'admin_url' => '',
-        ];
-
-        $body = buildEditedEmailBody($data);
-
-        $this->assertStringNotContainsString('Passwort:', $body);
-    }
-
-    #[Test]
-    public function buildEditedEmailBodyWithAdminUrl(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'EditedAdmin',
-            'email' => 'edited@test.com',
-            'password' => '',
-            'config' => 'N',
-            'admins' => 'N',
-            'entries' => 'N',
-            'release' => 'N',
-            'admin_url' => 'https://example.com/admin',
-        ];
-
-        $body = buildEditedEmailBody($data);
-
-        $this->assertStringContainsString('Die URL zum AdminCenter ist: https://example.com/admin', $body);
-    }
-
-    #[Test]
-    public function buildEditedEmailBodyWithoutAdminUrl(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'EditedAdmin',
-            'email' => 'edited@test.com',
-            'password' => '',
-            'config' => 'N',
-            'admins' => 'N',
-            'entries' => 'N',
-            'release' => 'N',
-            'admin_url' => '',
-        ];
-
-        $body = buildEditedEmailBody($data);
-
-        $this->assertStringNotContainsString('Die URL zum AdminCenter ist:', $body);
-    }
-
-    #[Test]
-    public function buildEditedEmailBodyContainsSecurityWarning(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-            'name' => 'EditedAdmin',
-            'email' => 'edited@test.com',
-            'password' => '',
-            'config' => 'N',
-            'admins' => 'N',
-            'entries' => 'N',
-            'release' => 'N',
-            'admin_url' => '',
-        ];
-
-        $body = buildEditedEmailBody($data);
-
-        $this->assertStringContainsString('Geben Sie diese Informationen niemals weiter!', $body);
-    }
-
-    // ========================================
-    // Tests for buildDeletedEmailBody()
-    // ========================================
-
-    #[Test]
-    public function buildDeletedEmailBodyContainsGreeting(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-        ];
-
-        $body = buildDeletedEmailBody($data);
-
-        $this->assertStringStartsWith("Hallo!\n\n", $body);
-    }
-
-    #[Test]
-    public function buildDeletedEmailBodyContainsDeleterName(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-        ];
-
-        $body = buildDeletedEmailBody($data);
-
-        $this->assertStringContainsString('SuperAdmin hat Sie aus der Admin-Datenbank', $body);
-    }
-
-    #[Test]
-    public function buildDeletedEmailBodyContainsAccessRevocation(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-        ];
-
-        $body = buildDeletedEmailBody($data);
-
-        $this->assertStringContainsString('Sie sind nicht mehr berechtigt, mit PowerBook zu arbeiten.', $body);
-    }
-
-    #[Test]
-    public function buildDeletedEmailBodyDoesNotContainPermissions(): void
-    {
-        $data = [
-            'by' => 'SuperAdmin',
-        ];
-
-        $body = buildDeletedEmailBody($data);
-
-        $this->assertStringNotContainsString('Konfiguration:', $body);
-        $this->assertStringNotContainsString('Passwort:', $body);
-    }
-
-    // ========================================
-    // Tests for formatStatement()
-    // ========================================
-
-    #[Test]
-    public function formatStatementEscapesHtml(): void
-    {
-        $result = formatStatement('<script>alert("xss")</script>');
-
-        $this->assertStringContainsString('&lt;script&gt;', $result);
-        $this->assertStringContainsString('&lt;/script&gt;', $result);
-        $this->assertStringNotContainsString('<script>', $result);
-    }
-
-    #[Test]
-    public function formatStatementConvertsNewlinesToBr(): void
-    {
-        $result = formatStatement("line1\nline2");
-
-        $this->assertStringContainsString('line1<br>line2', $result);
-    }
-
-    #[Test]
-    public function formatStatementProcessesBoldBBCode(): void
-    {
-        $result = formatStatement('[b]bold text[/b]');
-
-        $this->assertStringContainsString('<b>bold text</b>', $result);
-    }
-
-    #[Test]
-    public function formatStatementProcessesItalicBBCode(): void
-    {
-        $result = formatStatement('[i]italic text[/i]');
-
-        $this->assertStringContainsString('<i>italic text</i>', $result);
-    }
-
-    #[Test]
-    public function formatStatementProcessesUnderlineBBCode(): void
-    {
-        $result = formatStatement('[u]underline text[/u]');
-
-        $this->assertStringContainsString('<u>underline text</u>', $result);
-    }
-
-    #[Test]
-    public function formatStatementProcessesSmallBBCode(): void
-    {
-        $result = formatStatement('[small]small text[/small]');
-
-        $this->assertStringContainsString('<small>small text</small>', $result);
-    }
-
-    #[Test]
-    public function formatStatementBBCodeIsCaseInsensitive(): void
-    {
-        $result = formatStatement('[B]bold[/B] [I]italic[/I] [U]under[/U] [SMALL]sm[/SMALL]');
-
-        $this->assertStringContainsString('<b>bold</b>', $result);
-        $this->assertStringContainsString('<i>italic</i>', $result);
-        $this->assertStringContainsString('<u>under</u>', $result);
-        $this->assertStringContainsString('<small>sm</small>', $result);
-    }
-
-    #[Test]
-    public function formatStatementAutoLinksHttpUrls(): void
-    {
-        $result = formatStatement('Visit https://example.com for more');
-
-        $this->assertStringContainsString('<a href="https://example.com"', $result);
-        $this->assertStringContainsString('target="_blank"', $result);
-        $this->assertStringContainsString('rel="noopener"', $result);
-    }
-
-    #[Test]
-    public function formatStatementAutoLinksHttpsUrls(): void
-    {
-        $result = formatStatement('See http://example.com/path?q=1 here');
-
-        $this->assertStringContainsString('<a href="http://example.com/path?q=1"', $result);
-        $this->assertStringContainsString('target="_blank"', $result);
-    }
-
-    #[Test]
-    public function formatStatementAutoLinksWwwUrls(): void
-    {
-        $result = formatStatement('Visit www.example.com for info');
-
-        $this->assertStringContainsString('<a href="http://www.example.com"', $result);
-        $this->assertStringContainsString('>www.example.com</a>', $result);
-    }
-
-    #[Test]
-    public function formatStatementReplacesHappySmiley(): void
-    {
-        $result = formatStatement('Hello :)');
-
-        $this->assertStringContainsString('<img src="../smilies/happy1.gif"', $result);
-        $this->assertStringContainsString('alt=":happy:"', $result);
-    }
-
-    #[Test]
-    public function formatStatementReplacesSadSmiley(): void
-    {
-        $result = formatStatement('Oh no :(');
-
-        $this->assertStringContainsString('<img src="../smilies/sad2.gif"', $result);
-    }
-
-    #[Test]
-    public function formatStatementReplacesWinkSmiley(): void
-    {
-        $result = formatStatement('Wink ;)');
-
-        $this->assertStringContainsString('<img src="../smilies/happy3.gif"', $result);
-    }
-
-    #[Test]
-    public function formatStatementReplacesGrinSmiley(): void
-    {
-        $result = formatStatement('Haha :D');
-
-        $this->assertStringContainsString('<img src="../smilies/happy4.gif"', $result);
-    }
-
-    #[Test]
-    public function formatStatementReplacesTongueSmiley(): void
-    {
-        $result = formatStatement('Tongue :P');
-
-        $this->assertStringContainsString('<img src="../smilies/happy2.gif"', $result);
-    }
-
-    #[Test]
-    public function formatStatementReplacesConfusedSmiley(): void
-    {
-        $result = formatStatement('Hmm ?:)');
-
-        $this->assertStringContainsString('<img src="../smilies/confused.gif"', $result);
-    }
-
-    #[Test]
-    public function formatStatementReplacesShockSmiley(): void
-    {
-        $result = formatStatement('Wow !:)');
-
-        $this->assertStringContainsString('<img src="../smilies/shock.gif"', $result);
-    }
-
-    #[Test]
-    public function formatStatementReturnsEmptyForEmptyInput(): void
-    {
-        $result = formatStatement('');
-
-        $this->assertSame('', $result);
-    }
-
-    #[Test]
-    public function formatStatementHandlesPlainTextUnchanged(): void
-    {
-        $result = formatStatement('Just plain text');
-
-        $this->assertSame('Just plain text', $result);
-    }
-
-    #[Test]
-    public function formatStatementEscapesQuotes(): void
-    {
-        $result = formatStatement('He said "hello" & \'goodbye\'');
-
-        $this->assertStringContainsString('&quot;hello&quot;', $result);
-        $this->assertStringContainsString('&#039;goodbye&#039;', $result);
-        $this->assertStringContainsString('&amp;', $result);
-    }
-
-    #[Test]
-    public function formatStatementCombinesMultipleFeatures(): void
-    {
-        $result = formatStatement('[b]Bold[/b] and a link https://example.com :)');
-
-        $this->assertStringContainsString('<b>Bold</b>', $result);
-        $this->assertStringContainsString('<a href="https://example.com"', $result);
-        $this->assertStringContainsString('<img src="../smilies/happy1.gif"', $result);
-    }
-
-    #[Test]
-    public function formatStatementReplacesCryingSmiley(): void
-    {
-        $result = formatStatement('Crying ;(');
-
-        $this->assertStringContainsString('<img src="../smilies/sad1.gif"', $result);
-    }
-
-    #[Test]
-    public function formatStatementReplacesSadThreeSmiley(): void
-    {
-        $result = formatStatement('Upset :X');
-
-        $this->assertStringContainsString('<img src="../smilies/sad3.gif"', $result);
-    }
-
-    #[Test]
-    public function formatStatementReplacesClownSmiley(): void
-    {
-        $result = formatStatement('Funny ;o)');
-
-        $this->assertStringContainsString('<img src="../smilies/happy5.gif"', $result);
     }
 }

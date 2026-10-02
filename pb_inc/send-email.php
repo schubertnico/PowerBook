@@ -2,7 +2,10 @@
 
 /**
  * PowerBook - PHP Guestbook System
- * New Entry Notification Email
+ * Benachrichtigung an den Gästebuch-Betreiber über einen neuen Eintrag
+ *
+ * Definiert nur Funktionen; guestbook.inc.php ruft sie nach dem Speichern
+ * auf. Eigene Variablen, damit nichts im Gästebuch überschrieben wird.
  *
  * @license MIT
  * @copyright PowerScripts.org
@@ -12,37 +15,94 @@
 
 declare(strict_types=1);
 
-// This file is included from guestbook.inc.php when a new entry is added
-// Required variables: $config_email, $config_admin_url, $name2
+require_once __DIR__ . '/functions.inc.php';
+require_once __DIR__ . '/mail.inc.php';
 
-// Sanitize email addresses to prevent header injection
-$toEmail = sanitizeEmailHeader($config_email ?? '');
-$fromName = sanitizeEmailHeader($name2 ?? 'Gast');
-$adminUrl = $config_admin_url ?? '';
+if (!function_exists('pb_admin_notification_excerpt')) {
+    /**
+     * Eintragstext für die Benachrichtigung, gekürzt auf 1000 Zeichen.
+     */
+    function pb_admin_notification_excerpt(string $text): string
+    {
+        if (mb_strlen($text) <= 1000) {
+            return $text;
+        }
 
-if (!empty($toEmail) && filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
-    $subject = 'PowerBook: Neuer Eintrag!';
+        return rtrim(mb_substr($text, 0, 1000)) . ' …';
+    }
+}
 
-    $message = <<<EOT
-        Hallo!
+if (!function_exists('pb_admin_notification_text')) {
+    /**
+     * Betreff und Text der Benachrichtigung (Klartext, UTF-8).
+     *
+     * @param array{name: string, email: string, url: string, text: string} $entry Rohwerte des Eintrags
+     * @param string $status   'U' = wartet auf Freischaltung, 'R' = sofort sichtbar
+     * @param string $title    Titel des Gästebuchs
+     * @param string $adminUrl Adresse des AdminCenters
+     *
+     * @return array{subject: string, body: string}
+     */
+    function pb_admin_notification_text(array $entry, string $status, string $title, string $adminUrl, int $timestamp): array
+    {
+        $waiting = $status !== 'R';
+        $text = pb_admin_notification_excerpt($entry['text']);
+        $homepage = $entry['url'] !== '' ? pb_normalize_url($entry['url']) : '';
 
-        {$fromName} hat gerade einen neuen Eintrag in Ihrem Gaestebuch verfasst. Sollten Eintraege freigeschaltet werden muessen, tun Sie dies bitte im AdminCenter ({$adminUrl}).
-        Dort koennen Sie auch diese automatische E-Mail, welche bei jedem neuen Eintrag an Sie geschickt wird, deaktivieren.
+        $lines = [
+            'Hallo,',
+            '',
+            'im Gästebuch „' . $title . '“ ist ein neuer Eintrag eingegangen.',
+            '',
+            'Name:     ' . $entry['name'],
+            'E-Mail:   ' . ($entry['email'] !== '' ? $entry['email'] : 'nicht angegeben'),
+            'Homepage: ' . ($homepage !== '' ? $homepage : 'nicht angegeben'),
+            'Datum:    ' . date('d.m.Y, H:i', $timestamp) . ' Uhr',
+            'Status:   ' . ($waiting ? 'wartet auf Freischaltung' : 'freigeschaltet, sofort sichtbar'),
+            '',
+            'Text:',
+            $text,
+            '',
+            $waiting
+                ? 'Freischalten oder löschen können Sie den Eintrag im AdminCenter:'
+                : 'Bearbeiten, beantworten oder löschen können Sie den Eintrag im AdminCenter:',
+            pb_url_with($adminUrl, ['page' => $waiting ? 'release' : 'entries']),
+            '',
+            '-- ',
+            'Diese Nachricht hat Ihr Gästebuch automatisch verschickt.',
+            'Abschalten können Sie sie im AdminCenter unter „Konfiguration“.',
+        ];
 
-        --------------------------------------------------------
+        return [
+            'subject' => $waiting ? 'Neuer Eintrag wartet auf Freischaltung' : 'Neuer Eintrag im Gästebuch',
+            'body' => implode("\n", $lines) . "\n",
+        ];
+    }
+}
 
-        PowerBook - Gaestebuch-System
-        https://www.powerscripts.org
+if (!function_exists('pb_send_admin_notification')) {
+    /**
+     * Schickt die Benachrichtigung an die Adresse aus der Konfiguration.
+     * Antworten gehen an den Gast, wenn er eine Adresse angegeben hat.
+     *
+     * @param array{name: string, email: string, url: string, text: string} $entry Rohwerte des Eintrags
+     */
+    function pb_send_admin_notification(array $entry, string $status, int $timestamp): bool
+    {
+        $to = trim((string) ($GLOBALS['config_email'] ?? ''));
+        if ($to === '' || filter_var($to, FILTER_VALIDATE_EMAIL) === false) {
+            return false;
+        }
 
-        Diese E-Mail wurde automatisch generiert.
-        EOT;
+        $title = trim((string) ($GLOBALS['config_title'] ?? ''));
+        $mail = pb_admin_notification_text(
+            $entry,
+            $status,
+            $title !== '' ? $title : 'Gästebuch',
+            pb_admin_url((string) ($GLOBALS['config_admin_url'] ?? '')),
+            $timestamp
+        );
 
-    $headers = [
-        'From: PowerBook Automailer <noreply@powerbook.local>',
-        'Reply-To: ' . $toEmail,
-        'X-Mailer: PowerBook/2.0',
-        'Content-Type: text/plain; charset=UTF-8',
-    ];
-
-    sendEmail($toEmail, $subject, $message, implode("\r\n", $headers), 'New Entry Notification');
+        return pb_mail($to, $mail['subject'], $mail['body'], $entry['email']);
+    }
 }

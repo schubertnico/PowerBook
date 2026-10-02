@@ -1,7 +1,7 @@
 <?php
 /**
  * PowerBook - PHP Guestbook System
- * License Information
+ * AdminCenter: Lizenz
  *
  * @license MIT
  * @copyright PowerScripts.org
@@ -13,12 +13,18 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/layout.inc.php';
 
-pb_admin_card_open('MIT-Lizenz');
+pb_admin_card_open('Lizenz', 'pbLicense');
 ?>
+
+<p>
+PowerBook steht unter der MIT-Lizenz: Sie dürfen es kostenlos nutzen, verändern und weitergeben,
+solange der folgende Lizenzhinweis erhalten bleibt. Eine Gewährleistung gibt es nicht.
+Rechtlich gilt der englische Originaltext.
+</p>
 
 <div class="card border-light bg-body-secondary">
     <div class="card-body">
-        <pre class="pb-pre">MIT License
+        <pre class="pb-pre mb-0" lang="en">MIT License
 
 Copyright (c) 2002 Axel "Expandable" Habermaier (Original PowerBook 1.21)
 Copyright (c) 2025 Nico Schubert (PHP 8.4 Migration & Security Updates)
@@ -45,14 +51,9 @@ SOFTWARE.
 </div>
 
 <p class="mt-3 mb-0">
-    <b>Projekt:</b>
-    <a href="https://www.powerscripts.org" target="_blank" rel="noopener noreferrer">https://www.powerscripts.org</a>
+    <b>Projektseite:</b>
+    <a href="https://www.powerscripts.org" target="_blank" rel="noopener">https://www.powerscripts.org</a>
 </p>
-<p class="text-body-secondary mb-0"><small>
-    Hinweis: Der oben angezeigte MIT-Lizenztext ist rechtlich notwendig
-    und darf nicht entfernt werden, da PowerBook unter dieser Lizenz
-    weiterverteilt wird.
-</small></p>
 
 <?php
 pb_admin_card_close();

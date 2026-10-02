@@ -7,8 +7,8 @@
  * Tests the frontend guestbook files:
  * - pb_inc/config.inc.php (configuration loader)
  * - pb_inc/guestbook.inc.php (main guestbook display and entry handler)
- * - pb_inc/send-email.php (notification email)
- * - pb_inc/thank-email.php (thank you email)
+ * - pb_inc/send-email.php (Benachrichtigung an den Betreiber)
+ * - pb_inc/thank-email.php (Danke-Mail an den Gast)
  *
  * @license MIT
  */
@@ -166,30 +166,27 @@ class GuestbookPagesTest extends TestCase
     #[Test]
     public function testGuestbookShowsNoEntries(): void
     {
-        $output = $this->renderGuestbook(['show_gb' => 'yes']);
+        $output = $this->renderGuestbook();
 
-        // Should show "no entries" message
-        $this->assertStringContainsString('keine Eintr', $output);
-        // Should contain entry count showing 0
-        $this->assertStringContainsString('<b>0</b>', $output);
+        $this->assertStringContainsString('<span id="pbEntryCount">Noch keine Einträge.</span>', $output);
+        $this->assertStringContainsString('In diesem Gästebuch gibt es noch keine Einträge.', $output);
     }
 
     #[Test]
     public function testGuestbookShowsEntries(): void
     {
-        $this->insertEntry(['name' => 'Alice', 'text' => 'Hello from Alice!']);
-        $this->insertEntry(['name' => 'Bob', 'text' => 'Hello from Bob!']);
+        $this->insertEntry(['name' => 'Alice', 'text' => 'Hello from Alice!', 'date' => 1000]);
+        $this->insertEntry(['name' => 'Bob', 'text' => 'Hello from Bob!', 'date' => 2000]);
+        $this->insertEntry(['name' => 'Carla', 'text' => 'Alt, aber spät importiert', 'date' => 500]);
 
-        $output = $this->renderGuestbook(['show_gb' => 'yes']);
+        $output = $this->renderGuestbook();
 
-        // Should show the entry names and texts
-        $this->assertStringContainsString('Alice', $output);
-        $this->assertStringContainsString('Bob', $output);
         $this->assertStringContainsString('Hello from Alice!', $output);
         $this->assertStringContainsString('Hello from Bob!', $output);
-        // Should show count of 2
-        $this->assertStringContainsString('<b>2</b>', $output);
-        $this->assertStringContainsString('Eintr', $output);
+        $this->assertStringContainsString('Dieses Gästebuch enthält <b>3</b> Einträge.', $output);
+        // B25: neueste zuerst nach Datum, nicht nach ID
+        $this->assertLessThan(strpos($output, 'Alice'), strpos($output, 'Bob'));
+        $this->assertLessThan(strpos($output, 'Carla'), strpos($output, 'Alice'));
     }
 
     #[Test]
@@ -199,79 +196,76 @@ class GuestbookPagesTest extends TestCase
         $this->insertEntry(['name' => 'Bob', 'text' => 'Entry by Bob']);
 
         $output = $this->renderGuestbook([
-            'show_gb' => 'yes',
             'tmp_search' => 'Alice',
             'tmp_where' => 'name',
         ]);
 
-        // Should find Alice's entry
-        $this->assertStringContainsString('Alice', $output);
-        $this->assertStringContainsString('<b>1</b>', $output);
-        // Should show "gefunden" (found) text for search results
-        $this->assertStringContainsString('gefunden', $output);
+        $this->assertStringContainsString('<b>1</b> Eintrag mit „Alice“ im Namen', $output);
+        $this->assertStringContainsString('id="pbSearchReset"', $output);
+        $this->assertStringContainsString('value="Alice"', $output);
+        $this->assertStringNotContainsString('Entry by Bob', $output);
     }
 
     #[Test]
     public function testGuestbookSearchByText(): void
     {
-        $this->insertEntry(['name' => 'Alice', 'text' => 'I love PHP programming']);
+        $this->insertEntry(['name' => 'Alice', 'text' => 'I love PHP programming, 100% sure']);
         $this->insertEntry(['name' => 'Bob', 'text' => 'I love Python programming']);
 
         $output = $this->renderGuestbook([
-            'show_gb' => 'yes',
             'tmp_search' => 'PHP',
             'tmp_where' => 'text',
         ]);
 
-        // Should find only Alice's entry containing PHP
-        $this->assertStringContainsString('Alice', $output);
-        $this->assertStringContainsString('<b>1</b>', $output);
-        $this->assertStringContainsString('gefunden', $output);
+        $this->assertStringContainsString('<b>1</b> Eintrag mit „PHP“ im Eintragstext', $output);
+
+        // B18: % und _ sind keine Platzhalter, der Begriff wird maskiert angezeigt
+        $this->assertStringContainsString('<b>1</b> Eintrag mit „100%“', $this->renderGuestbook(['tmp_search' => '100%', 'tmp_where' => 'text']));
+        $this->assertStringContainsString('Keine Einträge mit „_“', $this->renderGuestbook(['tmp_search' => '_', 'tmp_where' => 'text']));
+        $html = $this->renderGuestbook(['tmp_search' => '<b>x</b>', 'tmp_where' => 'text']);
+        $this->assertStringContainsString('„&lt;b&gt;x&lt;/b&gt;“', $html);
+        // Ungültiger Suchbereich = keine Suche
+        $this->assertStringContainsString('Dieses Gästebuch enthält <b>2</b> Einträge.', $this->renderGuestbook(['tmp_search' => 'PHP', 'tmp_where' => 'text"><b>']));
     }
 
     #[Test]
     public function testGuestbookShowForm(): void
     {
-        $output = $this->renderGuestbook(
-            ['show_gb' => 'no', 'show_form' => 'yes'],
-            [],
-            ['show_form' => 'yes']
-        );
+        $output = $this->renderGuestbook();
 
-        // Form should contain input fields
-        $this->assertStringContainsString('<form', $output);
+        $this->assertStringContainsString('<form id="pbEntryForm"', $output);
         $this->assertStringContainsString('name="name"', $output);
         $this->assertStringContainsString('name="email2"', $output);
         $this->assertStringContainsString('name="text"', $output);
-        $this->assertStringContainsString('Abschicken', $output);
+        $this->assertStringContainsString('>Vorschau</button>', $output);
+        $this->assertStringContainsString('>Eintragen</button>', $output);
+        $this->assertStringContainsString('id="pbWriteEntryLink"', $output);
+        $this->assertStringContainsString('id="pbSearchLink" href="pbook.php?search=yes"', $output);
     }
 
     #[Test]
     public function testGuestbookHideForm(): void
     {
-        $output = $this->renderGuestbook(
-            ['show_gb' => 'no', 'show_form' => 'no'],
-            ['show_form' => 'no'],
-        );
+        // Die Suchseite zeigt nur das Suchformular, kein Eintragsformular und keine Liste.
+        $this->insertEntry(['name' => 'Alice', 'text' => 'Versteckt']);
+        $output = $this->renderGuestbook(['search' => 'yes']);
 
-        // Form should NOT appear (no form action for entry submission)
         $this->assertStringNotContainsString('name="name"', $output);
-        $this->assertStringNotContainsString('Abschicken', $output);
+        $this->assertStringNotContainsString('Versteckt', $output);
     }
 
     #[Test]
     public function testGuestbookSearchForm(): void
     {
-        $output = $this->renderGuestbook(
-            ['show_gb' => 'no', 'show_form' => 'no', 'search' => 'yes'],
-            ['show_form' => 'no'],
-        );
+        $output = $this->renderGuestbook(['show_gb' => 'no', 'show_form' => 'no', 'search' => 'yes', 'tmp_search' => 'Möwe']);
 
-        // Search form should appear
-        $this->assertStringContainsString('Suchen nach', $output);
-        $this->assertStringContainsString('name="tmp_search"', $output);
+        $this->assertStringContainsString('<form id="pbSearchForm"', $output);
+        $this->assertStringContainsString('id="pbSearchInput"', $output);
+        $this->assertStringContainsString('value="Möwe"', $output);
         $this->assertStringContainsString('name="tmp_where"', $output);
-        $this->assertStringContainsString('Suchen!', $output);
+        $this->assertStringContainsString('id="pbSearchSubmit" type="submit" class="btn btn-primary">Suchen</button>', $output);
+        $this->assertStringContainsString('id="pbSearchBack" href="pbook.php"', $output);
+        $this->assertStringNotContainsString('history.back', $output);
     }
 
     #[Test]
@@ -279,7 +273,7 @@ class GuestbookPagesTest extends TestCase
     {
         // Bootstrap-Migration: Der Footer mit PowerBook-Credit ist nun im
         // zentralen Layout-Wrapper (pb_layout_footer() in pbook.php), nicht
-        // mehr im guestbook.inc.php-Include. Entsprechend pruefen wir hier nur,
+        // mehr im guestbook.inc.php-Include. Entsprechend prüfen wir hier nur,
         // dass die Pflicht-Datei pb_inc/layout.inc.php den Footer rendert.
         require_once POWERBOOK_ROOT . '/pb_inc/layout.inc.php';
 
@@ -297,27 +291,35 @@ class GuestbookPagesTest extends TestCase
     #[Test]
     public function testGuestbookPagination(): void
     {
-        // Insert 15 entries (more than the default 10 per page)
         for ($i = 1; $i <= 15; $i++) {
-            $this->insertEntry([
-                'name' => "User{$i}",
-                'text' => "Entry number {$i}",
-                'date' => time() + $i,
-            ]);
+            $this->insertEntry(['name' => "User{$i}", 'text' => "Entry number {$i}", 'date' => 1000 + $i]);
         }
 
-        $output = $this->renderGuestbook(
-            ['show_gb' => 'yes'],
-            [],
-            ['config_show_entries' => 10, 'config_pages' => 'D']
-        );
-
-        // Should show 15 total entries
+        $output = $this->renderGuestbook([], [], ['config_show_entries' => 10, 'config_pages' => 'D']);
         $this->assertStringContainsString('<b>15</b>', $output);
-        // Direct pagination should show page links (Seite = Page in German)
-        $this->assertStringContainsString('Seite', $output);
-        // Should have at least 2 pages
-        $this->assertStringContainsString('tmp_page=2', $output);
+        $this->assertStringContainsString('id="pbPagerTop"', $output);
+        $this->assertStringContainsString('id="pbPagerBottom"', $output);
+        $this->assertStringContainsString('href="pbook.php?tmp_start=10"', $output);
+
+        // B19: Grenzwerte ergeben eine vollständige Seite
+        foreach (['-5' => 'User15', '999' => 'User5', '7' => 'User15', 'abc' => 'User15'] as $start => $first) {
+            $html = $this->renderGuestbook(['tmp_start' => $start], [], ['config_show_entries' => 10]);
+            $this->assertMatchesRegularExpression('/<span class="pb-entry-name">' . $first . '<\/span>/', $html, "tmp_start={$start}");
+            $this->assertStringContainsString('id="pbEntryForm"', $html);
+        }
+    }
+
+    #[Test]
+    public function testGuestbookFlashMessageAfterSave(): void
+    {
+        $_SESSION['pb_entry_saved'] = ['status' => 'U', 'id' => 5];
+        $output = $this->renderGuestbook();
+        $this->assertStringContainsString('<div id="pbEntryMessage" class="alert alert-success" role="status">Vielen Dank! Ihr Eintrag erscheint, sobald er freigeschaltet ist.</div>', $output);
+        $this->assertArrayNotHasKey('pb_entry_saved', $_SESSION);
+        $this->assertStringNotContainsString('pbEntryMessage', $this->renderGuestbook());
+
+        $_SESSION['pb_entry_saved'] = ['status' => 'R', 'id' => 5];
+        $this->assertStringContainsString('Vielen Dank! Ihr Eintrag ist jetzt im Gästebuch. <a class="alert-link" href="#pbEntry5">Zum Eintrag</a>', $this->renderGuestbook());
     }
 
     // =========================================================================
@@ -325,35 +327,45 @@ class GuestbookPagesTest extends TestCase
     // =========================================================================
 
     #[Test]
-    public function testSendEmailWithValidConfig(): void
+    public function testAdminNotificationText(): void
     {
-        // send-email.php expects: $config_email, $config_admin_url, $name2
-        // It calls sendEmail() which calls mail() - may fail silently in test env
-        $output = $this->renderFile(POWERBOOK_ROOT . '/pb_inc/send-email.php', [
-            'config_email' => 'admin@test.com',
-            'config_admin_url' => 'http://localhost/admin',
-            'name2' => 'TestUser',
-        ]);
+        require_once POWERBOOK_ROOT . '/pb_inc/send-email.php';
 
-        // send-email.php does not produce output on success, just calls sendEmail()
-        // If mail() is not available, sendEmail() handles errors gracefully
-        // The key thing is it does not throw or produce error output
-        $this->assertStringNotContainsString('Error', $output);
-        $this->assertStringNotContainsString('Fatal', $output);
+        $entry = ['name' => 'Maren <b>aus</b> Kiel', 'email' => 'maren@example.org', 'url' => 'www.example.org', 'text' => 'Preis $10 & "super"'];
+        $mail = pb_admin_notification_text($entry, 'U', 'Gästebuch Möwenblick', 'https://gb.example/pb_inc/admincenter/', mktime(20, 42, 0, 9, 20, 2026));
+
+        $this->assertSame('Neuer Eintrag wartet auf Freischaltung', $mail['subject']);
+        $this->assertStringContainsString('im Gästebuch „Gästebuch Möwenblick“ ist ein neuer Eintrag eingegangen.', $mail['body']);
+        $this->assertStringContainsString('Name:     Maren <b>aus</b> Kiel', $mail['body']);
+        $this->assertStringContainsString('Homepage: https://www.example.org', $mail['body']);
+        $this->assertStringContainsString('Datum:    20.09.2026, 20:42 Uhr', $mail['body']);
+        $this->assertStringContainsString('Status:   wartet auf Freischaltung', $mail['body']);
+        $this->assertStringContainsString("Text:\nPreis \$10 & \"super\"", $mail['body']);
+        $this->assertStringContainsString('https://gb.example/pb_inc/admincenter/?page=release', $mail['body']);
+        $this->assertStringNotContainsString('&amp;', $mail['body']);
+        $this->assertStringContainsString('Freischalten oder löschen können Sie den Eintrag im AdminCenter:', $mail['body']);
+
+        $sofort = pb_admin_notification_text(['name' => 'A', 'email' => '', 'url' => '', 'text' => str_repeat('x', 1200)], 'R', 'G', 'https://gb.example/admin/?x=1', 0);
+        $this->assertSame('Neuer Eintrag im Gästebuch', $sofort['subject']);
+        $this->assertStringContainsString('E-Mail:   nicht angegeben', $sofort['body']);
+        $this->assertStringContainsString('https://gb.example/admin/?x=1&page=entries', $sofort['body']);
+        $this->assertStringContainsString(str_repeat('x', 1000) . ' …', $sofort['body']);
     }
 
     #[Test]
     public function testSendEmailSkipsWithoutEmail(): void
     {
-        // When config_email is empty, the email should not be sent
-        $output = $this->renderFile(POWERBOOK_ROOT . '/pb_inc/send-email.php', [
-            'config_email' => '',
-            'config_admin_url' => '',
-            'name2' => 'TestUser',
-        ]);
+        require_once POWERBOOK_ROOT . '/pb_inc/send-email.php';
+        $saved = $GLOBALS['config_email'] ?? null;
+        $GLOBALS['config_email'] = '';
 
-        // No output expected - the if-check skips sending when email is empty
-        $this->assertEmpty(trim($output));
+        ob_start();
+        $result = pb_send_admin_notification(['name' => 'X', 'email' => '', 'url' => '', 'text' => 'Y'], 'U', time());
+        $output = (string) ob_get_clean();
+
+        $GLOBALS['config_email'] = $saved;
+        $this->assertFalse($result);
+        $this->assertSame('', $output);
     }
 
     // =========================================================================
@@ -363,48 +375,37 @@ class GuestbookPagesTest extends TestCase
     #[Test]
     public function testThankEmailReplacesPlaceholders(): void
     {
-        // thank-email.php replaces placeholders in $config_thanks template
-        // and sends an email via sendEmail(). It produces no output.
-        $template = 'Hello (#NAME#), thanks for your entry: (#TEXT#). Your email: (#EMAIL#). Time: (#TIME#). IP: (#IP#). URL: (#URL#). ICQ: (#ICQ#).';
+        require_once POWERBOOK_ROOT . '/pb_inc/thank-email.php';
+        $template = 'Hallo (#NAME#), Text: (#TEXT#). E-Mail: (#EMAIL#). Zeit: (#TIME#). IP: (#IP#). URL: (#URL#). ICQ: (#ICQ#).';
+        $entry = ['name' => "Ole \$1 Jensen\r\nBcc: x", 'email' => 'ole@example.org', 'url' => 'https://www.example.org/ute', 'text' => 'Preis $10, "super" & günstig (#NAME#)'];
 
-        $output = $this->renderFile(POWERBOOK_ROOT . '/pb_inc/thank-email.php', [
-            'config_thanks' => $template,
-            'config_thanks_title' => 'Thank You',
-            'config_email' => 'admin@test.com',
-            'email2' => 'user@example.com',
-            'name2' => 'TestUser',
-            'text2' => 'Great guestbook!',
-            'url2' => 'www.example.com',
-            'icq2' => '12345',
-            'time' => time(),
-            'ip' => '192.168.1.1',
-        ]);
+        $text = pb_thanks_mail_text($template, $entry, mktime(20, 42, 0, 9, 20, 2026), '192.0.2.1');
 
-        // The file calls sendEmail() internally - it does not produce HTML output.
-        // The key test is that the file executes without errors.
-        $this->assertStringNotContainsString('Error', $output);
-        $this->assertStringNotContainsString('Fatal', $output);
+        $this->assertSame('Hallo Ole $1 Jensen Bcc: x, Text: Preis $10, "super" & günstig (#NAME#). E-Mail: ole@example.org. Zeit: 20.09.2026, 20:42. IP: 192.0.2.1. URL: https://www.example.org/ute. ICQ: .', $text);
+        // Ohne Homepage bleibt (#URL#) leer, Namen ohne Links
+        $this->assertSame('U= N=Gewinnspiel! Jetzt klicken:', pb_thanks_mail_text('U=(#URL#) N=(#NAME#)', ['name' => 'Gewinnspiel! Jetzt klicken: http://gewinn.example/', 'email' => '', 'url' => '', 'text' => ''], 0, ''));
+        $this->assertSame('Hallo Gast', pb_thanks_mail_text('Hallo (#NAME#)', ['name' => 'www.spam.example', 'email' => '', 'url' => '', 'text' => ''], 0, ''));
     }
 
     #[Test]
-    public function testThankEmailSkipsInvalidEmail(): void
+    public function testThankEmailSkipsInvalidEmailAndRepeats(): void
     {
-        // When email2 is invalid, the email should not be sent
-        $output = $this->renderFile(POWERBOOK_ROOT . '/pb_inc/thank-email.php', [
-            'config_thanks' => 'Hello (#NAME#)',
-            'config_thanks_title' => 'Thank You',
-            'config_email' => 'admin@test.com',
-            'email2' => 'not-a-valid-email',
-            'name2' => 'TestUser',
-            'text2' => 'Great guestbook!',
-            'url2' => '',
-            'icq2' => '',
-            'time' => time(),
-            'ip' => '127.0.0.1',
-        ]);
+        require_once POWERBOOK_ROOT . '/pb_inc/thank-email.php';
+        $saved = $GLOBALS['config_use_thanks'] ?? null;
+        $GLOBALS['config_use_thanks'] = 'Y';
+        $entry = ['name' => 'X', 'email' => 'not-a-valid-email', 'url' => '', 'text' => 'Y'];
 
-        // No output expected - the if-check skips sending when email is invalid
-        $this->assertEmpty(trim($output));
+        $this->assertFalse(pb_send_thanks_mail(self::$pdo, 'pb_entries', $entry, 1, time(), '127.0.0.1'));
+
+        // Höchstens eine Danke-Mail je Adresse in 24 Stunden
+        $this->insertEntry(['email' => 'Gast@Example.org', 'date' => time() - 3600]);
+        $id = $this->insertEntry(['email' => 'gast@example.org']);
+        $entry['email'] = 'gast@example.org';
+        $this->assertFalse(pb_send_thanks_mail(self::$pdo, 'pb_entries', $entry, $id, time(), '127.0.0.1'));
+
+        $GLOBALS['config_use_thanks'] = 'N';
+        $this->assertFalse(pb_send_thanks_mail(self::$pdo, 'pb_entries', $entry, $id, time(), '127.0.0.1'));
+        $GLOBALS['config_use_thanks'] = $saved;
     }
 
     protected function setUp(): void
@@ -426,6 +427,7 @@ class GuestbookPagesTest extends TestCase
     {
         $_GET = [];
         $_POST = [];
+        unset($_SESSION['pb_entry_saved']);
     }
 
     /**

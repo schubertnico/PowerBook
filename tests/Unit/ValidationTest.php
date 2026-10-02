@@ -15,104 +15,140 @@ use PHPUnit\Framework\Attributes\CoversFunction;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-#[CoversFunction('validateGuestbookEntry')]
+#[CoversFunction('pb_validate_entry')]
+#[CoversFunction('pb_normalize_entry')]
 #[CoversFunction('validateAdminLogin')]
 #[CoversFunction('validateEmail')]
 #[CoversFunction('validateAdminData')]
-#[CoversFunction('validateUrl')]
 #[CoversFunction('validatePassword')]
 #[CoversFunction('validatePasswordConfirmation')]
 class ValidationTest extends TestCase
 {
     // ========================================
-    // Tests for validateGuestbookEntry()
+    // Tests for pb_normalize_entry() / pb_validate_entry()
     // ========================================
 
     #[Test]
-    public function validateGuestbookEntryReturnsEmptyArrayForValidData(): void
+    public function validateEntryReturnsEmptyArrayForValidData(): void
     {
-        $errors = validateGuestbookEntry('Test User', 'Test message', 'test@example.com');
+        $errors = pb_validate_entry($this->entry());
 
-        $this->assertEmpty($errors);
+        $this->assertSame([], $errors);
     }
 
     #[Test]
-    public function validateGuestbookEntryRequiresName(): void
+    public function validateEntryRequiresName(): void
     {
-        $errors = validateGuestbookEntry('', 'Test message', '');
+        $errors = pb_validate_entry($this->entry(['name' => '']));
 
-        $this->assertArrayHasKey('name', $errors);
-        $this->assertStringContainsString('Name', $errors['name']);
+        $this->assertSame('Bitte geben Sie Ihren Namen ein.', $errors['name']);
     }
 
     #[Test]
-    public function validateGuestbookEntryRequiresText(): void
+    public function validateEntryRequiresText(): void
     {
-        $errors = validateGuestbookEntry('Test User', '', '');
+        $errors = pb_validate_entry($this->entry(['text' => '']));
 
-        $this->assertArrayHasKey('text', $errors);
-        $this->assertStringContainsString('Text', $errors['text']);
+        $this->assertSame('Bitte schreiben Sie einen Text.', $errors['text']);
     }
 
     #[Test]
-    public function validateGuestbookEntryRejectsInvalidEmail(): void
+    public function validateEntryRejectsInvalidEmail(): void
     {
-        $errors = validateGuestbookEntry('Test User', 'Test message', 'invalid-email');
-
-        $this->assertArrayHasKey('email', $errors);
-        // Fehlermeldung wurde auf "E-Mail-Adresse" vereinheitlicht.
-        $this->assertStringContainsString('E-Mail-Adresse', $errors['email']);
+        foreach (['invalid-email', 'invalidemail.com', 'invalid@emailcom', 'x@example.org?subject=Spam'] as $email) {
+            $errors = pb_validate_entry($this->entry(['email' => $email]));
+            $this->assertArrayHasKey('email', $errors, $email);
+            $this->assertStringContainsString('E-Mail-Adresse', $errors['email']);
+        }
     }
 
     #[Test]
-    public function validateGuestbookEntryAcceptsEmptyEmail(): void
+    public function validateEntryAcceptsEmptyEmailAndUrl(): void
     {
-        $errors = validateGuestbookEntry('Test User', 'Test message', '');
+        $errors = pb_validate_entry($this->entry(['email' => '', 'url' => '']));
 
         $this->assertArrayNotHasKey('email', $errors);
+        $this->assertArrayNotHasKey('url', $errors);
     }
 
     #[Test]
-    public function validateGuestbookEntryRejectsEmailWithoutAtSign(): void
+    public function validateEntryChecksUrl(): void
     {
-        $errors = validateGuestbookEntry('Test User', 'Test message', 'invalidemail.com');
-
-        $this->assertArrayHasKey('email', $errors);
+        $this->assertArrayNotHasKey('url', pb_validate_entry($this->entry(['url' => 'www.example.org'])));
+        $this->assertArrayNotHasKey('url', pb_validate_entry($this->entry(['url' => 'https://www.example.org/pfad?x=1'])));
+        foreach (['kein link', 'javascript:alert(1)', 'data:text/html,x', 'ftp://example.org', 'https://example.org/" onmouseover="x', 'https://localhost'] as $url) {
+            $this->assertArrayHasKey('url', pb_validate_entry($this->entry(['url' => $url])), $url);
+        }
+        $errors = pb_validate_entry($this->entry(['url' => 'https://example.org/' . str_repeat('a', 190)]));
+        $this->assertStringContainsString('200 Zeichen', $errors['url']);
     }
 
     #[Test]
-    public function validateGuestbookEntryRejectsEmailWithoutDot(): void
+    public function validateEntryChecksLengths(): void
     {
-        $errors = validateGuestbookEntry('Test User', 'Test message', 'invalid@emailcom');
-
-        $this->assertArrayHasKey('email', $errors);
+        $this->assertArrayNotHasKey('name', pb_validate_entry($this->entry(['name' => str_repeat('Ö', 100)])));
+        $this->assertArrayHasKey('name', pb_validate_entry($this->entry(['name' => str_repeat('Ö', 101)])));
+        $this->assertArrayNotHasKey('text', pb_validate_entry($this->entry(['text' => str_repeat('😀', 5000)])));
+        $this->assertArrayHasKey('text', pb_validate_entry($this->entry(['text' => str_repeat('x', 5001)])));
+        $this->assertArrayHasKey('email', pb_validate_entry($this->entry(['email' => str_repeat('a', 240) . '@example.org'])));
     }
 
     #[Test]
-    public function validateGuestbookEntryTrimsWhitespaceFromName(): void
+    public function validateEntryChecksIconWhitelist(): void
     {
-        $errors = validateGuestbookEntry('   ', 'Test message', '');
-
-        $this->assertArrayHasKey('name', $errors);
+        $this->assertArrayNotHasKey('icon', pb_validate_entry($this->entry(['icon' => 'happy1'])));
+        $this->assertArrayNotHasKey('icon', pb_validate_entry($this->entry(['icon' => 'no'])));
+        $this->assertArrayHasKey('icon', pb_validate_entry($this->entry(['icon' => 'x" onerror="a'])));
+        $this->assertArrayHasKey('icon', pb_validate_entry($this->entry(['icon' => '../../etc/passwd'])));
+        $this->assertArrayNotHasKey('icon', pb_validate_entry($this->entry(['icon' => 'boese']), false));
     }
 
     #[Test]
-    public function validateGuestbookEntryTrimsWhitespaceFromText(): void
+    public function validateEntryReturnsAllErrorsAtOnce(): void
     {
-        $errors = validateGuestbookEntry('Test User', '   ', '');
+        $errors = pb_validate_entry($this->entry(['name' => '', 'text' => '', 'email' => 'invalid', 'url' => 'kein link']));
 
-        $this->assertArrayHasKey('text', $errors);
+        $this->assertSame(['name', 'email', 'url', 'text'], array_keys($errors));
     }
 
     #[Test]
-    public function validateGuestbookEntryReturnsMultipleErrors(): void
+    public function normalizeEntryCleansInput(): void
     {
-        $errors = validateGuestbookEntry('', '', 'invalid');
+        $data = pb_normalize_entry([
+            'name' => "  Anke\r\n  & Co  ",
+            'email2' => ' anke@example.org ',
+            'url' => ' www.example.org ',
+            'text' => "  Zeile 1\r\nZeile 2\x00  ",
+            'icon' => '',
+        ]);
 
-        $this->assertArrayHasKey('name', $errors);
-        $this->assertArrayHasKey('text', $errors);
-        $this->assertArrayHasKey('email', $errors);
-        $this->assertCount(3, $errors);
+        $this->assertSame('Anke & Co', $data['name']);
+        $this->assertSame('anke@example.org', $data['email']);
+        $this->assertSame('www.example.org', $data['url']);
+        $this->assertSame("Zeile 1\nZeile 2", $data['text']);
+        $this->assertSame('no', $data['icon']);
+        $this->assertSame('N', $data['smilies']);
+        $this->assertSame('Y', pb_normalize_entry(['smilies2' => 'Y'])['smilies']);
+    }
+
+    #[Test]
+    public function normalizeEntryCountsLineBreakAsOneCharacter(): void
+    {
+        // 4950 Zeichen + 49 Zeilenumbrüche (CRLF aus dem Browser) = 4999 Zeichen
+        $text = implode("\r\n", array_fill(0, 50, str_repeat('x', 99)));
+        $data = pb_normalize_entry(['name' => 'X', 'text' => $text]);
+
+        $this->assertSame(4999, mb_strlen($data['text']));
+        $this->assertArrayNotHasKey('text', pb_validate_entry($data));
+    }
+
+    #[Test]
+    public function normalizeEntryIgnoresArrays(): void
+    {
+        $data = pb_normalize_entry(['name' => ['x'], 'text' => ['y']]);
+
+        $this->assertSame('', $data['name']);
+        $this->assertSame('', $data['text']);
     }
 
     // ========================================
@@ -198,7 +234,7 @@ class ValidationTest extends TestCase
         $errors = validateEmail('invalid-email');
 
         $this->assertArrayHasKey('email', $errors);
-        $this->assertStringContainsString('Ungueltige', $errors['email']);
+        $this->assertStringContainsString('Ungültige', $errors['email']);
     }
 
     #[Test]
@@ -283,75 +319,6 @@ class ValidationTest extends TestCase
     public function validateAdminDataAcceptsNullPasswords(): void
     {
         $errors = validateAdminData('Admin', 'admin@example.com', null, null);
-
-        $this->assertEmpty($errors);
-    }
-
-    // ========================================
-    // Tests for validateUrl()
-    // ========================================
-
-    #[Test]
-    public function validateUrlReturnsEmptyArrayForValidUrl(): void
-    {
-        $errors = validateUrl('https://example.com');
-
-        $this->assertEmpty($errors);
-    }
-
-    #[Test]
-    public function validateUrlAcceptsEmptyString(): void
-    {
-        $errors = validateUrl('');
-
-        $this->assertEmpty($errors);
-    }
-
-    #[Test]
-    public function validateUrlAcceptsHttpUrl(): void
-    {
-        $errors = validateUrl('http://example.com');
-
-        $this->assertEmpty($errors);
-    }
-
-    #[Test]
-    public function validateUrlAcceptsUrlWithPath(): void
-    {
-        $errors = validateUrl('https://example.com/path/to/page.html');
-
-        $this->assertEmpty($errors);
-    }
-
-    #[Test]
-    public function validateUrlAcceptsUrlWithQueryString(): void
-    {
-        $errors = validateUrl('https://example.com/search?q=test&page=1');
-
-        $this->assertEmpty($errors);
-    }
-
-    #[Test]
-    public function validateUrlRejectsInvalidUrl(): void
-    {
-        $errors = validateUrl('not-a-valid-url');
-
-        $this->assertArrayHasKey('url', $errors);
-        $this->assertStringContainsString('URL', $errors['url']);
-    }
-
-    #[Test]
-    public function validateUrlRejectsUrlWithoutProtocol(): void
-    {
-        $errors = validateUrl('example.com');
-
-        $this->assertArrayHasKey('url', $errors);
-    }
-
-    #[Test]
-    public function validateUrlTrimsWhitespace(): void
-    {
-        $errors = validateUrl('  https://example.com  ');
 
         $this->assertEmpty($errors);
     }
@@ -460,5 +427,22 @@ class ValidationTest extends TestCase
     protected function setUp(): void
     {
         require_once POWERBOOK_ROOT . '/pb_inc/validation.inc.php';
+    }
+
+    /**
+     * @param array<string, string> $overrides
+     *
+     * @return array{name: string, email: string, url: string, text: string, icon: string, smilies: string}
+     */
+    private function entry(array $overrides = []): array
+    {
+        return array_merge([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'url' => '',
+            'text' => 'Test message',
+            'icon' => 'no',
+            'smilies' => 'Y',
+        ], $overrides);
     }
 }

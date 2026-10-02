@@ -9,9 +9,30 @@ body.pb-body {
     min-height: 100vh;
 }
 
-/* Eintrags-Karten: schmale Abstaende, keine knalligen Ecken. */
+/* Kopfleiste: Titel des Gästebuchs darf umbrechen statt aus dem Bild zu laufen. */
+.pb-title {
+    min-width: 0;
+    font-size: 1.5rem;
+    line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.pb-nav-admin {
+    flex-shrink: 0;
+}
+@media (max-width: 575.98px) {
+    .pb-title {
+        font-size: 1.15rem;
+    }
+}
+
+/* Eintrags-Karten: schmale Abstände, lange Wörter und Links umbrechen. */
 .pb-entry-card {
     margin-bottom: 1rem;
+}
+.pb-entry-card .card-body,
+.pb-entry .card-body {
+    overflow-wrap: anywhere;
 }
 
 /* Smiley/Icon-Bilder im Eintragstext sollen vertikal ausgerichtet sein. */
@@ -19,6 +40,38 @@ body.pb-body {
 .pb-public img,
 .pb-admin img {
     vertical-align: middle;
+}
+
+/* Admin-Antwort unter dem Eintragstext. */
+.pb-entry-statement b {
+    font-style: normal;
+}
+
+/* Hilfe im Formular (Formatierung und Smileys). */
+.pb-help-table {
+    max-width: 26rem;
+    background: transparent;
+}
+.pb-help-table th,
+.pb-help-table td {
+    background: transparent;
+    vertical-align: middle;
+}
+
+/* Zeichenzähler unter dem Textfeld. */
+.pb-counter {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Blätterleiste: auf dem Handy kompakter, Wörter neben den Pfeilen ausblenden. */
+@media (max-width: 575.98px) {
+    .pb-pager .page-link {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.9rem;
+    }
+    .pb-pager .pb-pager-label {
+        display: none;
+    }
 }
 
 /* Long-Text in Admin-Tabellen darf umbrechen statt zu sprengen. */
@@ -56,11 +109,10 @@ body.pb-body {
     border: none;
 }
 
-/* Browser-Default fuer <legend> ist ~1.5em — das laesst eine Fieldset-Ueberschrift
- * (z. B. "Icon", "Berechtigungen") deutlich groesser wirken als die <label>-Texte
+/* Browser-Vorgabe für <legend> ist ~1.5em — das lässt eine Fieldset-Überschrift
+ * (z. B. "Icon", "Berechtigungen") deutlich größer wirken als die <label>-Texte
  * im selben Formular. Wir vereinheitlichen: legend.form-label hat dieselbe
- * Schriftgroesse, Linienhoehe und das gleiche Margin wie label.form-label.
- * So wirken alle Form-Felder typografisch gleichwertig.
+ * Schriftgröße, Linienhöhe und das gleiche Margin wie label.form-label.
  */
 legend.form-label {
     font-size: 1rem;

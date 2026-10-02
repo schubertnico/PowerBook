@@ -1,0 +1,29 @@
+<?php
+
+/**
+ * PowerBook - PHP Guestbook System
+ * Vorlage für den Datenbankzugang
+ *
+ * Normalerweise legt install.php die Datei pb_inc/mysql.inc.php selbst an.
+ * Nur wenn der Installer sie nicht schreiben darf: diese Vorlage als
+ * pb_inc/mysql.inc.php speichern, die Werte vom Hoster eintragen und
+ * per FTP hochladen.
+ *
+ * @license MIT
+ * @copyright PowerScripts.org
+ *
+ * @see https://www.powerscripts.org
+ */
+
+declare(strict_types=1);
+
+$config_sql_server = 'localhost';       // Datenbankserver (beim Hoster oft nicht localhost)
+$config_sql_port = 3306;                // Port, fast immer 3306
+$config_sql_user = '';                  // Benutzername
+$config_sql_password = '';              // Passwort
+$config_sql_database = '';              // Name der Datenbank
+
+// Tabellennamen (nur ändern, wenn eine ältere Installation andere Namen nutzt)
+$pb_config = 'pb_config';
+$pb_admin = 'pb_admins';
+$pb_entries = 'pb_entries';

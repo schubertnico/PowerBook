@@ -19,6 +19,8 @@ use PHPUnit\Framework\TestCase;
 #[CoversFunction('validateCsrfToken')]
 #[CoversFunction('csrfField')]
 #[CoversFunction('regenerateCsrfToken')]
+#[CoversFunction('pb_csrf_failed_message')]
+#[CoversFunction('pb_session_start')]
 class CsrfTest extends TestCase
 {
     // ========================================
@@ -227,6 +229,60 @@ class CsrfTest extends TestCase
         $this->assertNotEmpty($token);
         $this->assertSame(64, strlen($token));
         $this->assertTrue(validateCsrfToken($token));
+    }
+
+    // ========================================
+    // A07: Token je Sitzung stabil, Meldung bei Fehlschlag
+    // ========================================
+
+    #[Test]
+    public function tokenStaysValidAfterSuccessfulValidation(): void
+    {
+        $token = generateCsrfToken();
+
+        // Zwei Tabs mit derselben Sitzung: beide senden dasselbe Token.
+        $this->assertTrue(validateCsrfToken($token));
+        $this->assertTrue(validateCsrfToken($token));
+        $this->assertSame($token, generateCsrfToken());
+    }
+
+    #[Test]
+    public function validateRejectsNonStringSessionToken(): void
+    {
+        $_SESSION['csrf_token'] = ['kein', 'string'];
+
+        $this->assertFalse(validateCsrfToken('kein'));
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', generateCsrfToken());
+    }
+
+    #[Test]
+    public function csrfFailedMessageIsPlainGermanSentence(): void
+    {
+        $message = pb_csrf_failed_message();
+
+        $this->assertSame('Das Formular war abgelaufen. Bitte senden Sie es erneut ab.', $message);
+        $this->assertSame($message, strip_tags($message));
+    }
+
+    #[Test]
+    public function sessionStartIsNoOpWhenSessionRuns(): void
+    {
+        $this->assertSame(PHP_SESSION_ACTIVE, session_status());
+        $id = session_id();
+
+        pb_session_start();
+
+        $this->assertSame($id, session_id());
+    }
+
+    #[Test]
+    public function noHandlerRotatesTokenAfterSuccess(): void
+    {
+        foreach (['admins', 'configuration', 'password', 'account'] as $page) {
+            $source = (string) file_get_contents(POWERBOOK_ROOT . '/pb_inc/admincenter/' . $page . '.inc.php');
+            $this->assertStringNotContainsString('regenerateCsrfToken', $source, $page . '.inc.php darf das Token nicht erneuern.');
+            $this->assertStringContainsString('pb_csrf_failed_message()', $source, $page . '.inc.php meldet abgelaufene Formulare.');
+        }
     }
 
     protected function setUp(): void

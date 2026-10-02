@@ -23,7 +23,7 @@ pnpm-lock.yaml
 
 
 # -------------------------------------------------------------
-# Claude Code / AI Tools — lokale Session-/Memory-Daten
+# Werkzeuge – lokale Sitzungs- und Arbeitsdaten
 # -------------------------------------------------------------
 /.claude/
 /.aider*
@@ -109,6 +109,9 @@ auth.json
 # ohne dass sie versehentlich gepusht werden.
 # -------------------------------------------------------------
 pb_inc/mysql.local.inc.php
+# Zugangsdaten schreibt install.php; im Paket liegt nur die Vorlage .example
+/pb_inc/mysql.inc.php
+/install.lock
 pb_inc/*.local.inc.php
 pb_inc/local.inc.php
 *.local.php
@@ -153,6 +156,8 @@ clover.xml
 # Datenbank-Dumps / Backups
 # -------------------------------------------------------------
 *.sql
+!/powerbook.sql
+!/tests/Fixtures/*.sql
 *.sql.gz
 *.sql.bz2
 *.sql.tar

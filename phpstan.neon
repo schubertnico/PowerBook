@@ -3,6 +3,8 @@ parameters:
     paths:
         - pbook.php
         - pb_inc
+        - install.php
+        - update.php
         - install_deu.php
     excludePaths:
         - pb_inc/smilies
