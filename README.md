@@ -240,7 +240,7 @@ Voller Lizenztext: [`LICENSE`](LICENSE).
 
 ## Changelog
 
-### v3.1.0 — 2026
+### v3.1.0 — 2026-10-02
 
 #### Installation und Aktualisierung
 - **Neuer Installer `install.php`** in vier Schritten (Datenbank, Gästebuch, Administrator, Fertig) mit Verbindungstest, verständlichen Fehlermeldungen, Prüfung vorhandener Tabellen und selbst gewähltem Administrator-Passwort. Er schreibt `pb_inc/mysql.inc.php` und die Sperrdatei `install.lock` und bietet an, sich danach selbst zu löschen.
@@ -253,6 +253,7 @@ Voller Lizenztext: [`LICENSE`](LICENSE).
 #### Weitere Änderungen
 - Gästebuch, AdminCenter und Mails überarbeitet: Titel des Gästebuchs und Absenderadresse einstellbar, Mails mit korrekt kodiertem Kopf, echte Umlaute, Rechte und Menü des AdminCenters eindeutig, Bereich „Mein Konto“.
 - Release-Archiv ohne Tests, Dokumentation und Entwicklungswerkzeuge (`.gitattributes`).
+- Acht Video-Anleitungen von der Installation bis zum Update: https://www.powerscripts.org/projects-5.html
 
 ### v3.0.0 — 2026-05-10
 
