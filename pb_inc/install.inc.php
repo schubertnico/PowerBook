@@ -109,7 +109,9 @@ function pb_install_dispatch(int $step, array $paths, ?array $manual, bool $isPo
     };
 }
 
-/** Hat diese Sitzung die Installation gerade abgeschlossen? */
+/**
+ * Hat diese Sitzung die Installation gerade abgeschlossen?
+ */
 function pb_install_done(): bool
 {
     return ($_SESSION['pb_install']['done'] ?? false) === true;
@@ -224,7 +226,9 @@ function pb_install_blocked(int $status, string $heading, string $html): array
     return pb_setup_response($page, $status, pb_install_headers());
 }
 
-/** @return array<string, string> */
+/**
+ * @return array<string, string>
+ */
 function pb_install_headers(): array
 {
     return ['Cache-Control' => 'no-store', 'X-Robots-Tag' => 'noindex'];
@@ -318,7 +322,9 @@ function pb_install_checks_html(array $checks): array
     return [$list, $blocked];
 }
 
-/** Roter Hinweis und „Erneut prüfen“, wenn eine Voraussetzung fehlt. */
+/**
+ * Roter Hinweis und „Erneut prüfen“, wenn eine Voraussetzung fehlt.
+ */
 function pb_install_blocked_hint(bool $configNotWritable): string
 {
     return '<div class="alert alert-danger" role="alert">Bitte beheben Sie zuerst die rot markierten Punkte. '
@@ -327,7 +333,9 @@ function pb_install_blocked_hint(bool $configNotWritable): string
         . '<a id="pbInstallRecheck" class="btn btn-outline-secondary" href="' . PB_INSTALL_SELF . '">Erneut prüfen</a>';
 }
 
-/** Anleitung, falls PowerBook pb_inc/mysql.inc.php nicht schreiben darf (ohne Passwort im Browser). */
+/**
+ * Anleitung, falls PowerBook pb_inc/mysql.inc.php nicht schreiben darf (ohne Passwort im Browser).
+ */
 function pb_install_manual_hint(): string
 {
     return 'Sie können die Zugangsdaten auch selbst eintragen: Speichern Sie die Vorlage <code>pb_inc/mysql.inc.php.example</code> '
@@ -502,7 +510,9 @@ function pb_install_validate_database(array $values): array
     return $errors;
 }
 
-/** @return string|null Meldung oder null */
+/**
+ * @return string|null Meldung oder null
+ */
 function pb_install_validate_database_name(string $database): ?string
 {
     if ($database === '') {
@@ -515,7 +525,9 @@ function pb_install_validate_database_name(string $database): ?string
     return null;
 }
 
-/** @return string|null Meldung oder null */
+/**
+ * @return string|null Meldung oder null
+ */
 function pb_install_validate_host(string $host): ?string
 {
     if ($host === '') {
@@ -564,7 +576,9 @@ function pb_install_check_database(array $db, array $names): array
     return [[], pb_setup_existing_tables($pdo, array_values($names))];
 }
 
-/** @param array<string, string> $values */
+/**
+ * @param array<string, string> $values
+ */
 function pb_install_database_fields(array $values): string
 {
     return pb_setup_field('mysql_host', 'Datenbankserver', 'text', $values['mysql_host'], 'Beim Hoster oft nicht <code>localhost</code>, sondern ein eigener Servername.', 'maxlength="200" required')
@@ -574,7 +588,9 @@ function pb_install_database_fields(array $values): string
         . pb_setup_field('mysql_password', 'Passwort', 'password', '', '', 'maxlength="200" autocomplete="new-password"');
 }
 
-/** @param array{host: string, port: int, database: string, user: string, password: string} $db */
+/**
+ * @param array{host: string, port: int, database: string, user: string, password: string} $db
+ */
 function pb_install_manual_info(array $db): string
 {
     $rows = '';
@@ -646,7 +662,9 @@ function pb_install_step_guestbook(bool $isPost): array
     return pb_install_render(2, 'Gästebuch', 'Schritt 2 von 4: Gästebuch', $content);
 }
 
-/** Adresse des Ordners: ohne Dateinamen, mit / am Ende. */
+/**
+ * Adresse des Ordners: ohne Dateinamen, mit / am Ende.
+ */
 function pb_install_normalize_url(string $url): string
 {
     if ($url === '') {
@@ -943,7 +961,9 @@ function pb_install_step_done(array $paths, bool $isPost): array
     return pb_install_render(4, 'Fertig', 'Fertig: PowerBook ist installiert', $content);
 }
 
-/** Kasten „install.php jetzt löschen“. */
+/**
+ * Kasten „install.php jetzt löschen“.
+ */
 function pb_install_delete_box(): string
 {
     return '<div class="alert alert-warning border-2 p-4" role="alert">'

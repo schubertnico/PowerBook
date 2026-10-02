@@ -86,7 +86,9 @@ function pb_setup_start_session(): void
     session_start();
 }
 
-/** Neue Sitzungs-ID nach Anmeldung oder Installation (nur wenn möglich). */
+/**
+ * Neue Sitzungs-ID nach Anmeldung oder Installation (nur wenn möglich).
+ */
 function pb_setup_regenerate_session(): void
 {
     if (session_status() === PHP_SESSION_ACTIVE && !headers_sent()) {
@@ -94,7 +96,9 @@ function pb_setup_regenerate_session(): void
     }
 }
 
-/** Kam die Anfrage per POST? */
+/**
+ * Kam die Anfrage per POST?
+ */
 function pb_setup_is_post(): bool
 {
     return ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
@@ -251,7 +255,9 @@ function pb_setup_field(string $id, string $label, string $type, string $value, 
         . '</div></div>';
 }
 
-/** Ein Kontrollkästchen mit Beschriftung. */
+/**
+ * Ein Kontrollkästchen mit Beschriftung.
+ */
 function pb_setup_checkbox(string $id, string $label, bool $checked): string
 {
     return '<div class="form-check mb-3">'
@@ -260,7 +266,9 @@ function pb_setup_checkbox(string $id, string $label, bool $checked): string
         . '</div>';
 }
 
-/** Wert aus $_POST als getrimmter String. */
+/**
+ * Wert aus $_POST als getrimmter String.
+ */
 function pb_setup_post(string $key): string
 {
     $value = $_POST[$key] ?? '';
@@ -268,7 +276,9 @@ function pb_setup_post(string $key): string
     return is_string($value) ? trim($value) : '';
 }
 
-/** Wert aus $_POST unverändert (Passwörter werden nicht getrimmt). */
+/**
+ * Wert aus $_POST unverändert (Passwörter werden nicht getrimmt).
+ */
 function pb_setup_post_raw(string $key): string
 {
     $value = $_POST[$key] ?? '';
@@ -323,7 +333,9 @@ function pb_setup_connect(array $db): PDO
     ]);
 }
 
-/** Fehlernummer des Servers (1045, 2002 …) aus einer PDO-Ausnahme. */
+/**
+ * Fehlernummer des Servers (1045, 2002 …) aus einer PDO-Ausnahme.
+ */
 function pb_setup_error_code(PDOException $e): int
 {
     $info = $e->errorInfo;
@@ -367,7 +379,9 @@ function pb_setup_server_problem(PDO $pdo): ?string
     return pb_setup_version_problem($version);
 }
 
-/** @return string|null Klartext-Meldung oder null, wenn die Version passt */
+/**
+ * @return string|null Klartext-Meldung oder null, wenn die Version passt
+ */
 function pb_setup_version_problem(string $version): ?string
 {
     $isMaria = stripos($version, 'mariadb') !== false;
@@ -411,7 +425,9 @@ function pb_setup_existing_tables(PDO $pdo, array $tables): array
     return $existing;
 }
 
-/** Anzahl der Zeilen einer Tabelle (Name vorher geprüft). */
+/**
+ * Anzahl der Zeilen einer Tabelle (Name vorher geprüft).
+ */
 function pb_setup_count_rows(PDO $pdo, string $table): int
 {
     $stmt = $pdo->query('SELECT COUNT(*) FROM `' . str_replace('`', '', $table) . '`');
@@ -554,7 +570,9 @@ function pb_setup_sql_strings(string $statement): array
 // pb_inc/mysql.inc.php
 // =============================================================================
 
-/** Darf PowerBook die Datei anlegen bzw. überschreiben? */
+/**
+ * Darf PowerBook die Datei anlegen bzw. überschreiben?
+ */
 function pb_setup_writable(string $file): bool
 {
     if (file_exists($file)) {
@@ -654,7 +672,9 @@ function pb_setup_delete_files(array $files): array
 // Adressen
 // =============================================================================
 
-/** Adresse des PowerBook-Ordners aus der aufgerufenen Adresse (mit / am Ende). */
+/**
+ * Adresse des PowerBook-Ordners aus der aufgerufenen Adresse (mit / am Ende).
+ */
 function pb_setup_base_url(): string
 {
     $host = preg_replace('/[^A-Za-z0-9.\-:\[\]]/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')) ?? '';
@@ -666,7 +686,9 @@ function pb_setup_base_url(): string
     return (pb_setup_is_https() ? 'https' : 'http') . '://' . $host . $dir . '/';
 }
 
-/** Ist das eine vollständige http(s)-Adresse? */
+/**
+ * Ist das eine vollständige http(s)-Adresse?
+ */
 function pb_setup_valid_url(string $url): bool
 {
     return filter_var($url, FILTER_VALIDATE_URL) !== false

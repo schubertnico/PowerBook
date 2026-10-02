@@ -144,7 +144,9 @@ function pb_update_render(string $heading, string $content, int $status = 200): 
     return pb_setup_response($page, $status, ['Cache-Control' => 'no-store', 'X-Robots-Tag' => 'noindex']);
 }
 
-/** Zielstand als „3.1“. */
+/**
+ * Zielstand als „3.1“.
+ */
 function pb_update_target(): string
 {
     return implode('.', array_slice(explode('.', PB_VERSION), 0, 2));
@@ -189,7 +191,9 @@ function pb_update_handle(PDO $pdo, array $names, array $paths): array
     };
 }
 
-/** Hat sich in dieser Sitzung ein berechtigtes Konto angemeldet? */
+/**
+ * Hat sich in dieser Sitzung ein berechtigtes Konto angemeldet?
+ */
 function pb_update_authenticated(): bool
 {
     return ($_SESSION['pb_update_auth'] ?? false) === true;
@@ -386,7 +390,9 @@ function pb_update_page_done(array $plan, string $logHtml, array $paths): array
         . pb_update_links());
 }
 
-/** @param list<string> $notes Klartext */
+/**
+ * @param list<string> $notes Klartext
+ */
 function pb_update_notes(array $notes): string
 {
     if ($notes === []) {
@@ -444,7 +450,9 @@ function pb_update_delete_files(array $files): string
         . '</div>';
 }
 
-/** Links zum AdminCenter und zum Gästebuch. */
+/**
+ * Links zum AdminCenter und zum Gästebuch.
+ */
 function pb_update_links(): string
 {
     return '<div class="d-flex flex-wrap gap-2 mt-4">'
@@ -617,7 +625,9 @@ function pb_update_value_task(string $label, string $table, array $values): arra
     ];
 }
 
-/** Erklärung in Klammern für die Anzeige, z. B. „ (IPv6-Adressen)“. */
+/**
+ * Erklärung in Klammern für die Anzeige, z. B. „ (IPv6-Adressen)“.
+ */
 function pb_update_purpose(string $key): string
 {
     $purpose = PB_UPDATE_PURPOSES[$key] ?? '';
@@ -832,7 +842,9 @@ function pb_update_key_tasks(PDO $pdo, string $table, array $keys): array
     return $tasks;
 }
 
-/** Vorgabewert aus einer Spaltendefinition in powerbook.sql (SQL-Literal) oder null. */
+/**
+ * Vorgabewert aus einer Spaltendefinition in powerbook.sql (SQL-Literal) oder null.
+ */
 function pb_update_schema_default(string $definition): ?string
 {
     if (preg_match("/\\bDEFAULT\\s+('(?:[^'\\\\]|\\\\.)*'|-?\\d+)/i", $definition, $match) !== 1) {
@@ -842,7 +854,9 @@ function pb_update_schema_default(string $definition): ?string
     return $match[1];
 }
 
-/** Neutraler Vorgabewert für alte Spalten, die PowerBook nicht mehr füllt (z. B. icq). */
+/**
+ * Neutraler Vorgabewert für alte Spalten, die PowerBook nicht mehr füllt (z. B. icq).
+ */
 function pb_update_neutral_default(string $type): ?string
 {
     if (preg_match('/^(var)?char\b/', $type) === 1) {
@@ -910,7 +924,9 @@ function pb_update_number_task(PDO $pdo, string $key, string $table, string $mod
     ]);
 }
 
-/** Typ aus einer Spaltendefinition in powerbook.sql, klein geschrieben (z. B. „varchar(45)“). */
+/**
+ * Typ aus einer Spaltendefinition in powerbook.sql, klein geschrieben (z. B. „varchar(45)“).
+ */
 function pb_update_schema_type(string $definition): string
 {
     if (preg_match('/^`?\w+`?\s+(\w+(?:\([^)]*\))?)/', $definition, $match) !== 1) {
@@ -996,7 +1012,9 @@ function pb_update_design_task(string $table, string $design, string $newDesign,
     return pb_update_value_task($label, $table, ['design' => $newDesign]);
 }
 
-/** Ist das ein unverändertes Standarddesign einer früheren Version? Liefert die Art oder null. */
+/**
+ * Ist das ein unverändertes Standarddesign einer früheren Version? Liefert die Art oder null.
+ */
 function pb_update_old_design(string $design): ?string
 {
     $compact = (string) preg_replace('/\s+/', '', $design);
@@ -1094,7 +1112,9 @@ function pb_update_general_notes(PDO $pdo, array $names, array $tables): array
     ], static fn (string $note): bool => $note !== ''));
 }
 
-/** @param array<string, array{name: string, engine: string, collation: string}> $tables */
+/**
+ * @param array<string, array{name: string, engine: string, collation: string}> $tables
+ */
 function pb_update_charset_note(array $tables): string
 {
     $foreign = [];
